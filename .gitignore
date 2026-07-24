@@ -1,0 +1,10 @@
+.env
+.env*.local
+.next
+.sanity
+node_modules
+out
+dist
+coverage
+*.tsbuildinfo
+sanity.cli.json

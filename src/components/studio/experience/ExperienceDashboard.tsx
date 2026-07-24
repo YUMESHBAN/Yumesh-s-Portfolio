@@ -1,0 +1,254 @@
+"use client";
+
+import { BriefcaseBusiness, EyeOff, MapPin, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useClient } from "sanity";
+
+import { getErrorMessage } from "../shared/studio-utils";
+
+import ExperienceForm, { type ExperienceDocument } from "./ExperienceForm";
+
+const experienceQuery = `*[_type == "experience"] | order(current desc, startDate desc, _createdAt desc) {
+  _id,
+  _type,
+  status,
+  company,
+  role,
+  employmentType,
+  location,
+  workMode,
+  companyUrl,
+  startDate,
+  endDate,
+  dateRange,
+  current,
+  summary,
+  responsibilities,
+  achievements,
+  relatedSkills,
+  skills
+}`;
+
+export default function ExperienceDashboard() {
+  const client = useClient({ apiVersion: "2026-03-01" });
+  const [experiences, setExperiences] = useState<ExperienceDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"list" | "form">("list");
+  const [editingExperience, setEditingExperience] = useState<ExperienceDocument | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showCurrentOnly, setShowCurrentOnly] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [error, setError] = useState("");
+
+  const fetchExperiences = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await client.fetch<ExperienceDocument[]>(experienceQuery);
+      setExperiences(data);
+    } catch (fetchError) {
+      setError(getErrorMessage(fetchError));
+    } finally {
+      setLoading(false);
+    }
+  }, [client]);
+
+  useEffect(() => {
+    fetchExperiences();
+  }, [fetchExperiences]);
+
+  const filteredExperiences = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
+
+    return experiences.filter((experience) => {
+      const searchable = [
+        experience.company,
+        experience.role,
+        experience.employmentType,
+        experience.location,
+        experience.workMode,
+        experience.summary,
+        experience.skills?.join(" "),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      const matchesSearch = !search || searchable.includes(search);
+      const matchesCurrent = !showCurrentOnly || experience.current;
+      const matchesStatus = filterStatus === "all" || (experience.status ?? "published") === filterStatus;
+
+      return matchesSearch && matchesCurrent && matchesStatus;
+    });
+  }, [experiences, filterStatus, searchTerm, showCurrentOnly]);
+
+  function handleAddNew() {
+    setEditingExperience(null);
+    setView("form");
+  }
+
+  function handleEdit(experience: ExperienceDocument) {
+    setEditingExperience(experience);
+    setView("form");
+  }
+
+  async function handleDelete(experience: ExperienceDocument) {
+    if (!experience._id) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete "${experience.role}" at "${experience.company}"?`);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await client.delete(experience._id);
+      setExperiences((currentExperiences) => currentExperiences.filter((item) => item._id !== experience._id));
+    } catch (deleteError) {
+      setError(getErrorMessage(deleteError));
+    }
+  }
+
+  function handleFormComplete() {
+    setView("list");
+    setEditingExperience(null);
+    fetchExperiences();
+  }
+
+  if (view === "form") {
+    return (
+      <div className="studio-page-container-form">
+        <ExperienceForm experience={editingExperience} onComplete={handleFormComplete} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="studio-page-container">
+      <div className="studio-header">
+        <div>
+          <p className="studio-eyebrow">Career Timeline</p>
+          <h1 className="studio-header-title">Experience Overview</h1>
+          <p className="studio-header-subtitle">Manage public timeline entries for developer roles, freelance work, and internships.</p>
+        </div>
+
+        <div className="studio-filters">
+          <div className="studio-search-wrapper">
+            <Search className="studio-search-icon" size={16} />
+            <input
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="studio-search-input"
+              placeholder="Search experience..."
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowCurrentOnly((current) => !current)}
+            className={`studio-filter-btn ${showCurrentOnly ? "studio-filter-btn-active" : "studio-filter-btn-inactive"}`}
+          >
+            <BriefcaseBusiness size={15} />
+            Current
+          </button>
+
+          <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className="studio-select">
+            <option value="all">All Statuses</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+            <option value="hidden">Hidden</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="studio-stats-grid">
+        <div className="studio-stat-card">
+          <p className="studio-stat-label">Total Roles</p>
+          <p className="studio-stat-value studio-stat-blue">{experiences.length}</p>
+        </div>
+        <div className="studio-stat-card">
+          <p className="studio-stat-label">Current</p>
+          <p className="studio-stat-value studio-stat-green">{experiences.filter((experience) => experience.current).length}</p>
+        </div>
+        <div className="studio-stat-card">
+          <p className="studio-stat-label">Companies</p>
+          <p className="studio-stat-value studio-stat-orange">{new Set(experiences.map((experience) => experience.company).filter(Boolean)).size}</p>
+        </div>
+        <div className="studio-stat-card">
+          <p className="studio-stat-label">Skill Tags</p>
+          <p className="studio-stat-value studio-stat-pink">{new Set(experiences.flatMap((experience) => experience.skills ?? [])).size}</p>
+        </div>
+      </div>
+
+      {error ? <p className="studio-error">{error}</p> : null}
+
+      {loading ? (
+        <div className="studio-loading">Loading experience...</div>
+      ) : filteredExperiences.length === 0 ? (
+        <div className="studio-empty">No experience entries found.</div>
+      ) : (
+        <div className="studio-timeline-list">
+          {filteredExperiences.map((experience) => (
+            <article key={experience._id} className="studio-timeline-card">
+              <div className="studio-timeline-marker" />
+              <div className="studio-timeline-content">
+                <div className="studio-card-topline">
+                  <span className="studio-badge studio-badge-info">{experience.employmentType ?? "Role"}</span>
+                  {experience.current ? <span className="studio-badge studio-badge-success">Current</span> : null}
+                  {experience.status === "hidden" ? (
+                    <span className="studio-badge studio-badge-neutral">
+                      <EyeOff size={12} />
+                      Hidden
+                    </span>
+                  ) : null}
+                </div>
+
+                <h2 className="studio-card-title">{experience.role}</h2>
+                <p className="studio-card-meta">
+                  {experience.company} / {experience.dateRange || "No date range"}
+                </p>
+                <p className="studio-location-line">
+                  <MapPin size={14} />
+                  {[experience.location, experience.workMode].filter(Boolean).join(" / ") || "Location not added"}
+                </p>
+                <p className="studio-card-description">{experience.summary || "No summary added yet."}</p>
+
+                {experience.skills?.length ? (
+                  <div className="studio-tag-list">
+                    {experience.skills.slice(0, 5).map((skill) => (
+                      <span key={skill} className="studio-tag">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div className="studio-actions">
+                  <button type="button" onClick={() => handleEdit(experience)} className="studio-btn-edit">
+                    <Pencil size={16} />
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(experience)}
+                    className="studio-btn-delete"
+                    title="Delete experience"
+                    aria-label={`Delete ${experience.role}`}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      <button type="button" onClick={handleAddNew} className="studio-fab">
+        <Plus size={20} />
+        <span className="studio-fab-text">Add Experience</span>
+      </button>
+    </div>
+  );
+}

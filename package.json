@@ -1,0 +1,51 @@
+{
+  "name": "yumesh-ban-portfolio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.19 <22 || >=22.12"
+  },
+  "scripts": {
+    "dev": "next dev --turbo",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "check:sanity": "tsx scripts/check-sanity.ts",
+    "seed:sanity": "tsx scripts/seed-sanity.ts",
+    "studio": "sanity dev",
+    "studio:build": "sanity build",
+    "studio:deploy": "sanity deploy"
+  },
+  "dependencies": {
+    "@sanity/client": "^7.13.1",
+    "@sanity/image-url": "^1.2.0",
+    "@sanity/vision": "^4.18.0",
+    "clsx": "^2.1.1",
+    "geist": "^1.7.2",
+    "lucide-react": "^0.575.0",
+    "next": "^16.1.6",
+    "next-sanity": "^11.6.8",
+    "nodemailer": "^7.0.11",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "sanity": "^4.18.0",
+    "styled-components": "^6.4.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@tailwindcss/typography": "^0.5.19",
+    "@types/node": "^20",
+    "@types/nodemailer": "^7.0.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.22",
+    "eslint": "^9",
+    "eslint-config-next": "^16.1.6",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.18",
+    "tsx": "^4.20.6",
+    "typescript": "^5"
+  }
+}
