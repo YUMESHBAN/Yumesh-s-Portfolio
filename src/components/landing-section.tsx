@@ -12,7 +12,7 @@ export function LandingSection({ profile, settings }: { profile: PersonProfile; 
   return (
     <section className="landing-section site-container min-h-[calc(100svh-1px)] pt-28 sm:pt-32">
       <div className="grid min-h-[calc(100svh-12rem)] items-center gap-10 lg:grid-cols-[minmax(0,1.04fr)_minmax(360px,0.96fr)] lg:gap-8">
-        <div className="relative z-10 max-w-2xl text-left">
+        <div className="relative z-30 max-w-2xl text-left">
           <GreetingRotator />
 
           <p className="mt-6 text-xl font-medium text-white/82 sm:text-2xl">I&apos;m {profile.name}</p>
