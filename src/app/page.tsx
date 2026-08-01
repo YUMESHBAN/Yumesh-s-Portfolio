@@ -106,7 +106,7 @@ export default async function HomePage() {
                             <circle cx={achievementX} cy={achievementY} r="1.75" fill="#93C5FD" />
                             <foreignObject x={achievementLabelX} y={achievementLabelY} width="180" height="128">
                               <div className="group relative h-full">
-                                <p className={`absolute bottom-0 cursor-help text-[8px] leading-3 text-blue-200/65 line-clamp-2 ${achievementDirection === -1 ? "w-[100px] text-right" : "right-0 w-[84px] text-left"}`}>
+                                <p className={`absolute bottom-0 cursor-help text-[12px] leading-3 text-blue-200/65 line-clamp-2 ${achievementDirection === -1 ? "w-[100px] text-left" : "right-0 w-[84px] text-left"}`}>
                                   {shortAchievement(achievement)}
                                 </p>
                                 <div className="pointer-events-none absolute bottom-8 z-20 w-full rounded-md border border-blue-400/30 bg-[#0B1220]/95 px-2.5 py-2 text-left text-[9px] leading-3 text-blue-100 opacity-0 shadow-[0_10px_26px_rgba(0,0,0,0.45)] transition-opacity duration-150 group-hover:opacity-100">
@@ -148,18 +148,20 @@ export default async function HomePage() {
               />
             </div>
 
-            <div className="mt-10">
+            <div className="mt-10 ">
               {homepageExperiences.map((experience, experienceIndex) => {
                 const visibleAchievementCount = Math.min(experience.achievements.length, 2);
                 const isLastExperience = experienceIndex === homepageExperiences.length ;
                 const labelOnRight = experienceIndex % 2 === 0;
-                const graphHeightCm = visibleAchievementCount === 1 ? 8 : visibleAchievementCount === 2 ? 8 : 0;
-                const graphRhythmClass = visibleAchievementCount === 1 ? "lg:min-h-[8cm]" : visibleAchievementCount === 2 ? "lg:min-h-[9cm]" : "";
+                const graphHeightCm = visibleAchievementCount === 1 ? 7 : visibleAchievementCount === 2 ? 8.5 : 0;
+                const graphRhythmClass = visibleAchievementCount === 1 ? "lg:min-h-[9cm]" : visibleAchievementCount === 2 ? "lg:min-h-[9cm]" : "";
                 const desktopArticleSpacingClass = visibleAchievementCount ? "lg:pb-0" : "";
                 const graphAchievements = experience.achievements.slice(0, visibleAchievementCount).map((achievement, achievementIndex) => {
-                  const originCm = achievementIndex + 3;
+                  const achievementStartCm = 2;
+                  const achievementGapCm = 2;
+                  const originCm = achievementStartCm + achievementIndex * achievementGapCm;
                   const position = (originCm / graphHeightCm) * 100;
-                  const endpointPosition = ((originCm + 4) / graphHeightCm) * 100;
+                  const endpointPosition = ((originCm + 3) / graphHeightCm) * 100;
                   const direction = (experienceIndex + achievementIndex) % 2 === 0 ? 1 : -1;
 
                   return {
@@ -168,10 +170,10 @@ export default async function HomePage() {
                     position,
                     endpointPosition,
                     bendPosition: position + (endpointPosition - position) / 2,
-                    tailPosition: ((originCm + 6) / graphHeightCm) * 100,
-                    labelPosition: ((originCm + 3.45) / graphHeightCm) * 100,
+                    tailPosition: ((originCm + 4) / graphHeightCm) * 100,
+                    labelPosition: ((originCm + 2.85) / graphHeightCm) * 100,
                     direction,
-                    endpointX: direction === -1 ? 34 : 78,
+                    endpointX: direction === -1 ? 40 : 72,
                   };
                 });
 
@@ -223,16 +225,16 @@ export default async function HomePage() {
                         {experience.current ? "✓" : null}
                       </span>
                       <div className={`absolute top-0 w-[40%] -translate-y-1/2 ${labelOnRight ? "left-[62%] text-left" : "left-[12%] text-right"}`}>
-                        <p className="text-[10px] font-semibold leading-3 text-blue-200/80">{experience.role}</p>
-                        <p className="mt-1 text-[9px] leading-3 text-blue-300/50">{experience.company}</p>
+                        <p className="text-[12px] font-semibold leading-3 text-blue-200/80">{experience.role}</p>
+                        <p className="mt-1 text-[10px] leading-3 text-blue-300/50">{experience.company}</p>
                       </div>
 
                       {graphAchievements.map(({ achievement, achievementIndex, position, endpointPosition, labelPosition, direction, endpointX }) => (
-                          <div key={`${experience.company}-achievement-${achievementIndex}`} className="absolute inset-0">
+                          <div key={`${experience.company}-achievement-${achievementIndex}`} className="pointer-events-none absolute inset-0">
                             <span className="absolute left-[56%] h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-blue-300/85 bg-[#0B1220]" style={{ top: `${position}%` }} />
                             <span className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-blue-300/85 bg-[#0B1220]" style={{ left: `${endpointX}%`, top: `${endpointPosition}%` }} />
-                            <div className={`group absolute w-[26%] ${direction === -1 ? "left-0 text-right" : "right-0 text-left"}`} style={{ top: `${labelPosition}%` }}>
-                              <p className="cursor-help text-[8px] leading-3 text-blue-200/65 line-clamp-2">{shortAchievement(achievement)}</p>
+                            <div className={`group pointer-events-auto absolute w-[26%] ${direction === -1 ? "left-12 text-right" : "right-0 text-left"}`} style={{ top: `${labelPosition}%` }}>
+                              <p className="cursor-help text-[10px] leading-3 text-blue-200/65 line-clamp-2">{shortAchievement(achievement)}</p>
                               <div className={`pointer-events-none absolute bottom-full mb-2 w-[180px] rounded-md border border-blue-400/30 bg-[#0B1220]/95 px-2.5 py-2 text-left text-[9px] leading-3 text-blue-100 opacity-0 shadow-[0_10px_26px_rgba(0,0,0,0.45)] transition-opacity duration-150 group-hover:opacity-100 ${direction === -1 ? "left-0" : "right-0"}`}>
                                 {achievement}
                               </div>
