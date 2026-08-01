@@ -83,6 +83,9 @@ export type Project = {
   repoUrl?: string;
   liveUrl?: string;
   links?: LinkItem[];
+  demoVideoUrl?: string;
+  demoVideoMimeType?: string;
+  projectPdfUrl?: string;
   logo?: ImageWithMeta;
   featuredImage?: ImageWithMeta;
   gallery?: ImageWithMeta[];
@@ -93,6 +96,8 @@ export type Project = {
 
 export type Experience = {
   status?: ContentStatus;
+  featuredOnHomepage?: boolean;
+  homepageOrder?: number;
   company: string;
   role: string;
   employmentType: string;
@@ -148,9 +153,44 @@ export type Skill = {
   description?: string;
   iconName?: string;
   aliases?: string[];
-  category: "Frontend" | "Backend" | "Database" | "CMS" | "Tools" | "Soft Skills";
+  category: string;
   level: "Learning" | "Working" | "Strong";
   featured?: boolean;
+  order: number;
+};
+
+export type StackCategory = {
+  _id?: string;
+  status?: ContentStatus;
+  title: string;
+  label?: string;
+  description: string;
+  image?: ImageWithMeta;
+  order: number;
+};
+
+export type ShowcaseProject = {
+  title: string;
+  slug: string;
+  summary?: string;
+  type?: Project["type"];
+  liveUrl?: string;
+  repoUrl?: string;
+  techStack?: string[];
+  featuredImage?: ImageWithMeta;
+};
+
+export type SkillShowcase = {
+  _id?: string;
+  status?: ContentStatus;
+  skill: SkillReference;
+  title: string;
+  description: string;
+  project?: ShowcaseProject;
+  image?: ImageWithMeta;
+  demoVideoUrl?: string;
+  demoVideoMimeType?: string;
+  highlights?: string[];
   order: number;
 };
 
@@ -170,6 +210,8 @@ export type Certification = {
 
 export type Article = {
   status?: ContentStatus;
+  featuredOnHomepage?: boolean;
+  homepageOrder?: number;
   title: string;
   slug: string;
   category?: string;

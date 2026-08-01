@@ -1,59 +1,42 @@
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, Mail } from "lucide-react";
+import { ArrowRight, Clock3, Mail, MapPin, Network } from "lucide-react";
 
 import { LandingSection } from "@/components/landing-section";
+import { HowIWorkSection } from "@/components/how-i-work-section";
 import { SelectedWorkPreview } from "@/components/selected-work-preview";
 import { SectionHeading } from "@/components/section-heading";
-import { TechLogo } from "@/components/tech-logo";
+import { StackScrollExperience } from "@/components/stack-scroll-experience";
 import {
-  getCertifications,
-  getExperiences,
+  getFeaturedHomepageArticles,
+  getFeaturedHomepageExperiences,
   getFeaturedProjects,
   getPersonProfile,
+  getSkillShowcases,
   getSkills,
+  getStackCategories,
   getSiteSettings,
 } from "@/lib/content";
 
+function shortAchievement(value: string) {
+  const words = value.trim().split(/\s+/);
+
+  return words.length > 5 ? `${words.slice(0, 5).join(" ")}…` : value;
+}
+
 export default async function HomePage() {
-  const [profile, settings, featuredProjects, experiences, skills, certifications] = await Promise.all([
+  const [profile, settings, featuredProjects, homepageExperiences, skills, stackCategories, skillShowcases, featuredArticles] = await Promise.all([
     getPersonProfile(),
     getSiteSettings(),
     getFeaturedProjects(),
-    getExperiences(),
+    getFeaturedHomepageExperiences(),
     getSkills(),
-    getCertifications(),
+    getStackCategories(),
+    getSkillShowcases(),
+    getFeaturedHomepageArticles(),
   ]);
 
-  const stackLanes = [
-    {
-      category: "Frontend",
-      description: "Interfaces that stay fast, responsive, and maintainable.",
-    },
-    {
-      category: "Backend",
-      description: "APIs, auth flows, server logic, and product data.",
-    },
-    {
-      category: "Database",
-      description: "Schemas and persistence for real application workflows.",
-    },
-    {
-      category: "CMS",
-      description: "Structured content systems that clients can actually use.",
-    },
-    {
-      category: "Tools",
-      description: "Shipping, versioning, design handoff, and deployment.",
-    },
-  ] as const;
-  const stackGroups = stackLanes
-    .map((lane) => ({
-      ...lane,
-      items: skills.filter((skill) => skill.category === lane.category).slice(0, 4),
-    }))
-    .filter((lane) => lane.items.length > 0);
-  const primaryStack = stackGroups.flatMap((lane) => lane.items).slice(0, 8);
-  const strongSkillCount = skills.filter((skill) => skill.level === "Strong").length;
+  const graphExperienceSpacing = homepageExperiences.length > 1 ? Math.min(260, 500 / (homepageExperiences.length - 1)) : 0;
+  const experienceGraphSpine = 210;
 
   return (
     <>
@@ -70,140 +53,283 @@ export default async function HomePage() {
 
           <div className="mt-7 flex justify-center border-t border-white/10 pt-7 sm:justify-end">
             <Link href="/selected-work" className="site-button-primary w-fit">
-              View selected work
+              View project archive
               <ArrowRight size={17} />
             </Link>
           </div>
         </div>
       </section>
 
-      <section className="site-section border-t border-white/10">
-        <div className="site-container grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
-          <div className="lg:sticky lg:top-28">
-            <SectionHeading
-              eyebrow="Current stack"
-              title="A focused toolkit for shipping useful web products."
-              description="I keep the stack deliberate: strong interface foundations, practical backend work, and content/data systems that are easy to maintain after launch."
-            />
+      <HowIWorkSection />
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-              <div className="rounded-lg border border-white/10 bg-white/[0.045] p-4">
-                <p className="text-3xl font-semibold text-white">{stackGroups.length}</p>
-                <p className="mt-1 text-sm font-medium text-white/48">core capability lanes</p>
-              </div>
-              <div className="rounded-lg border border-white/10 bg-white/[0.045] p-4">
-                <p className="text-3xl font-semibold text-white">{primaryStack.length}</p>
-                <p className="mt-1 text-sm font-medium text-white/48">tools in active rotation</p>
-              </div>
-              <div className="rounded-lg border border-white/10 bg-white/[0.045] p-4">
-                <p className="text-3xl font-semibold text-white">{strongSkillCount}</p>
-                <p className="mt-1 text-sm font-medium text-white/48">strongly rated skills</p>
-              </div>
+      <section className="site-section">
+        <div className="site-container relative isolate">
+          <svg
+            className="hidden"
+            viewBox="0 0 432 850"
+            fill="none"
+            aria-hidden="true"
+          >
+            <defs>
+              <filter id="experience-commit-glow" x="0" y="0" width="736" height="850" filterUnits="userSpaceOnUse">
+                <feGaussianBlur stdDeviation="10" />
+              </filter>
+            </defs>
+            <path d={`M${experienceGraphSpine} 832V64`} stroke="white" strokeOpacity="0.24" strokeWidth="2" />
+            {homepageExperiences.map((experience, experienceIndex) => {
+              const y = 64 + experienceIndex * graphExperienceSpacing;
+              const labelOnRight = experienceIndex % 2 === 0;
+              const visibleOutcomeCount = Math.min(experience.achievements.length, 2);
+              const labelX = labelOnRight ? experienceGraphSpine + 24 : experienceGraphSpine - 154;
+              const labelY = y - 18;
+
+              return (
+                <g key={`${experience.company}-${experience.role}`}>
+                  {visibleOutcomeCount ? (
+                    <>
+                      {experience.achievements.slice(0, visibleOutcomeCount).map((achievement, achievementIndex) => {
+                        const achievementDirection = (labelOnRight ? -1 : 1) * (achievementIndex % 2 === 0 ? 1 : -1);
+                        const branchStartY = y + 32 + achievementIndex * 54;
+                        const achievementX = experienceGraphSpine + achievementDirection * 100;
+                        const achievementY = branchStartY + 99;
+                        const achievementLabelX = achievementDirection === -1 ? achievementX - 110 : achievementX - 88;
+                        const achievementLabelY = achievementY - 96;
+                        const dashedTailY = achievementY + 48;
+
+                        return (
+                          <g key={`${experience.company}-${achievementIndex}`}>
+                            <path d={`M${experienceGraphSpine} ${branchStartY}C${experienceGraphSpine + achievementDirection * 72} ${branchStartY} ${achievementX} ${achievementY - 69} ${achievementX} ${achievementY}`} stroke="#60A5FA" strokeOpacity="0.72" strokeWidth="1.75" />
+                            <path d={`M${achievementX} ${achievementY}V${dashedTailY}`} stroke="#60A5FA" strokeOpacity="0.34" strokeWidth="1.5" strokeDasharray="4 7" />
+                            <circle cx={experienceGraphSpine} cy={branchStartY} r="5" fill="#0B1220" stroke="#93C5FD" strokeOpacity="0.85" strokeWidth="2" />
+                            <circle cx={experienceGraphSpine} cy={branchStartY} r="1.75" fill="#93C5FD" />
+                            <circle cx={achievementX} cy={achievementY} r="5" fill="#0B1220" stroke="#93C5FD" strokeOpacity="0.85" strokeWidth="2" />
+                            <circle cx={achievementX} cy={achievementY} r="1.75" fill="#93C5FD" />
+                            <foreignObject x={achievementLabelX} y={achievementLabelY} width="180" height="128">
+                              <div className="group relative h-full">
+                                <p className={`absolute bottom-0 cursor-help text-[8px] leading-3 text-blue-200/65 line-clamp-2 ${achievementDirection === -1 ? "w-[100px] text-right" : "right-0 w-[84px] text-left"}`}>
+                                  {shortAchievement(achievement)}
+                                </p>
+                                <div className="pointer-events-none absolute bottom-8 z-20 w-full rounded-md border border-blue-400/30 bg-[#0B1220]/95 px-2.5 py-2 text-left text-[9px] leading-3 text-blue-100 opacity-0 shadow-[0_10px_26px_rgba(0,0,0,0.45)] transition-opacity duration-150 group-hover:opacity-100">
+                                  {achievement}
+                                </div>
+                              </div>
+                            </foreignObject>
+                          </g>
+                        );
+                      })}
+                    </>
+                  ) : null}
+                  {experience.current ? (
+                    <>
+                      <circle cx={experienceGraphSpine} cy={y} r="34" fill="#60A5FA" fillOpacity="0.15" filter="url(#experience-commit-glow)" />
+                      <circle cx={experienceGraphSpine} cy={y} r="17" fill="#60A5FA" />
+                      <path d={`M${experienceGraphSpine - 7} ${y}L${experienceGraphSpine - 2} ${y + 5}L${experienceGraphSpine + 9} ${y - 7}`} stroke="#0B1220" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </>
+                  ) : (
+                    <circle cx={experienceGraphSpine} cy={y} r="10" fill="#0B1220" stroke="#93C5FD" strokeOpacity="0.85" strokeWidth="2" />
+                  )}
+                  <foreignObject x={labelX} y={labelY} width="138" height="52">
+                    <div className={labelOnRight ? "text-left" : "text-right"}>
+                      <p className="text-[10px] font-semibold leading-3 text-blue-200/80">{experience.role}</p>
+                      <p className="mt-1 text-[9px] leading-3 text-blue-300/50">{experience.company}</p>
+                    </div>
+                  </foreignObject>
+                </g>
+              );
+            })}
+          </svg>
+
+          <div className="relative z-10">
+            <div className="lg:w-[70%]">
+              <SectionHeading
+                eyebrow="Professional experience"
+                title="Selected roles and real-world delivery."
+                description="A concise view of the work, responsibilities, and technologies behind my professional experience."
+              />
             </div>
 
-            <Link href="/about" className="site-link mt-7 inline-flex items-center gap-2 text-sm font-semibold">
-              View full skill map
-              <ArrowRight size={16} />
-            </Link>
-          </div>
+            <div className="mt-10">
+              {homepageExperiences.map((experience, experienceIndex) => {
+                const visibleAchievementCount = Math.min(experience.achievements.length, 2);
+                const isLastExperience = experienceIndex === homepageExperiences.length ;
+                const labelOnRight = experienceIndex % 2 === 0;
+                const graphHeightCm = visibleAchievementCount === 1 ? 8 : visibleAchievementCount === 2 ? 8 : 0;
+                const graphRhythmClass = visibleAchievementCount === 1 ? "lg:min-h-[8cm]" : visibleAchievementCount === 2 ? "lg:min-h-[9cm]" : "";
+                const desktopArticleSpacingClass = visibleAchievementCount ? "lg:pb-0" : "";
+                const graphAchievements = experience.achievements.slice(0, visibleAchievementCount).map((achievement, achievementIndex) => {
+                  const originCm = achievementIndex + 3;
+                  const position = (originCm / graphHeightCm) * 100;
+                  const endpointPosition = ((originCm + 4) / graphHeightCm) * 100;
+                  const direction = (experienceIndex + achievementIndex) % 2 === 0 ? 1 : -1;
 
-          <div className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
-            <div className="border-b border-white/10 p-5 sm:p-6">
-              <p className="text-xs font-semibold uppercase text-white/35">Primary tools</p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                {primaryStack.map((skill) => (
-                  <div
-                    key={skill.name}
-                    className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2"
-                  >
-                    <TechLogo name={skill.name} />
-                    <div>
-                      <p className="text-sm font-semibold text-white">{skill.name}</p>
-                      <p className="text-xs text-white/45">{skill.level}</p>
+                  return {
+                    achievement,
+                    achievementIndex,
+                    position,
+                    endpointPosition,
+                    bendPosition: position + (endpointPosition - position) / 2,
+                    tailPosition: ((originCm + 6) / graphHeightCm) * 100,
+                    labelPosition: ((originCm + 3.45) / graphHeightCm) * 100,
+                    direction,
+                    endpointX: direction === -1 ? 34 : 78,
+                  };
+                });
+
+                return (
+                  <div key={`${experience.company}-${experience.role}`} className={`relative lg:grid lg:grid-cols-[3fr_2fr] ${graphRhythmClass} ${isLastExperience ? "lg:min-h-[18rem]" : ""}`}>
+                    <article className={`relative border-l border-white/15 pb-8 pl-7 lg:col-start-1 ${desktopArticleSpacingClass}`}>
+                    <span
+                      className={`absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full ${experience.current ? "bg-blue-400 shadow-[0_0_0_5px_rgba(96,165,250,0.14)]" : "bg-white/40"}`}
+                      aria-hidden="true"
+                    />
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="text-sm font-semibold uppercase tracking-[0.14em] text-white/40">{experience.dateRange}</p>
+                      <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${experience.current ? "border-blue-400/30 bg-blue-400/10 text-blue-300" : "border-white/10 bg-white/[0.045] text-white/60"}`}>
+                        {experience.current ? "Current" : experience.employmentType}
+                      </span>
+                    </div>
+                    <h2 className="mt-3 text-2xl font-semibold text-white sm:text-3xl">{experience.role}</h2>
+                    <p className="mt-2 text-sm font-medium text-white/60">
+                      {experience.company} <span className="text-white/30">·</span> {experience.workMode}
+                    </p>
+                    <p className="site-muted mt-4 max-w-2xl leading-7">{experience.summary}</p>
+                    {experience.skills.length ? (
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        {experience.skills.slice(0, 6).map((skill) => (
+                          <span key={skill} className="site-chip">{skill}</span>
+                        ))}
+                      </div>
+                    ) : null}
+                    {experience.responsibilities?.[0] ? (
+                      <p className="mt-5 flex max-w-2xl gap-3 text-sm font-medium leading-6 text-blue-200">
+                        <ArrowRight className="mt-1 shrink-0 text-blue-400" size={16} aria-hidden="true" />
+                        {experience.responsibilities[0]}
+                      </p>
+                    ) : null}
+                    </article>
+
+                    <div className="relative hidden overflow-visible lg:col-start-2 lg:block">
+                      <div className="absolute bottom-0 left-[56%] top-0 w-px bg-white/25" aria-hidden="true" />
+                      <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" aria-hidden="true">
+                        {graphAchievements.map(({ achievementIndex, position, endpointPosition, bendPosition, tailPosition, direction, endpointX }) => (
+                          <g key={`${experience.company}-branch-${achievementIndex}`}>
+                            <path d={`M56 ${position}C${56 + direction * 16} ${position} ${endpointX} ${bendPosition} ${endpointX} ${endpointPosition}`} vectorEffect="non-scaling-stroke" stroke="#60A5FA" strokeOpacity="0.72" strokeWidth="1.75" />
+                            <path d={`M${endpointX} ${endpointPosition}V${tailPosition}`} vectorEffect="non-scaling-stroke" stroke="#60A5FA" strokeOpacity="0.34" strokeWidth="1.5" strokeDasharray="4 7" />
+                          </g>
+                        ))}
+                      </svg>
+
+                      <span className={`absolute left-[56%] top-0 grid h-5 w-5 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 ${experience.current ? "h-9 w-9 border-blue-400 bg-blue-400 text-[#0B1220] shadow-[0_0_24px_rgba(96,165,250,0.32)]" : "border-blue-300/85 bg-[#0B1220]"}`}>
+                        {experience.current ? "✓" : null}
+                      </span>
+                      <div className={`absolute top-0 w-[40%] -translate-y-1/2 ${labelOnRight ? "left-[62%] text-left" : "left-[12%] text-right"}`}>
+                        <p className="text-[10px] font-semibold leading-3 text-blue-200/80">{experience.role}</p>
+                        <p className="mt-1 text-[9px] leading-3 text-blue-300/50">{experience.company}</p>
+                      </div>
+
+                      {graphAchievements.map(({ achievement, achievementIndex, position, endpointPosition, labelPosition, direction, endpointX }) => (
+                          <div key={`${experience.company}-achievement-${achievementIndex}`} className="absolute inset-0">
+                            <span className="absolute left-[56%] h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-blue-300/85 bg-[#0B1220]" style={{ top: `${position}%` }} />
+                            <span className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-blue-300/85 bg-[#0B1220]" style={{ left: `${endpointX}%`, top: `${endpointPosition}%` }} />
+                            <div className={`group absolute w-[26%] ${direction === -1 ? "left-0 text-right" : "right-0 text-left"}`} style={{ top: `${labelPosition}%` }}>
+                              <p className="cursor-help text-[8px] leading-3 text-blue-200/65 line-clamp-2">{shortAchievement(achievement)}</p>
+                              <div className={`pointer-events-none absolute bottom-full mb-2 w-[180px] rounded-md border border-blue-400/30 bg-[#0B1220]/95 px-2.5 py-2 text-left text-[9px] leading-3 text-blue-100 opacity-0 shadow-[0_10px_26px_rgba(0,0,0,0.45)] transition-opacity duration-150 group-hover:opacity-100 ${direction === -1 ? "left-0" : "right-0"}`}>
+                                {achievement}
+                              </div>
+                            </div>
+                          </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
+              <Link href="/experience" className="site-link mt-10 inline-flex items-center gap-2 text-sm font-semibold lg:w-3/5">
+                View full experience
+                <ArrowRight size={16} aria-hidden="true" />
+              </Link>
             </div>
+          </div>
+        </div>
+      </section>
 
-            <div className="divide-y divide-white/10">
-              {stackGroups.map((lane) => (
-                <div key={lane.category} className="grid gap-5 p-5 sm:grid-cols-[9rem_minmax(0,1fr)] sm:p-6">
-                  <div>
-                    <h2 className="font-semibold text-white">{lane.category}</h2>
-                    <p className="mt-2 text-sm leading-6 text-white/48">{lane.description}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 sm:justify-end">
-                    {lane.items.map((skill) => (
-                      <span key={skill.name} className="site-chip">
-                        {skill.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+      <StackScrollExperience skills={skills} categories={stackCategories} showcases={skillShowcases} />
+
+      {featuredArticles.length ? (
+        <section className="site-section border-t border-white/10">
+          <div className="site-container">
+            <SectionHeading
+              eyebrow="Notes from building"
+              title="Practical lessons from projects and growth."
+              description="Short notes on the work, decisions, and learning behind the portfolio."
+            />
+
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              {featuredArticles.map((article) => (
+                <Link
+                  key={article.slug}
+                  href={`/articles/${article.slug}`}
+                  className="site-panel flex min-h-72 flex-col p-6 transition hover:border-white/20 hover:bg-white/[0.085] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+                >
+                  <p className="text-sm font-semibold uppercase tracking-[0.14em] text-blue-300">{article.category || "Writing"}</p>
+                  <p className="mt-3 text-sm text-white/48">{article.publishedAt}</p>
+                  <h2 className="mt-4 text-2xl font-semibold leading-tight text-white">{article.title}</h2>
+                  <p className="site-muted mt-4 text-sm leading-6">{article.excerpt}</p>
+                  <span className="mt-auto inline-flex items-center gap-2 pt-6 text-sm font-semibold text-blue-300">
+                    Read article
+                    <ArrowRight size={16} aria-hidden="true" />
+                  </span>
+                </Link>
               ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       <section className="site-section border-t border-white/10">
-        <div className="site-container">
-          <SectionHeading
-            eyebrow="Proof"
-            title="Credibility without fake testimonials."
-            description="A restrained snapshot of work history, education, and certificates."
+        <div className="site-container relative isolate overflow-hidden">
+          <Network
+            className="pointer-events-none absolute right-0 top-1/2 -z-10 hidden h-[31rem] w-[31rem] -translate-y-1/2 text-blue-300/[0.09] lg:block"
+            strokeWidth={0.7}
+            aria-hidden="true"
           />
 
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            <article className="site-panel p-6">
-              <BadgeCheck className="text-blue-400" size={24} />
-              <p className="mt-5 text-sm font-semibold uppercase text-white/35">Experience</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">{experiences.length} roles</h2>
-              <p className="site-muted mt-3 text-sm leading-6">
-                Current full-stack work plus frontend, design, and video editing roots.
-              </p>
-            </article>
-            <article className="site-panel p-6">
-              <BadgeCheck className="text-blue-400" size={24} />
-              <p className="mt-5 text-sm font-semibold uppercase text-white/35">Education</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">{profile.finalSemesterPercentage}</h2>
-              <p className="site-muted mt-3 text-sm leading-6">
-                Final semester result for BSc.CSIT at Tribhuvan University.
-              </p>
-            </article>
-            <article className="site-panel p-6">
-              <BadgeCheck className="text-blue-400" size={24} />
-              <p className="mt-5 text-sm font-semibold uppercase text-white/35">Certifications</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">{certifications.length} listed</h2>
-              <p className="site-muted mt-3 text-sm leading-6">
-                Backend, English, web design, and learning-recognition proof.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
+          <div className="grid gap-12 lg:grid-cols-[9rem_minmax(0,1fr)_17rem] lg:gap-10">
+            <aside className="relative border-b border-white/10 pb-8 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-8">
+              <p className="font-mono text-xs uppercase tracking-[0.22em] text-blue-300 lg:[writing-mode:vertical-rl]">{"// Open channel"}</p>
+              <div className="mt-8 grid gap-7 lg:mt-52">
+                <div>
+                  <MapPin className="text-blue-400" size={24} aria-hidden="true" />
+                  <p className="mt-4 font-mono text-xs uppercase tracking-[0.14em] text-blue-300">Location</p>
+                  <p className="mt-2 text-sm leading-6 text-white/75">{profile.location}</p>
+                  <p className="text-sm text-white/50">Remote · GMT+5:45</p>
+                </div>
+                <div>
+                  <Clock3 className="text-blue-400" size={24} aria-hidden="true" />
+                  <p className="mt-4 font-mono text-xs uppercase tracking-[0.14em] text-blue-300">Availability</p>
+                  <p className="mt-2 text-sm leading-6 text-white/75">{profile.availability || "Open to new projects"}</p>
+                </div>
+              </div>
+            </aside>
 
-      <section className="site-section border-t border-white/10">
-        <div className="site-container">
-          <div className="site-panel grid gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div>
-              <p className="site-eyebrow">Contact</p>
-              <h2 className="mt-3 max-w-3xl text-3xl font-semibold leading-tight text-white sm:text-5xl">
-                Have a role, project, or product idea that needs a careful builder?
+            <div className="relative z-10 lg:pt-28">
+              <p className="site-eyebrow">{"// Let&apos;s build something meaningful"}</p>
+              <h2 className="mt-8 max-w-3xl text-balance text-5xl font-medium leading-[0.98] tracking-[-0.04em] text-white sm:text-7xl lg:text-8xl">
+                The next good project starts with a clear hello.
               </h2>
-              <p className="site-muted mt-4 max-w-2xl leading-7">
-                Send the context and I will get back with a practical next step.
+              <p className="site-muted mt-10 max-w-md text-base leading-8 sm:text-lg">
+                I help founders and teams ship thoughtful digital products — from the first idea to production.
               </p>
+              <p className="site-muted mt-1 text-base leading-8 sm:text-lg">Let&apos;s create something that lasts.</p>
             </div>
-            <div className="flex flex-wrap gap-3 lg:justify-end">
-              <Link href="/contact" className="site-button-primary">
-                Contact Me
-                <ArrowRight size={17} />
+
+            <div className="relative z-10 flex flex-col justify-end lg:min-h-[35rem] lg:pb-16">
+              <Link href="/contact" className="site-button-primary w-full justify-between sm:w-72">
+                Contact me
+                <ArrowRight size={19} />
               </Link>
-              <a href={`mailto:${profile.email}`} className="site-button-secondary">
-                <Mail size={17} />
-                Email
+              <a href={`mailto:${profile.email}`} className="site-link mt-9 inline-flex items-center gap-3 text-sm font-medium text-blue-300">
+                <Mail size={20} aria-hidden="true" />
+                <span className="border-b border-blue-300/60 pb-1">{profile.email}</span>
               </a>
             </div>
           </div>

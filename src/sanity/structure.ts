@@ -165,6 +165,18 @@ export const structure: StructureResolver = (S) =>
         ),
 
       S.listItem()
+        .title("Stack Showcase")
+        .icon(SparklesIcon)
+        .child(
+          S.list()
+            .title("Homepage Stack Showcase")
+            .items([
+              S.documentTypeListItem("stackCategory").title("Categories").icon(TagIcon),
+              S.documentTypeListItem("skillShowcase").title("Skill Proofs").icon(DocumentTextIcon),
+            ]),
+        ),
+
+      S.listItem()
         .title("All Documents")
         .icon(DashboardIcon)
         .child(

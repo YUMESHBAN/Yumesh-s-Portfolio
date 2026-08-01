@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Download, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -73,11 +74,21 @@ export function SiteHeader({
         <div className={`site-container relative flex ${isScrolled ? "h-16" : "h-[76px]"} items-center justify-between gap-4 px-0 transition-[height] duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none`}>
           <Link
             href="/"
-            className="group inline-flex min-w-0 items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300/70"
+            className="group inline-flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300/70"
             aria-label={`${profile.name} home`}
           >
+            <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/20 bg-white/10 shadow-[0_0_12px_rgba(96,165,250,0.25)] transition-transform duration-300 group-hover:scale-105 group-hover:border-blue-400/40">
+              <Image
+                src="/images/yb-logo-abstract.png"
+                alt="Yumesh Ban Logo"
+                width={32}
+                height={32}
+                className="h-full w-full object-cover"
+                priority
+              />
+            </div>
             <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold tracking-[-0.02em] text-white">{profile.name}</span>
+              <span className="block truncate text-sm font-semibold tracking-[-0.02em] text-white transition-colors group-hover:text-blue-200">{profile.name}</span>
               <span className="block truncate font-mono text-[10px] uppercase tracking-[0.16em] text-white/50">Portfolio</span>
             </span>
           </Link>

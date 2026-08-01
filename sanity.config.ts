@@ -12,7 +12,7 @@ import ExperienceDashboard from "./src/components/studio/experience/ExperienceDa
 import OverviewDashboard from "./src/components/studio/overview/OverviewDashboard";
 import ProfileDashboard from "./src/components/studio/profile/ProfileDashboard";
 import ProjectDashboard from "./src/components/studio/projects/ProjectDashboard";
-import SkillDashboard from "./src/components/studio/skills/SkillDashboard";
+import StackShowcaseDashboard from "./src/components/studio/stack/StackShowcaseDashboard";
 import { schemaTypes } from "./src/sanity/schemaTypes";
 import { structure } from "./src/sanity/structure";
 import { templates } from "./src/sanity/templates";
@@ -60,8 +60,8 @@ export default defineConfig({
     },
     {
       name: "skill",
-      title: "Skills",
-      component: SkillDashboard,
+      title: "Stack Showcase",
+      component: StackShowcaseDashboard,
     },
     {
       name: "certification",

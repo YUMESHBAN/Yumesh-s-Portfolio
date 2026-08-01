@@ -36,6 +36,8 @@ export type ArticleDocument = {
   seoTitle?: string;
   seoDescription?: string;
   canonicalPath?: string;
+  featuredOnHomepage?: boolean;
+  homepageOrder?: number;
 };
 
 type ArticleFormState = {
@@ -51,6 +53,8 @@ type ArticleFormState = {
   seoTitle: string;
   seoDescription: string;
   canonicalPath: string;
+  featuredOnHomepage: boolean;
+  homepageOrder: number;
 };
 
 type ArticleFormProps = {
@@ -80,6 +84,8 @@ function articleToFormState(article?: ArticleDocument | null): ArticleFormState 
     seoTitle: article?.seoTitle ?? "",
     seoDescription: article?.seoDescription ?? "",
     canonicalPath: article?.canonicalPath ?? "",
+    featuredOnHomepage: article?.featuredOnHomepage ?? false,
+    homepageOrder: article?.homepageOrder ?? 99,
   };
 }
 
@@ -131,6 +137,8 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
       seoTitle: formData.seoTitle.trim(),
       seoDescription: formData.seoDescription.trim(),
       canonicalPath: formData.canonicalPath.trim(),
+      featuredOnHomepage: formData.featuredOnHomepage,
+      homepageOrder: formData.homepageOrder,
     };
 
     const unsetFields = ["category", "excerpt", "publishedAt", "updatedAt", "seoTitle", "seoDescription", "canonicalPath"].filter(
@@ -223,6 +231,21 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
         <section className="studio-form-section">
           <RichContentEditor label="Article Content" value={formData.body} onChange={(value) => updateField("body", value)} />
           {!formData.body.length && portableBlocksToText(formData.body) ? null : null}
+        </section>
+
+        <section className="studio-form-section">
+          <h3 className="studio-form-section-title">Homepage feature</h3>
+          <div className="studio-form-grid">
+            <label className="studio-checkbox-field">
+              <input type="checkbox" checked={formData.featuredOnHomepage} onChange={(event) => updateField("featuredOnHomepage", event.target.checked)} />
+              <span>Show this article in Notes from building</span>
+            </label>
+
+            <label className="studio-field">
+              <span className="studio-form-label">Homepage order</span>
+              <input type="number" min="1" value={formData.homepageOrder} onChange={(event) => updateField("homepageOrder", Number(event.target.value) || 99)} className="studio-form-input" disabled={!formData.featuredOnHomepage} />
+            </label>
+          </div>
         </section>
 
         <section className="studio-form-section">

@@ -10,9 +10,10 @@ export function LandingSection({ profile, settings }: { profile: PersonProfile; 
   const availability = profile.availability?.trim();
 
   return (
-    <section className="landing-section site-container min-h-[calc(100svh-1px)] pt-28 sm:pt-32">
-      <div className="grid min-h-[calc(100svh-12rem)] items-center gap-10 lg:grid-cols-[minmax(0,1.04fr)_minmax(360px,0.96fr)] lg:gap-8">
-        <div className="relative z-30 max-w-2xl text-left">
+    <section className="landing-section pt-28 sm:pt-32">
+      <div className="site-container">
+        <div className="landing-section-content grid items-center gap-10 lg:grid-cols-[minmax(0,1.04fr)_minmax(360px,0.96fr)] lg:gap-8">
+        <div className="relative max-w-2xl text-left">
           <GreetingRotator />
 
           <p className="mt-6 text-xl font-medium text-white/82 sm:text-2xl">I&apos;m {profile.name}</p>
@@ -30,7 +31,7 @@ export function LandingSection({ profile, settings }: { profile: PersonProfile; 
             {availability ? <span className="site-chip py-1.5">{availability}</span> : null}
           </div>
 
-          <div className="mt-9 flex flex-wrap gap-3">
+          <div className="relative z-30 mt-9 flex flex-wrap gap-3">
             <Link href="/contact" className="site-button-primary">
               Got a project?
               <ArrowRight size={17} />
@@ -66,6 +67,8 @@ export function LandingSection({ profile, settings }: { profile: PersonProfile; 
           </div>
         </div>
       </div>
+      </div>
+      <div className="landing-bottom-shadow pointer-events-none absolute inset-x-0 bottom-0 z-20" aria-hidden="true" />
     </section>
   );
 }

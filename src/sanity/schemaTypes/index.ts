@@ -396,6 +396,8 @@ export const schemaTypes = [
       defineField({ name: "links", title: "Additional links", type: "array", of: [{ type: "linkItem" }] }),
       defineField({ name: "logo", title: "Project logo", type: "imageWithMeta" }),
       defineField({ name: "featuredImage", title: "Featured image", type: "imageWithMeta" }),
+      defineField({ name: "demoVideo", title: "Demo video", type: "file", options: { accept: "video/mp4,video/webm" } }),
+      defineField({ name: "projectPdf", title: "Project PDF", type: "file", options: { accept: "application/pdf" } }),
       defineField({ name: "gallery", title: "Gallery", type: "array", of: [{ type: "imageWithMeta" }] }),
       defineField({ name: "screenshots", type: "array", of: [{ type: "image", options: { hotspot: true } }] }),
       defineField({ name: "featured", type: "boolean", initialValue: false }),
@@ -449,6 +451,14 @@ export const schemaTypes = [
       defineField({ name: "endDate", type: "date" }),
       defineField({ name: "dateRange", type: "string" }),
       defineField({ name: "current", type: "boolean", initialValue: false }),
+      defineField({ name: "featuredOnHomepage", title: "Feature on homepage", type: "boolean", initialValue: false }),
+      defineField({
+        name: "homepageOrder",
+        title: "Homepage order",
+        type: "number",
+        initialValue: 99,
+        hidden: ({ document }) => !document?.featuredOnHomepage,
+      }),
       defineField({ name: "summary", type: "text", rows: 3 }),
       defineField({ name: "responsibilities", type: "array", of: [{ type: "string" }] }),
       defineField({ name: "achievements", type: "array", of: [{ type: "string" }] }),
@@ -566,7 +576,7 @@ export const schemaTypes = [
       defineField({
         name: "category",
         type: "string",
-        options: { list: ["Frontend", "Backend", "Database", "CMS", "Tools", "Soft Skills"] },
+        validation: (Rule) => Rule.required(),
       }),
       defineField({
         name: "level",
@@ -588,6 +598,68 @@ export const schemaTypes = [
           title,
           subtitle: `${status || "published"} - ${category || "Skill"} - ${level || "Level"}`,
         };
+      },
+    },
+  }),
+  defineType({
+    name: "stackCategory",
+    title: "Stack Category",
+    type: "document",
+    icon: TagIcon,
+    description: "The category heading and introduction used by the homepage stack showcase.",
+    fields: [
+      statusField,
+      defineField({ name: "title", type: "string", validation: (Rule) => Rule.required() }),
+      defineField({
+        name: "label",
+        title: "Section label",
+        type: "string",
+        description: "For example: 01 / Interface.",
+      }),
+      defineField({ name: "description", type: "text", rows: 3, validation: (Rule) => Rule.required() }),
+      defineField({ name: "image", title: "Category fallback image", type: "imageWithMeta" }),
+      defineField({ name: "order", type: "number", initialValue: 99 }),
+    ],
+    preview: {
+      select: { title: "title", subtitle: "label", status: "status", media: "image.image" },
+      prepare({ title, subtitle, status, media }) {
+        return { title, subtitle: `${status || "published"}${subtitle ? ` - ${subtitle}` : ""}`, media };
+      },
+    },
+  }),
+  defineType({
+    name: "skillShowcase",
+    title: "Skill Showcase",
+    type: "document",
+    icon: DocumentTextIcon,
+    description: "A skill-specific proof item for the homepage stack showcase.",
+    fields: [
+      statusField,
+      defineField({
+        name: "skill",
+        title: "Skill",
+        type: "reference",
+        to: [{ type: "skill" }],
+        validation: (Rule) => Rule.required(),
+      }),
+      defineField({ name: "title", type: "string", validation: (Rule) => Rule.required() }),
+      defineField({
+        name: "description",
+        title: "What I built",
+        type: "text",
+        rows: 4,
+        validation: (Rule) => Rule.required(),
+      }),
+      defineField({ name: "project", title: "Related project", type: "reference", to: [{ type: "project" }] }),
+      defineField({ name: "image", title: "Showcase image", type: "imageWithMeta" }),
+      defineField({ name: "demoVideo", title: "Showcase video", type: "file", options: { accept: "video/mp4,video/webm" } }),
+      defineField({ name: "highlights", title: "Highlights", type: "array", of: [{ type: "string" }] }),
+      defineField({ name: "order", type: "number", initialValue: 99 }),
+    ],
+    preview: {
+      select: { title: "title", skill: "skill.name", project: "project.title", status: "status", media: "image.image" },
+      prepare({ title, skill, project, status, media }) {
+        return { title, subtitle: `${status || "published"} - ${skill || "No skill"}${project ? ` - ${project}` : ""}`, media };
       },
     },
   }),
@@ -647,6 +719,14 @@ export const schemaTypes = [
       defineField({ name: "excerpt", type: "text", rows: 3 }),
       defineField({ name: "publishedAt", type: "date" }),
       defineField({ name: "updatedAt", title: "Updated date", type: "date" }),
+      defineField({ name: "featuredOnHomepage", title: "Feature on homepage", type: "boolean", initialValue: false }),
+      defineField({
+        name: "homepageOrder",
+        title: "Homepage order",
+        type: "number",
+        initialValue: 99,
+        hidden: ({ document }) => !document?.featuredOnHomepage,
+      }),
       defineField({ name: "coverImage", title: "Cover image", type: "imageWithMeta" }),
       defineField({ name: "tags", type: "array", of: [{ type: "string" }] }),
       defineField({ name: "body", type: "richContent" }),

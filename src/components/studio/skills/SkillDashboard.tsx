@@ -51,7 +51,10 @@ export default function SkillDashboard() {
     fetchSkills();
   }, [fetchSkills]);
 
-  const categories = useMemo(() => Array.from(new Set(skills.map((skill) => skill.category).filter(Boolean))).sort(), [skills]);
+  const categories = useMemo(
+    () => Array.from(new Set(skills.map((skill) => skill.category).filter((category): category is string => Boolean(category)))).sort(),
+    [skills],
+  );
 
   const filteredSkills = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -106,7 +109,7 @@ export default function SkillDashboard() {
   if (view === "form") {
     return (
       <div className="studio-page-container-form">
-        <SkillForm skill={editingSkill} onComplete={handleFormComplete} />
+        <SkillForm skill={editingSkill} categorySuggestions={categories} onComplete={handleFormComplete} />
       </div>
     );
   }

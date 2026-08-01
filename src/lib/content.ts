@@ -6,6 +6,8 @@ import {
   personProfile,
   projects,
   siteSettings,
+  skillShowcases,
+  stackCategories,
   skills,
 } from "@/content/fallback";
 import { sanityFetch } from "@/sanity/client";
@@ -15,12 +17,16 @@ import {
   certificationsQuery,
   educationQuery,
   experiencesQuery,
+  featuredHomepageArticlesQuery,
+  featuredHomepageExperiencesQuery,
   featuredProjectsQuery,
   personProfileQuery,
   projectBySlugQuery,
   projectsQuery,
   siteSettingsQuery,
+  skillShowcasesQuery,
   skillsQuery,
+  stackCategoriesQuery,
 } from "@/sanity/queries";
 import { urlForImage } from "@/sanity/image";
 import type {
@@ -34,6 +40,8 @@ import type {
   Project,
   SiteSettings,
   Skill,
+  SkillShowcase,
+  StackCategory,
 } from "@/types/content";
 import { sortByOrder } from "@/lib/utils";
 
@@ -264,6 +272,17 @@ export async function getExperiences() {
   });
 }
 
+export async function getFeaturedHomepageExperiences() {
+  const fallback = experiences
+    .filter((experience) => experience.featuredOnHomepage)
+    .sort((a, b) => (a.homepageOrder ?? 99) - (b.homepageOrder ?? 99));
+
+  return sanityFetch<Experience[]>({
+    query: featuredHomepageExperiencesQuery,
+    fallback,
+  });
+}
+
 export async function getEducation() {
   const data = await sanityFetch<Education[]>({
     query: educationQuery,
@@ -280,6 +299,33 @@ export async function getSkills() {
   });
 }
 
+export async function getStackCategories() {
+  const data = await sanityFetch<StackCategory[]>({
+    query: stackCategoriesQuery,
+    fallback: stackCategories,
+  });
+
+  return sortByOrder((data.length ? data : stackCategories).map((category) => ({
+    ...category,
+    image: normalizeProjectImage(category.image),
+  })));
+}
+
+export async function getSkillShowcases() {
+  const data = await sanityFetch<SkillShowcase[]>({
+    query: skillShowcasesQuery,
+    fallback: skillShowcases,
+  });
+
+  return sortByOrder((data.length ? data : skillShowcases).map((showcase) => ({
+    ...showcase,
+    image: normalizeProjectImage(showcase.image),
+    project: showcase.project
+      ? { ...showcase.project, featuredImage: normalizeProjectImage(showcase.project.featuredImage) }
+      : undefined,
+  })));
+}
+
 export async function getCertifications() {
   return sanityFetch<Certification[]>({
     query: certificationsQuery,
@@ -291,6 +337,19 @@ export async function getArticles() {
   const data = await sanityFetch<Article[]>({
     query: articlesQuery,
     fallback: articles,
+  });
+
+  return data.map((article) => normalizeArticle(article)).filter((article): article is Article => Boolean(article));
+}
+
+export async function getFeaturedHomepageArticles() {
+  const fallback = articles
+    .filter((article) => article.featuredOnHomepage)
+    .sort((a, b) => (a.homepageOrder ?? 99) - (b.homepageOrder ?? 99))
+    .slice(0, 3);
+  const data = await sanityFetch<Article[]>({
+    query: featuredHomepageArticlesQuery,
+    fallback,
   });
 
   return data.map((article) => normalizeArticle(article)).filter((article): article is Article => Boolean(article));

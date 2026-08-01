@@ -46,6 +46,9 @@ const projectFields = `{
   repoUrl,
   liveUrl,
   links,
+  "demoVideoUrl": demoVideo.asset->url,
+  "demoVideoMimeType": demoVideo.asset->mimeType,
+  "projectPdfUrl": projectPdf.asset->url,
   logo{image, alt, "src": image.asset->url},
   featuredImage{image, alt, caption, "src": image.asset->url},
   gallery[]{image, alt, caption, "src": image.asset->url},
@@ -79,6 +82,9 @@ export const projectBySlugQuery = `*[_type == "project" && slug.current == $slug
   repoUrl,
   liveUrl,
   links,
+  "demoVideoUrl": demoVideo.asset->url,
+  "demoVideoMimeType": demoVideo.asset->mimeType,
+  "projectPdfUrl": projectPdf.asset->url,
   logo{image, alt, "src": image.asset->url},
   featuredImage{image, alt, caption, "src": image.asset->url},
   gallery[]{image, alt, caption, "src": image.asset->url},
@@ -87,6 +93,29 @@ export const projectBySlugQuery = `*[_type == "project" && slug.current == $slug
   order
 }`;
 export const experiencesQuery = `*[_type == "experience" && (!defined(status) || status == "published")] | order(current desc, startDate desc){
+  status,
+  featuredOnHomepage,
+  homepageOrder,
+  company,
+  role,
+  employmentType,
+  location,
+  workMode,
+  companyUrl,
+  startDate,
+  endDate,
+  dateRange,
+  current,
+  summary,
+  responsibilities,
+  achievements,
+  relatedSkills[]->{_id, name, category, level},
+  skills
+}`;
+export const featuredHomepageExperiencesQuery = `*[_type == "experience" && (!defined(status) || status == "published") && featuredOnHomepage == true] | order(homepageOrder asc){
+  status,
+  featuredOnHomepage,
+  homepageOrder,
   company,
   role,
   employmentType,
@@ -137,6 +166,37 @@ export const skillsQuery = `*[_type == "skill" && (!defined(status) || status ==
   featured,
   order
 }`;
+export const stackCategoriesQuery = `*[_type == "stackCategory" && (!defined(status) || status == "published")] | order(order asc, title asc){
+  _id,
+  status,
+  title,
+  label,
+  description,
+  image{image, alt, caption, "src": image.asset->url},
+  order
+}`;
+export const skillShowcasesQuery = `*[_type == "skillShowcase" && (!defined(status) || status == "published")] | order(order asc, title asc){
+  _id,
+  status,
+  skill->{_id, name, category, level},
+  title,
+  description,
+  project->{
+    title,
+    "slug": slug.current,
+    summary,
+    type,
+    liveUrl,
+    repoUrl,
+    techStack,
+    featuredImage{image, alt, caption, "src": image.asset->url}
+  },
+  image{image, alt, caption, "src": image.asset->url},
+  "demoVideoUrl": demoVideo.asset->url,
+  "demoVideoMimeType": demoVideo.asset->mimeType,
+  highlights,
+  order
+}`;
 export const certificationsQuery = `*[_type == "certification" && (!defined(status) || status == "published")] | order(order asc, date desc){
   status,
   title,
@@ -152,6 +212,21 @@ export const certificationsQuery = `*[_type == "certification" && (!defined(stat
 }`;
 export const articlesQuery = `*[_type == "article" && (!defined(status) || status == "published")] | order(publishedAt desc){
   status,
+  featuredOnHomepage,
+  homepageOrder,
+  title,
+  "slug": slug.current,
+  category,
+  excerpt,
+  publishedAt,
+  updatedAt,
+  tags,
+  body
+}`;
+export const featuredHomepageArticlesQuery = `*[_type == "article" && (!defined(status) || status == "published") && featuredOnHomepage == true] | order(homepageOrder asc)[0...3]{
+  status,
+  featuredOnHomepage,
+  homepageOrder,
   title,
   "slug": slug.current,
   category,
@@ -163,6 +238,8 @@ export const articlesQuery = `*[_type == "article" && (!defined(status) || statu
 }`;
 export const articleBySlugQuery = `*[_type == "article" && slug.current == $slug && (!defined(status) || status == "published")][0]{
   status,
+  featuredOnHomepage,
+  homepageOrder,
   title,
   "slug": slug.current,
   category,

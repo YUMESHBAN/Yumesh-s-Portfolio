@@ -8,7 +8,7 @@ import { getErrorMessage } from "../shared/studio-utils";
 
 import ExperienceForm, { type ExperienceDocument } from "./ExperienceForm";
 
-const experienceQuery = `*[_type == "experience"] | order(current desc, startDate desc, _createdAt desc) {
+const experienceQuery = `*[_type == "experience"] | order(featuredOnHomepage desc, homepageOrder asc, current desc, startDate desc, _createdAt desc) {
   _id,
   _type,
   status,
@@ -25,6 +25,8 @@ const experienceQuery = `*[_type == "experience"] | order(current desc, startDat
   summary,
   responsibilities,
   achievements,
+  featuredOnHomepage,
+  homepageOrder,
   relatedSkills,
   skills
 }`;
@@ -130,7 +132,7 @@ export default function ExperienceDashboard() {
         <div>
           <p className="studio-eyebrow">Career Timeline</p>
           <h1 className="studio-header-title">Experience Overview</h1>
-          <p className="studio-header-subtitle">Manage public timeline entries for developer roles, freelance work, and internships.</p>
+          <p className="studio-header-subtitle">Homepage entries are listed first in their website display order, followed by the remaining roles.</p>
         </div>
 
         <div className="studio-filters">
@@ -176,8 +178,8 @@ export default function ExperienceDashboard() {
           <p className="studio-stat-value studio-stat-orange">{new Set(experiences.map((experience) => experience.company).filter(Boolean)).size}</p>
         </div>
         <div className="studio-stat-card">
-          <p className="studio-stat-label">Skill Tags</p>
-          <p className="studio-stat-value studio-stat-pink">{new Set(experiences.flatMap((experience) => experience.skills ?? [])).size}</p>
+          <p className="studio-stat-label">Homepage Features</p>
+          <p className="studio-stat-value studio-stat-pink">{experiences.filter((experience) => experience.featuredOnHomepage).length}</p>
         </div>
       </div>
 
@@ -196,6 +198,7 @@ export default function ExperienceDashboard() {
                 <div className="studio-card-topline">
                   <span className="studio-badge studio-badge-info">{experience.employmentType ?? "Role"}</span>
                   {experience.current ? <span className="studio-badge studio-badge-success">Current</span> : null}
+                  {experience.featuredOnHomepage ? <span className="studio-badge studio-badge-info">Homepage #{experience.homepageOrder ?? 99}</span> : null}
                   {experience.status === "hidden" ? (
                     <span className="studio-badge studio-badge-neutral">
                       <EyeOff size={12} />

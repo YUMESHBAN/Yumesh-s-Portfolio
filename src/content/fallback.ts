@@ -6,6 +6,8 @@ import type {
   PersonProfile,
   Project,
   SiteSettings,
+  SkillShowcase,
+  StackCategory,
   Skill,
 } from "@/types/content";
 
@@ -207,6 +209,8 @@ export const projects: Project[] = [
 
 export const experiences: Experience[] = [
   {
+    featuredOnHomepage: true,
+    homepageOrder: 1,
     company: "Niyalo Creatives",
     role: "Full Stack Developer",
     employmentType: "Internship",
@@ -224,6 +228,8 @@ export const experiences: Experience[] = [
     skills: ["Next.js", "Sanity CMS", "TypeScript", "Stripe", "Clerk", "Vercel"],
   },
   {
+    featuredOnHomepage: true,
+    homepageOrder: 2,
     company: "Sea Sky Cargo Service Pvt. Ltd.",
     role: "Junior Frontend Developer",
     employmentType: "Contract",
@@ -349,6 +355,172 @@ export const skills: Skill[] = [
   { name: "Problem Solving", category: "Soft Skills", level: "Strong", order: 16 },
 ];
 
+export const stackCategories: StackCategory[] = [
+  {
+    title: "Frontend",
+    label: "01 / Interface",
+    description: "Responsive, considered interfaces that keep the product clear, fast, and easy to use.",
+    order: 1,
+  },
+  {
+    title: "Backend",
+    label: "02 / Product systems",
+    description: "Application logic and data models shaped around the workflows a product actually needs.",
+    order: 2,
+  },
+  {
+    title: "CMS",
+    label: "03 / Content operations",
+    description: "Structured publishing systems that make it simple to update and grow a product after launch.",
+    order: 3,
+  },
+  {
+    title: "Database",
+    label: "04 / Data",
+    description: "Data foundations selected to fit each product's needs and workflows.",
+    order: 4,
+  },
+  {
+    title: "Tools",
+    label: "05 / Design & delivery",
+    description: "A practical design and delivery workflow for shipping polished work with confidence.",
+    order: 5,
+  },
+  {
+    title: "Soft Skills",
+    label: "06 / Collaboration",
+    description: "The communication, judgement, and follow-through behind dependable project delivery.",
+    order: 6,
+  },
+];
+
+export const skillShowcases: SkillShowcase[] = [
+  {
+    skill: { name: "Next.js", category: "Frontend", level: "Working" },
+    title: "CMS-backed commerce storefront",
+    description: "Built Merry Crochets as a full-stack storefront with product browsing, responsive pages, checkout flows, and CMS-backed content.",
+    project: { title: "Merry Crochets", slug: "merry-crochets", summary: "A full-stack e-commerce platform for authentic Nepali crochet products.", type: "Company", techStack: ["Next.js", "TypeScript", "Sanity CMS"] },
+    highlights: ["Product browsing", "Checkout flow", "Vercel deployment"],
+    order: 1,
+  },
+  {
+    skill: { name: "React", category: "Frontend", level: "Strong" },
+    title: "Futsal booking and team workflows",
+    description: "Built the client-side experience for a full-stack futsal management system, including bookings, team creation, friendly matches, and results.",
+    project: { title: "Hamro Futsal", slug: "hamro-futsal", summary: "A full-stack futsal management system for bookings, teams, matches, and ranking.", type: "Academic", techStack: ["React", "TypeScript", "Tailwind CSS"] },
+    highlights: ["Booking workflow", "Team creation", "Match results"],
+    order: 2,
+  },
+  {
+    skill: { name: "TypeScript", category: "Frontend", level: "Working" },
+    title: "Type-safe content and commerce work",
+    description: "Used TypeScript across the Merry Crochets storefront to support a type-safe codebase, structured content, and product workflows.",
+    project: { title: "Merry Crochets", slug: "merry-crochets", summary: "A full-stack e-commerce platform for authentic Nepali crochet products.", type: "Company", techStack: ["Next.js", "TypeScript", "Sanity CMS"] },
+    highlights: ["Type-safe codebase", "Structured content", "Commerce workflows"],
+    order: 3,
+  },
+  {
+    skill: { name: "Tailwind CSS", category: "Frontend", level: "Strong" },
+    title: "Responsive commerce interface",
+    description: "Created responsive layouts, dark mode, search, and category filtering for the Merry Crochets product experience.",
+    project: { title: "Merry Crochets", slug: "merry-crochets", summary: "A full-stack e-commerce platform for authentic Nepali crochet products.", type: "Company", techStack: ["Tailwind CSS", "Next.js", "TypeScript"] },
+    highlights: ["Responsive design", "Dark mode", "Search and filtering"],
+    order: 4,
+  },
+  {
+    skill: { name: "Node.js", category: "Backend", level: "Working" },
+    title: "MERN commerce backend",
+    description: "Built server-side flows for a beauty e-commerce application, covering product browsing, cart and order placement, authentication, and admin management.",
+    project: { title: "Rupali Beauty Point", slug: "rupali-beauty-point", summary: "A MERN e-commerce application for beauty and personal care products.", type: "Academic", techStack: ["MongoDB", "Express.js", "React", "Node.js"] },
+    highlights: ["Cart and orders", "JWT authentication", "Admin management"],
+    order: 5,
+  },
+  {
+    skill: { name: "Express.js", category: "Backend", level: "Working" },
+    title: "RESTful e-commerce API practice",
+    description: "Implemented RESTful API integration and secure backend flows for the Rupali Beauty Point MERN application.",
+    project: { title: "Rupali Beauty Point", slug: "rupali-beauty-point", summary: "A MERN e-commerce application for beauty and personal care products.", type: "Academic", techStack: ["Express.js", "Node.js", "MongoDB"] },
+    highlights: ["RESTful integration", "Secure flows", "Product and order data"],
+    order: 6,
+  },
+  {
+    skill: { name: "Django", category: "Backend", level: "Working" },
+    title: "Futsal management system",
+    description: "Built the backend of a futsal management system for bookings, teams, matches, results, and competitive ranking.",
+    project: { title: "Hamro Futsal", slug: "hamro-futsal", summary: "A full-stack futsal management system for bookings, teams, matches, and ranking.", type: "Academic", techStack: ["Django", "React", "SQLite"] },
+    highlights: ["Bookings", "Match scheduling", "Modified ELO ranking"],
+    order: 7,
+  },
+  {
+    skill: { name: "Sanity CMS", category: "CMS", level: "Working" },
+    title: "Editable property content",
+    description: "Connected structured property listing content so KTM Cribs could present and update listings through a CMS-backed workflow.",
+    project: { title: "KTM Cribs", slug: "ktm-cribs", summary: "A real-estate listing website with CMS-backed property content.", type: "Company", techStack: ["Next.js", "Sanity CMS", "TypeScript"] },
+    highlights: ["Property listings", "Structured content", "Production workflow"],
+    order: 8,
+  },
+  {
+    skill: { name: "MongoDB", category: "Database", level: "Working" },
+    title: "Commerce data and admin flows",
+    description: "Used MongoDB in a MERN e-commerce application supporting products, cart and orders, authentication, and admin management.",
+    project: { title: "Rupali Beauty Point", slug: "rupali-beauty-point", summary: "A MERN e-commerce application for beauty and personal care products.", type: "Academic", techStack: ["MongoDB", "Express.js", "Node.js"] },
+    highlights: ["Product data", "Orders", "Admin workflows"],
+    order: 9,
+  },
+  {
+    skill: { name: "SQLite", category: "Database", level: "Working" },
+    title: "Offline quiz results storage",
+    description: "Used SQLite and JDBC for an offline Java quiz system with saved, filterable student results and an admin question workflow.",
+    project: { title: "Advanced Java Quiz System", slug: "advanced-java-quiz-system", summary: "An offline quiz management system with saved results.", type: "Academic", techStack: ["Java", "SQLite", "JDBC"] },
+    highlights: ["Saved results", "Admin questions", "Offline database connectivity"],
+    order: 10,
+  },
+  {
+    skill: { name: "MariaDB", category: "Database", level: "Learning" },
+    title: "Database learning focus",
+    description: "Currently learning MariaDB alongside the relational database workflows already used in project work.",
+    highlights: ["Learning", "Relational data modelling"],
+    order: 11,
+  },
+  {
+    skill: { name: "Git", category: "Tools", level: "Working" },
+    title: "Production delivery workflow",
+    description: "Supported production-oriented delivery for projects including Merry Crochets and KTM Cribs, with deployment and iterative project workflows.",
+    project: { title: "Merry Crochets", slug: "merry-crochets", summary: "A full-stack e-commerce platform deployed on Vercel.", type: "Company", techStack: ["Next.js", "TypeScript"] },
+    highlights: ["CI/CD deployment", "Iterative delivery", "Production workflow"],
+    order: 12,
+  },
+  {
+    skill: { name: "Figma", category: "Tools", level: "Working" },
+    title: "Freelance design delivery",
+    description: "Delivered digital design assets, graphics, branding, and client-facing visual work as a freelance graphic designer using Figma and Adobe tools.",
+    highlights: ["30+ digital assets", "Iterative feedback", "Brand consistency"],
+    order: 13,
+  },
+  {
+    skill: { name: "Photoshop", category: "Tools", level: "Working" },
+    title: "Client visual assets",
+    description: "Produced digital graphics, branding, and visual assets for freelance clients using Photoshop as part of a broader Adobe design workflow.",
+    highlights: ["Digital graphics", "Client delivery", "Visual consistency"],
+    order: 14,
+  },
+  {
+    skill: { name: "Communication", category: "Soft Skills", level: "Strong" },
+    title: "Iterative client and team delivery",
+    description: "Worked through iterative feedback and collaborative delivery across freelance design, contract frontend work, and full-stack project work.",
+    highlights: ["Iterative feedback", "Collaborative delivery", "Timely delivery"],
+    order: 15,
+  },
+  {
+    skill: { name: "Problem Solving", category: "Soft Skills", level: "Strong" },
+    title: "Domain-specific ranking workflow",
+    description: "Designed the Hamro Futsal workflow around booking, match results, and a modified ELO ranking approach for competitive matchmaking.",
+    project: { title: "Hamro Futsal", slug: "hamro-futsal", summary: "A full-stack futsal management system with competitive ranking.", type: "Academic", techStack: ["Django", "React", "SQLite"] },
+    highlights: ["Modified ELO ranking", "Matchmaking", "Domain-specific workflow"],
+    order: 16,
+  },
+];
+
 export const certifications: Certification[] = [
   {
     title: "Node.js, Express, MongoDB and More",
@@ -378,6 +550,8 @@ export const certifications: Certification[] = [
 
 export const articles: Article[] = [
   {
+    featuredOnHomepage: true,
+    homepageOrder: 3,
     title: "Who is Yumesh Ban?",
     slug: "who-is-yumesh-ban",
     excerpt:
@@ -391,6 +565,8 @@ export const articles: Article[] = [
     ],
   },
   {
+    featuredOnHomepage: true,
+    homepageOrder: 1,
     title: "How I Built Merry Crochets with Next.js, Sanity, Stripe, and Clerk",
     slug: "merry-crochets-nextjs-sanity-stripe-clerk",
     excerpt:
@@ -404,6 +580,8 @@ export const articles: Article[] = [
     ],
   },
   {
+    featuredOnHomepage: true,
+    homepageOrder: 2,
     title: "My Journey from BSc.CSIT Student to Full Stack Developer",
     slug: "bsc-csit-student-to-full-stack-developer",
     excerpt:

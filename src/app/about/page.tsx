@@ -169,7 +169,7 @@ export default async function AboutPage() {
                 <div className="mt-4 grid gap-3">
                   {items.map((item) => (
                     <div key={item.name} className="flex items-center gap-3">
-                      <TechLogo name={item.name} />
+                      <TechLogo name={item.name} iconName={item.iconName} />
                       <div>
                         <p className="font-medium text-white">{item.name}</p>
                         <p className="text-sm text-white/45">{item.level}</p>

@@ -1,17 +1,17 @@
 "use client";
 
-import { Save, X } from "lucide-react";
+import { Plus, Save, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useClient } from "sanity";
 
 import { cleanOptionalFields, joinLines, splitLines } from "../shared/studio-utils";
 
 const skillStatuses = ["published", "draft", "hidden"] as const;
-const skillCategories = ["Frontend", "Backend", "Database", "CMS", "Tools", "Soft Skills"] as const;
 const skillLevels = ["Learning", "Working", "Strong"] as const;
+const defaultCategorySuggestions = ["Frontend", "Backend", "Database", "CMS", "Tools", "Soft Skills"];
 
 export type SkillStatus = (typeof skillStatuses)[number];
-export type SkillCategory = (typeof skillCategories)[number];
+export type SkillCategory = string;
 export type SkillLevel = (typeof skillLevels)[number];
 
 export type SkillDocument = {
@@ -42,6 +42,7 @@ type SkillFormState = {
 
 type SkillFormProps = {
   skill?: SkillDocument | null;
+  categorySuggestions: string[];
   onComplete: () => void;
 };
 
@@ -59,9 +60,11 @@ function skillToFormState(skill?: SkillDocument | null): SkillFormState {
   };
 }
 
-export default function SkillForm({ skill, onComplete }: SkillFormProps) {
+export default function SkillForm({ skill, categorySuggestions, onComplete }: SkillFormProps) {
   const client = useClient({ apiVersion: "2026-03-01" });
   const [formData, setFormData] = useState<SkillFormState>(() => skillToFormState(skill));
+  const categoryOptions = Array.from(new Set([...defaultCategorySuggestions, ...categorySuggestions])).sort();
+  const [isCreatingCategory, setIsCreatingCategory] = useState(() => !categoryOptions.includes(formData.category));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -76,9 +79,15 @@ export default function SkillForm({ skill, onComplete }: SkillFormProps) {
     setError("");
 
     const name = formData.name.trim();
+    const category = formData.category.trim();
 
     if (!name) {
       setError("Skill name is required.");
+      return;
+    }
+
+    if (!category) {
+      setError("Category is required.");
       return;
     }
 
@@ -91,7 +100,7 @@ export default function SkillForm({ skill, onComplete }: SkillFormProps) {
       description: formData.description.trim(),
       iconName: formData.iconName.trim(),
       aliases: splitLines(formData.aliases),
-      category: formData.category,
+      category,
       level: formData.level,
       featured: formData.featured,
       order: Number.isFinite(Number(formData.order)) ? Number(formData.order) : 99,
@@ -150,16 +159,50 @@ export default function SkillForm({ skill, onComplete }: SkillFormProps) {
               <input required value={formData.name} onChange={(event) => updateField("name", event.target.value)} className="studio-form-input" />
             </label>
 
-            <label className="studio-field">
-              <span className="studio-form-label">Category</span>
-              <select value={formData.category} onChange={(event) => updateField("category", event.target.value as SkillCategory)} className="studio-form-select">
-                {skillCategories.map((category) => (
-                  <option key={category} value={category}>
+            <div className="studio-field studio-field-wide">
+              <span className="studio-form-label">Category *</span>
+              <div className="studio-category-options" role="radiogroup" aria-label="Skill category">
+                {categoryOptions.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    role="radio"
+                    aria-checked={!isCreatingCategory && formData.category === category}
+                    onClick={() => {
+                      setIsCreatingCategory(false);
+                      updateField("category", category);
+                    }}
+                    className={`studio-category-option ${!isCreatingCategory && formData.category === category ? "is-selected" : ""}`}
+                  >
                     {category}
-                  </option>
+                  </button>
                 ))}
-              </select>
-            </label>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={isCreatingCategory}
+                  onClick={() => {
+                    setIsCreatingCategory(true);
+                    updateField("category", "");
+                  }}
+                  className={`studio-category-option ${isCreatingCategory ? "is-selected" : ""}`}
+                >
+                  <Plus size={14} aria-hidden="true" />
+                  New category
+                </button>
+              </div>
+              {isCreatingCategory ? (
+                <input
+                  required
+                  autoFocus
+                  value={formData.category}
+                  onChange={(event) => updateField("category", event.target.value)}
+                  className="studio-form-input"
+                  placeholder="e.g. DevOps"
+                />
+              ) : null}
+              <span className="studio-category-hint">Select a category above, or choose New category to create one.</span>
+            </div>
 
             <label className="studio-field">
               <span className="studio-form-label">Level</span>
@@ -173,8 +216,9 @@ export default function SkillForm({ skill, onComplete }: SkillFormProps) {
             </label>
 
             <label className="studio-field">
-              <span className="studio-form-label">Icon Name</span>
-              <input value={formData.iconName} onChange={(event) => updateField("iconName", event.target.value)} className="studio-form-input" placeholder="react, nextjs, figma" />
+              <span className="studio-form-label">Simple Icons Slug</span>
+              <input value={formData.iconName} onChange={(event) => updateField("iconName", event.target.value)} className="studio-form-input" placeholder="nodedotjs, react, figma" />
+              <span className="studio-help-text">Optional. Used when no built-in logo match exists.</span>
             </label>
 
             <label className="studio-field">

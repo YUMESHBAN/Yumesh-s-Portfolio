@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 
 import type { PersonProfile, SiteSettings } from "@/types/content";
@@ -14,7 +15,18 @@ export function SiteFooter({
     <footer className="border-t border-white/10 bg-[#0b0b0c] text-white">
       <div className="site-container grid gap-10 py-12 lg:grid-cols-[1.3fr_0.7fr_0.7fr]">
         <div>
-          <p className="site-eyebrow">Yumesh Ban</p>
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/20 bg-white/10 shadow-[0_0_12px_rgba(96,165,250,0.25)]">
+              <Image
+                src="/images/yb-logo-abstract.png"
+                alt="Yumesh Ban Logo"
+                width={32}
+                height={32}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <p className="site-eyebrow my-0">Yumesh Ban</p>
+          </div>
           <p className="mt-4 max-w-xl text-2xl font-semibold leading-tight text-white">
             Full stack developer building useful, polished web products.
           </p>

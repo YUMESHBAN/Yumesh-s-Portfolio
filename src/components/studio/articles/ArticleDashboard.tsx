@@ -22,7 +22,9 @@ const articleQuery = `*[_type == "article"] | order(publishedAt desc, _createdAt
   body,
   seoTitle,
   seoDescription,
-  canonicalPath
+  canonicalPath,
+  featuredOnHomepage,
+  homepageOrder
 }`;
 
 export default function ArticleDashboard() {
@@ -166,8 +168,8 @@ export default function ArticleDashboard() {
           <p className="studio-stat-value studio-stat-orange">{articles.filter((article) => Boolean(article.seoTitle)).length}</p>
         </div>
         <div className="studio-stat-card">
-          <p className="studio-stat-label">Hidden</p>
-          <p className="studio-stat-value studio-stat-pink">{articles.filter((article) => article.status === "hidden").length}</p>
+          <p className="studio-stat-label">Homepage Features</p>
+          <p className="studio-stat-value studio-stat-pink">{articles.filter((article) => article.featuredOnHomepage).length}</p>
         </div>
       </div>
 
@@ -191,6 +193,7 @@ export default function ArticleDashboard() {
                     <CalendarDays size={12} />
                     {article.publishedAt ?? "Draft"}
                   </span>
+                  {article.featuredOnHomepage ? <span className="studio-badge studio-badge-info">Homepage #{article.homepageOrder ?? 99}</span> : null}
                   {article.status === "hidden" ? (
                     <span className="studio-badge studio-badge-neutral">
                       <EyeOff size={12} />

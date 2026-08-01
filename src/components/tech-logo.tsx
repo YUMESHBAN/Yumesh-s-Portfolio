@@ -40,8 +40,8 @@ function initials(name: string) {
     .join("");
 }
 
-export function TechLogo({ name }: { name: string }) {
-  const logo = techLogos[name];
+export function TechLogo({ name, iconName }: { name: string; iconName?: string }) {
+  const logo = techLogos[name] ?? (iconName ? `https://cdn.simpleicons.org/${encodeURIComponent(iconName)}/FFFFFF` : undefined);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 

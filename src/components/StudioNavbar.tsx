@@ -15,7 +15,7 @@ import {
   Home,
   LayoutDashboard,
   Menu,
-  Tag,
+  Sparkles,
   UserRound,
   X,
 } from "lucide-react";
@@ -33,7 +33,7 @@ const navItems: NavItem[] = [
   { label: "Articles", path: "/studio/article", icon: FileText },
   { label: "Experience", path: "/studio/experience", icon: BriefcaseBusiness },
   { label: "Education", path: "/studio/education", icon: GraduationCap },
-  { label: "Skills", path: "/studio/skill", icon: Tag },
+  { label: "Stack showcase", path: "/studio/skill", icon: Sparkles },
   { label: "Certifications", path: "/studio/certification", icon: Award },
   { label: "Documents", path: "/studio/documents", icon: Database },
 ];

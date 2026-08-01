@@ -12,7 +12,9 @@
     "start": "next start",
     "lint": "eslint",
     "check:sanity": "tsx scripts/check-sanity.ts",
+    "check:sanity:stack": "tsx scripts/check-stack-showcase.ts",
     "seed:sanity": "tsx scripts/seed-sanity.ts",
+    "seed:sanity:stack": "tsx scripts/seed-stack-showcase.ts",
     "studio": "sanity dev",
     "studio:build": "sanity build",
     "studio:deploy": "sanity deploy"
@@ -23,6 +25,7 @@
     "@sanity/vision": "^4.18.0",
     "clsx": "^2.1.1",
     "geist": "^1.7.2",
+    "gsap": "^3.15.0",
     "lucide-react": "^0.575.0",
     "next": "^16.1.6",
     "next-sanity": "^11.6.8",

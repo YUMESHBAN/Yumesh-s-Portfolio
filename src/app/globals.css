@@ -26,6 +26,38 @@
     animation: selected-work-details-in 900ms 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  .workflow-stage-content {
+    animation: workflow-stage-in 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .workflow-phase-line {
+    animation: workflow-phase-line-in 320ms ease-out both;
+  }
+
+  @keyframes workflow-stage-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes workflow-phase-line-in {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   @keyframes selected-work-panel-expand {
     from {
       max-height: 0;
@@ -97,6 +129,14 @@
     .selected-work-feature-media,
     .selected-work-feature-details,
     .selected-work-feature-panel {
+      animation: none;
+    }
+
+    .workflow-stage-content {
+      animation: none;
+    }
+
+    .workflow-phase-line {
       animation: none;
     }
   }
@@ -287,18 +327,23 @@ a {
   .landing-section {
     position: relative;
     isolation: isolate;
+    min-height: min(calc(100svh - 1px), 52rem);
   }
 
-  .landing-section::after {
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    z-index: 20;
-    width: 100%;
-    height: 9rem;
-    content: "";
-    pointer-events: none;
-    background: linear-gradient(to top, #0b0b0c 0%, rgba(11, 11, 12, 0.9) 38%, transparent 100%);
+  .landing-section-content {
+    min-height: min(calc(100svh - 12rem), 40rem);
+  }
+
+.landing-bottom-shadow {
+  height: clamp(10rem, 22svh, 15rem);
+  background: linear-gradient(
+      to top,
+      #0b0b0c 0%,
+      rgba(11, 11, 12, 0.78) 24%,
+      rgba(11, 11, 12, 0.3) 48%,
+      rgba(11, 11, 12, 0.08) 72%,
+      transparent 100%
+    );
   }
 
   .hero-portrait-stage:hover .hero-portrait-image {
@@ -718,6 +763,30 @@ a {
     @apply space-y-4;
   }
 
+  .studio-stepper {
+    @apply grid gap-2 border-b border-black/10 pb-5 sm:grid-cols-5;
+  }
+
+  .studio-stepper-item {
+    @apply flex items-center gap-2 rounded-lg border border-black/10 bg-white px-3 py-2 text-left text-xs font-black uppercase tracking-[0.08em] text-ink/45 transition hover:border-moss/35 hover:text-moss;
+  }
+
+  .studio-stepper-item > span {
+    @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-paper text-[11px] text-ink/55;
+  }
+
+  .studio-stepper-item.is-active {
+    @apply border-moss bg-moss text-white shadow-sm;
+  }
+
+  .studio-stepper-item.is-active > span {
+    @apply bg-white/15 text-white;
+  }
+
+  .studio-stepper-item.is-complete:not(.is-active) {
+    @apply border-moss/25 text-moss;
+  }
+
   .studio-form-section-header {
     @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between;
   }
@@ -745,6 +814,22 @@ a {
 
   .studio-form-label {
     @apply text-xs font-black uppercase tracking-[0.12em] text-ink/50;
+  }
+
+  .studio-category-options {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .studio-category-option {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-paper px-3 py-2 text-sm font-bold text-ink/65 transition hover:border-moss/35 hover:bg-moss/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss/30;
+  }
+
+  .studio-category-option.is-selected {
+    @apply border-moss bg-moss text-white;
+  }
+
+  .studio-category-hint {
+    @apply text-xs font-semibold leading-5 text-ink/45;
   }
 
   .studio-form-input,
@@ -964,6 +1049,149 @@ a {
 
   .studio-gallery-editor {
     @apply mt-4 grid gap-3;
+  }
+
+  .studio-media-preview-grid {
+    @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  .studio-media-preview {
+    @apply relative min-h-40 overflow-hidden rounded-lg border border-black/10 bg-paper;
+  }
+
+  .studio-media-preview-logo {
+    @apply max-w-40;
+  }
+
+  .studio-media-preview > span {
+    @apply absolute inset-x-0 bottom-0 bg-ink/75 px-3 py-2 text-xs font-black uppercase tracking-[0.1em] text-white;
+  }
+
+  .studio-asset-grid {
+    @apply grid gap-4 sm:grid-cols-2 xl:grid-cols-3;
+  }
+
+  .studio-asset-card,
+  .studio-asset-upload-tile {
+    @apply relative min-h-48 overflow-hidden rounded-lg border border-black/10 bg-paper;
+  }
+
+  .studio-asset-card {
+    @apply relative;
+  }
+
+  .studio-asset-card-wide,
+  .studio-asset-upload-tile-wide {
+    @apply xl:col-span-2;
+  }
+
+  .studio-asset-card-logo {
+    @apply max-w-52;
+  }
+
+  .studio-asset-upload-tile {
+    @apply flex cursor-pointer flex-col items-center justify-center gap-2 border-dashed px-5 text-center text-ink/55 transition hover:border-moss/45 hover:bg-white hover:text-moss;
+  }
+
+  .studio-asset-upload-tile strong {
+    @apply text-sm font-black text-ink;
+  }
+
+  .studio-asset-upload-tile span {
+    @apply text-xs font-bold;
+  }
+
+  .studio-asset-upload-tile input,
+  .studio-asset-action input {
+    @apply sr-only;
+  }
+
+  .studio-asset-card-label {
+    @apply pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 to-transparent px-4 pb-3 pt-10 text-xs font-black uppercase tracking-[0.12em] text-white;
+  }
+
+  .studio-asset-card-actions {
+    @apply absolute inset-0 z-10 flex items-center justify-center gap-2 p-4 opacity-0 transition duration-200;
+    background-color: rgb(32 38 48 / 0.72);
+  }
+
+  .studio-asset-action {
+    @apply inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-3 py-2 text-xs font-black text-white transition hover:bg-white/20;
+  }
+
+  .studio-asset-action.is-danger {
+    @apply border-red-200/40 text-red-100 hover:bg-red-400/20;
+  }
+
+  .studio-asset-details {
+    @apply absolute inset-x-3 bottom-3 z-20 rounded-md bg-white/95 p-3 opacity-0 transition duration-200;
+  }
+
+  .studio-asset-card:hover .studio-asset-card-actions,
+  .studio-asset-card:focus-within .studio-asset-card-actions,
+  .studio-asset-card:hover .studio-asset-details,
+  .studio-asset-card:focus-within .studio-asset-details {
+    opacity: 1;
+  }
+
+  .studio-asset-details[open] {
+    @apply opacity-100;
+  }
+
+  .studio-asset-details summary {
+    @apply cursor-pointer text-xs font-black uppercase tracking-[0.1em] text-moss;
+  }
+
+  .studio-asset-details label {
+    @apply mt-2 block text-xs font-black text-ink/55;
+  }
+
+  .studio-asset-details label span {
+    @apply mb-1 block uppercase tracking-[0.08em];
+  }
+
+  .studio-asset-details .studio-form-input {
+    @apply py-2;
+  }
+
+  .studio-pdf-card {
+    @apply flex flex-col items-center justify-center gap-2 p-5 text-center text-moss;
+  }
+
+  .studio-pdf-card strong {
+    @apply text-sm font-black text-ink;
+  }
+
+  .studio-pdf-card > a {
+    @apply text-xs font-black underline underline-offset-4;
+  }
+
+  .studio-media-confirm {
+    @apply flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-900 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .studio-media-confirm > div {
+    @apply flex gap-2;
+  }
+
+  .studio-project-review {
+    @apply grid gap-3 rounded-lg border border-black/10 bg-paper p-4 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center;
+  }
+
+  .studio-project-review > div {
+    @apply min-w-0;
+  }
+
+  .studio-project-review span {
+    @apply block text-[11px] font-black uppercase tracking-[0.12em] text-ink/45;
+  }
+
+  .studio-project-review strong {
+    @apply mt-1 block truncate text-base font-black text-moss;
+  }
+
+  .studio-project-review p {
+    @apply mt-1 text-sm font-medium text-ink/60;
   }
 
   .studio-gallery-item {

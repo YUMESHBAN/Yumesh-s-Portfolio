@@ -1,6 +1,7 @@
 "use client";
 
-import { ImagePlus, Plus, Save, Trash2, X } from "lucide-react";
+import Image from "next/image";
+import { ArrowLeft, ArrowRight, FileText, ImagePlus, Plus, Save, Trash2, Upload, Video, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useClient } from "sanity";
 
@@ -18,6 +19,7 @@ import {
 
 const projectStatuses = ["published", "draft", "hidden"] as const;
 const projectTypes = ["Company", "Freelance", "Academic", "Learning"] as const;
+const formSteps = ["Basics", "Case study", "Tech & links", "Media", "Review & publish"] as const;
 
 type ProjectStatus = (typeof projectStatuses)[number];
 type ProjectType = (typeof projectTypes)[number];
@@ -48,6 +50,20 @@ type ImageWithMetaDocument = {
   image?: unknown;
   alt?: string;
   caption?: string;
+  src?: string;
+};
+
+type FileDocument = {
+  _type?: "file";
+  asset?: unknown;
+  url?: string;
+  originalFilename?: string;
+};
+
+type PendingRemoval = {
+  kind: "logo" | "featuredImage" | "demoVideo" | "projectPdf" | "gallery";
+  label: string;
+  index?: number;
 };
 
 export type ProjectDocument = {
@@ -78,6 +94,10 @@ export type ProjectDocument = {
   impact?: string[];
   repoUrl?: string;
   liveUrl?: string;
+  demoVideo?: FileDocument;
+  demoVideoUrl?: string;
+  projectPdf?: FileDocument;
+  projectPdfUrl?: string;
   logo?: ImageWithMetaDocument;
   featuredImage?: ImageWithMetaDocument;
   gallery?: ImageWithMetaDocument[];
@@ -114,6 +134,10 @@ type ProjectFormState = {
   impact: string;
   repoUrl: string;
   liveUrl: string;
+  demoVideo?: FileDocument;
+  demoVideoUrl: string;
+  projectPdf?: FileDocument;
+  projectPdfUrl: string;
   logo?: ImageWithMetaDocument;
   featuredImage?: ImageWithMetaDocument;
   gallery: ImageWithMetaDocument[];
@@ -182,6 +206,10 @@ function projectToFormState(project?: ProjectDocument | null): ProjectFormState 
     impact: joinLines(project?.impact),
     repoUrl: project?.repoUrl ?? "",
     liveUrl: project?.liveUrl ?? "",
+    demoVideo: project?.demoVideo,
+    demoVideoUrl: project?.demoVideoUrl ?? "",
+    projectPdf: project?.projectPdf,
+    projectPdfUrl: project?.projectPdfUrl ?? "",
     logo: project?.logo,
     featuredImage: project?.featuredImage,
     gallery: project?.gallery ?? [],
@@ -205,8 +233,26 @@ function usableMetrics(metrics: MetricDocument[]) {
     .filter((metric) => metric.label && metric.value);
 }
 
+function imageForSave(image?: ImageWithMetaDocument) {
+  if (!image?.image) {
+    return undefined;
+  }
+
+  const { src: _src, ...savedImage } = image;
+  return savedImage;
+}
+
 function usableGallery(gallery: ImageWithMetaDocument[]) {
-  return gallery.filter((item) => Boolean(item.image));
+  return gallery.map(imageForSave).filter((item): item is NonNullable<typeof item> => Boolean(item));
+}
+
+function fileForSave(file?: FileDocument) {
+  if (!file?.asset) {
+    return undefined;
+  }
+
+  const { url: _url, originalFilename: _originalFilename, ...savedFile } = file;
+  return savedFile;
 }
 
 export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
@@ -216,6 +262,8 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [activeStep, setActiveStep] = useState(0);
+  const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
 
   const isEditing = Boolean(project?._id);
   const selectedSkillSet = useMemo(() => new Set(formData.relatedSkillIds), [formData.relatedSkillIds]);
@@ -288,6 +336,21 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
       },
       alt: altFallback || file.name,
       caption: "",
+      src: asset.url,
+    };
+  }
+
+  async function uploadFile(file: File) {
+    const asset = await client.assets.upload("file", file, { filename: file.name, contentType: file.type });
+
+    return {
+      _type: "file" as const,
+      asset: {
+        _type: "reference",
+        _ref: asset._id,
+      },
+      url: asset.url,
+      originalFilename: file.name,
     };
   }
 
@@ -351,6 +414,27 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
     }
   }
 
+  async function handleFileUpload(event: ChangeEvent<HTMLInputElement>, field: "demoVideo" | "projectPdf") {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setUploading(true);
+    setError("");
+
+    try {
+      const uploadedFile = await uploadFile(file);
+      updateField(field, uploadedFile);
+      updateField(field === "demoVideo" ? "demoVideoUrl" : "projectPdfUrl", uploadedFile.url);
+    } catch (uploadError) {
+      setError(getErrorMessage(uploadError));
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
+  }
+
   function updateFeaturedImage(field: "alt" | "caption", value: string) {
     setFormData((previous) => ({
       ...previous,
@@ -367,6 +451,28 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
 
   function removeGalleryImage(index: number) {
     setFormData((previous) => ({ ...previous, gallery: previous.gallery.filter((_, imageIndex) => imageIndex !== index) }));
+  }
+
+  function confirmRemoval() {
+    if (!pendingRemoval) {
+      return;
+    }
+
+    if (pendingRemoval.kind === "gallery" && pendingRemoval.index !== undefined) {
+      removeGalleryImage(pendingRemoval.index);
+    } else if (pendingRemoval.kind === "logo") {
+      updateField("logo", undefined);
+    } else if (pendingRemoval.kind === "featuredImage") {
+      updateField("featuredImage", undefined);
+    } else if (pendingRemoval.kind === "demoVideo") {
+      updateField("demoVideo", undefined);
+      updateField("demoVideoUrl", "");
+    } else if (pendingRemoval.kind === "projectPdf") {
+      updateField("projectPdf", undefined);
+      updateField("projectPdfUrl", "");
+    }
+
+    setPendingRemoval(null);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -410,8 +516,10 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
       impact: splitLines(formData.impact),
       repoUrl: formData.repoUrl.trim(),
       liveUrl: formData.liveUrl.trim(),
-      logo: formData.logo?.image ? formData.logo : undefined,
-      featuredImage: formData.featuredImage?.image ? formData.featuredImage : undefined,
+      logo: imageForSave(formData.logo),
+      featuredImage: imageForSave(formData.featuredImage),
+      demoVideo: fileForSave(formData.demoVideo),
+      projectPdf: fileForSave(formData.projectPdf),
       gallery: usableGallery(formData.gallery),
       featured: formData.featured,
       order: Number.isFinite(Number(formData.order)) ? Number(formData.order) : 99,
@@ -436,6 +544,8 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
       "canonicalPath",
       ...(!payload.logo ? ["logo"] : []),
       ...(!payload.featuredImage ? ["featuredImage"] : []),
+      ...(!payload.demoVideo ? ["demoVideo"] : []),
+      ...(!payload.projectPdf ? ["projectPdf"] : []),
     ].filter((field) => !String(payload[field as keyof typeof payload] ?? "").trim());
 
     try {
@@ -470,6 +580,22 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="studio-form-stack">
+        <div className="studio-stepper" aria-label="Project form steps">
+          {formSteps.map((step, index) => (
+            <button
+              key={step}
+              type="button"
+              onClick={() => setActiveStep(index)}
+              className={`studio-stepper-item ${activeStep === index ? "is-active" : ""} ${activeStep > index ? "is-complete" : ""}`}
+              aria-current={activeStep === index ? "step" : undefined}
+            >
+              <span>{index + 1}</span>
+              {step}
+            </button>
+          ))}
+        </div>
+
+        {activeStep === 0 ? (
         <section className="studio-form-section">
           <h3 className="studio-form-section-title">Basic Information</h3>
           <div className="studio-form-grid">
@@ -546,7 +672,10 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
             </label>
           </div>
         </section>
+        ) : null}
 
+        {activeStep === 1 ? (
+          <>
         <section className="studio-form-section">
           <h3 className="studio-form-section-title">Case Study Structure</h3>
           <div className="studio-form-grid">
@@ -567,7 +696,6 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
             <RichContentEditor label="Results" value={formData.results} onChange={(value) => updateField("results", value)} />
           </div>
         </section>
-
         <section className="studio-form-section">
           <div className="studio-form-section-header">
             <h3 className="studio-form-section-title">Metrics</h3>
@@ -596,7 +724,10 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
             ))}
           </div>
         </section>
+          </>
+        ) : null}
 
+        {activeStep === 2 ? (
         <section className="studio-form-section">
           <h3 className="studio-form-section-title">Skills and Legacy Details</h3>
           {skills.length ? (
@@ -635,72 +766,119 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
             </label>
           </div>
         </section>
+        ) : null}
 
+        {activeStep === 3 ? (
         <section className="studio-form-section">
           <div className="studio-form-section-header">
             <h3 className="studio-form-section-title">Media</h3>
             <span className="studio-help-inline">{uploading ? "Uploading..." : "Stored in Sanity assets"}</span>
           </div>
-          <div className="studio-form-grid">
-            <label className="studio-field">
-              <span className="studio-form-label">Project Logo</span>
-              <input type="file" accept="image/*" onChange={handleLogoUpload} className="studio-form-input" />
-            </label>
+          <p className="studio-help-text">Add the assets that best explain this project. Hover an uploaded asset to replace or remove it.</p>
+          <div className="studio-asset-grid">
+            {formData.logo?.src ? (
+              <div className="studio-asset-card studio-asset-card-logo">
+                <Image src={formData.logo.src} alt={formData.logo.alt || "Project logo"} fill sizes="180px" className="object-contain p-5" />
+                <div className="studio-asset-card-label">Project logo</div>
+                <div className="studio-asset-card-actions">
+                  <label className="studio-asset-action"><Upload size={15} /> Replace<input type="file" accept="image/*" onChange={handleLogoUpload} /></label>
+                  <button type="button" className="studio-asset-action is-danger" onClick={() => setPendingRemoval({ kind: "logo", label: "project logo" })}><Trash2 size={15} /> Delete</button>
+                </div>
+              </div>
+            ) : (
+              <label className="studio-asset-upload-tile"><ImagePlus size={20} /><strong>Add project logo</strong><span>PNG, JPG, or WEBP</span><input type="file" accept="image/*" onChange={handleLogoUpload} /></label>
+            )}
 
-            {formData.logo?.image ? (
-              <button type="button" onClick={() => updateField("logo", undefined)} className="studio-btn-cancel">
-                Remove Project Logo
-              </button>
-            ) : null}
+            {formData.featuredImage?.src ? (
+              <div className="studio-asset-card studio-asset-card-wide">
+                <Image src={formData.featuredImage.src} alt={formData.featuredImage.alt || "Featured project image"} fill sizes="420px" className="object-cover" />
+                <div className="studio-asset-card-label">Featured image</div>
+                <div className="studio-asset-card-actions">
+                  <label className="studio-asset-action"><Upload size={15} /> Replace<input type="file" accept="image/*" onChange={handleFeaturedImageUpload} /></label>
+                  <button type="button" className="studio-asset-action is-danger" onClick={() => setPendingRemoval({ kind: "featuredImage", label: "featured image" })}><Trash2 size={15} /> Delete</button>
+                </div>
+                <details className="studio-asset-details">
+                  <summary>Edit image details</summary>
+                  <label><span>Alt text</span><input value={formData.featuredImage.alt ?? ""} onChange={(event) => updateFeaturedImage("alt", event.target.value)} className="studio-form-input" /></label>
+                  <label><span>Caption</span><input value={formData.featuredImage.caption ?? ""} onChange={(event) => updateFeaturedImage("caption", event.target.value)} className="studio-form-input" /></label>
+                </details>
+              </div>
+            ) : (
+              <label className="studio-asset-upload-tile studio-asset-upload-tile-wide"><ImagePlus size={20} /><strong>Add featured image</strong><span>The main visual shown on the project</span><input type="file" accept="image/*" onChange={handleFeaturedImageUpload} /></label>
+            )}
 
-            <label className="studio-field">
-              <span className="studio-form-label">Featured Image</span>
-              <input type="file" accept="image/*" onChange={handleFeaturedImageUpload} className="studio-form-input" />
-            </label>
+            {formData.demoVideoUrl ? (
+              <div className="studio-asset-card studio-asset-card-wide">
+                <video src={formData.demoVideoUrl} controls muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                <div className="studio-asset-card-label">Demo video</div>
+                <div className="studio-asset-card-actions">
+                  <label className="studio-asset-action"><Upload size={15} /> Replace<input type="file" accept="video/mp4,video/webm" onChange={(event) => handleFileUpload(event, "demoVideo")} /></label>
+                  <button type="button" className="studio-asset-action is-danger" onClick={() => setPendingRemoval({ kind: "demoVideo", label: "demo video" })}><Trash2 size={15} /> Delete</button>
+                </div>
+              </div>
+            ) : (
+              <label className="studio-asset-upload-tile"><Video size={20} /><strong>Add demo video</strong><span>MP4 or WEBM · muted loop</span><input type="file" accept="video/mp4,video/webm" onChange={(event) => handleFileUpload(event, "demoVideo")} /></label>
+            )}
 
-            {formData.featuredImage?.image ? (
-              <>
-                <label className="studio-field">
-                  <span className="studio-form-label">Featured Alt Text</span>
-                  <input value={formData.featuredImage.alt ?? ""} onChange={(event) => updateFeaturedImage("alt", event.target.value)} className="studio-form-input" />
-                </label>
-                <label className="studio-field">
-                  <span className="studio-form-label">Featured Caption</span>
-                  <input value={formData.featuredImage.caption ?? ""} onChange={(event) => updateFeaturedImage("caption", event.target.value)} className="studio-form-input" />
-                </label>
-                <button type="button" onClick={() => updateField("featuredImage", undefined)} className="studio-btn-cancel">
-                  Remove Featured Image
-                </button>
-              </>
-            ) : null}
+            {formData.projectPdfUrl ? (
+              <div className="studio-asset-card studio-pdf-card">
+                <FileText size={30} />
+                <strong>Project PDF</strong>
+                <a href={formData.projectPdfUrl} target="_blank" rel="noreferrer">Open document</a>
+                <div className="studio-asset-card-actions">
+                  <label className="studio-asset-action"><Upload size={15} /> Replace<input type="file" accept="application/pdf" onChange={(event) => handleFileUpload(event, "projectPdf")} /></label>
+                  <button type="button" className="studio-asset-action is-danger" onClick={() => setPendingRemoval({ kind: "projectPdf", label: "project PDF" })}><Trash2 size={15} /> Delete</button>
+                </div>
+              </div>
+            ) : (
+              <label className="studio-asset-upload-tile"><FileText size={20} /><strong>Add project PDF</strong><span>Case study or supporting document</span><input type="file" accept="application/pdf" onChange={(event) => handleFileUpload(event, "projectPdf")} /></label>
+            )}
 
-            <label className="studio-field studio-field-wide">
-              <span className="studio-form-label">Gallery Images</span>
-              <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="studio-form-input" />
-            </label>
+            {formData.gallery.map((image, index) => (
+              <div key={image._key ?? index} className="studio-asset-card">
+                {image.src ? <Image src={image.src} alt={image.alt || `Gallery image ${index + 1}`} fill sizes="240px" className="object-cover" /> : <ImagePlus size={20} />}
+                <div className="studio-asset-card-label">Gallery image {index + 1}</div>
+                <div className="studio-asset-card-actions">
+                  <button type="button" className="studio-asset-action is-danger" onClick={() => setPendingRemoval({ kind: "gallery", index, label: `gallery image ${index + 1}` })}><Trash2 size={15} /> Delete</button>
+                </div>
+                <details className="studio-asset-details">
+                  <summary>Edit image details</summary>
+                  <label><span>Alt text</span><input value={image.alt ?? ""} onChange={(event) => updateGalleryImage(index, "alt", event.target.value)} className="studio-form-input" /></label>
+                  <label><span>Caption</span><input value={image.caption ?? ""} onChange={(event) => updateGalleryImage(index, "caption", event.target.value)} className="studio-form-input" /></label>
+                </details>
+              </div>
+            ))}
+
+            <label className="studio-asset-upload-tile"><ImagePlus size={20} /><strong>Add gallery images</strong><span>Supporting project screens</span><input type="file" accept="image/*" multiple onChange={handleGalleryUpload} /></label>
           </div>
 
-          {formData.gallery.length ? (
-            <div className="studio-gallery-editor">
-              {formData.gallery.map((image, index) => (
-                <div key={image._key ?? index} className="studio-gallery-item">
-                  <div className="studio-gallery-placeholder">
-                    <ImagePlus size={22} />
-                    <span>{image.alt || `Image ${index + 1}`}</span>
-                  </div>
-                  <input value={image.alt ?? ""} onChange={(event) => updateGalleryImage(index, "alt", event.target.value)} className="studio-form-input" placeholder="Alt text" />
-                  <input value={image.caption ?? ""} onChange={(event) => updateGalleryImage(index, "caption", event.target.value)} className="studio-form-input" placeholder="Caption" />
-                  <button type="button" onClick={() => removeGalleryImage(index)} className="studio-icon-button studio-icon-button-danger" aria-label="Remove gallery image">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
+          {pendingRemoval ? (
+            <div className="studio-media-confirm" role="alert">
+              <span>Remove {pendingRemoval.label}? This will be applied when you save the project.</span>
+              <div><button type="button" className="studio-btn-cancel" onClick={() => setPendingRemoval(null)}>Cancel</button><button type="button" className="studio-btn-delete" onClick={confirmRemoval}>Remove</button></div>
             </div>
           ) : null}
         </section>
+        ) : null}
 
+        {activeStep === 4 ? (
         <section className="studio-form-section">
-          <h3 className="studio-form-section-title">SEO and Display</h3>
+          <h3 className="studio-form-section-title">Review & Publish</h3>
+          <div className="studio-project-review">
+            <div>
+              <span>Project</span>
+              <strong>{formData.title || "Untitled project"}</strong>
+              <p>{[formData.type, formData.association].filter(Boolean).join(" / ") || "Project details not added yet"}</p>
+            </div>
+            <div>
+              <span>Media</span>
+              <p>{[formData.featuredImage?.image && "Image", formData.demoVideo && "Video", formData.projectPdf && "PDF"].filter(Boolean).join(" · ") || "No media added"}</p>
+            </div>
+            <div>
+              <span>Status</span>
+              <p>{formData.status}</p>
+            </div>
+          </div>
           <div className="studio-form-grid">
             <label className="studio-field">
               <span className="studio-form-label">Featured Order</span>
@@ -728,6 +906,7 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
             </label>
           </div>
         </section>
+        ) : null}
 
         {error ? <p className="studio-error">{error}</p> : null}
 
@@ -735,10 +914,23 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
           <button type="button" onClick={onComplete} className="studio-btn-cancel">
             Cancel
           </button>
-          <button type="submit" disabled={saving || uploading} className="studio-btn-primary">
-            <Save size={16} />
-            {saving ? "Saving..." : "Save Project"}
-          </button>
+          {activeStep > 0 ? (
+            <button type="button" onClick={() => setActiveStep((step) => step - 1)} className="studio-btn-secondary">
+              <ArrowLeft size={16} />
+              Back
+            </button>
+          ) : null}
+          {activeStep < formSteps.length - 1 ? (
+            <button type="button" onClick={() => setActiveStep((step) => step + 1)} className="studio-btn-primary">
+              Next
+              <ArrowRight size={16} />
+            </button>
+          ) : (
+            <button type="submit" disabled={saving || uploading} className="studio-btn-primary">
+              <Save size={16} />
+              {saving ? "Saving..." : "Save Project"}
+            </button>
+          )}
         </div>
       </form>
     </div>

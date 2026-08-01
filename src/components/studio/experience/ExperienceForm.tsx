@@ -39,6 +39,8 @@ export type ExperienceDocument = {
   summary?: string;
   responsibilities?: string[];
   achievements?: string[];
+  featuredOnHomepage?: boolean;
+  homepageOrder?: number;
   relatedSkills?: SkillReference[];
   skills?: string[];
 };
@@ -58,6 +60,8 @@ type ExperienceFormState = {
   summary: string;
   responsibilities: string;
   achievements: string;
+  featuredOnHomepage: boolean;
+  homepageOrder: number;
   relatedSkillIds: string[];
   skills: string;
 };
@@ -95,6 +99,8 @@ function experienceToFormState(experience?: ExperienceDocument | null): Experien
     summary: experience?.summary ?? "",
     responsibilities: joinLines(experience?.responsibilities),
     achievements: joinLines(experience?.achievements),
+    featuredOnHomepage: experience?.featuredOnHomepage ?? false,
+    homepageOrder: experience?.homepageOrder ?? 99,
     relatedSkillIds: experience?.relatedSkills?.map((skill) => skill._ref).filter((id): id is string => Boolean(id)) ?? [],
     skills: joinLines(experience?.skills),
   };
@@ -164,6 +170,8 @@ export default function ExperienceForm({ experience, onComplete }: ExperienceFor
       summary: formData.summary.trim(),
       responsibilities: splitLines(formData.responsibilities),
       achievements: splitLines(formData.achievements),
+      featuredOnHomepage: formData.featuredOnHomepage,
+      homepageOrder: formData.homepageOrder,
       relatedSkills: refsFromIds(formData.relatedSkillIds),
       skills: splitLines(formData.skills),
     };
@@ -296,6 +304,21 @@ export default function ExperienceForm({ experience, onComplete }: ExperienceFor
             <label className="studio-field">
               <span className="studio-form-label">Legacy Skill Text</span>
               <textarea value={formData.skills} onChange={(event) => updateField("skills", event.target.value)} className="studio-form-textarea" rows={6} />
+            </label>
+          </div>
+        </section>
+
+        <section className="studio-form-section">
+          <h3 className="studio-form-section-title">Homepage feature</h3>
+          <div className="studio-form-grid">
+            <label className="studio-checkbox-field">
+              <input type="checkbox" checked={formData.featuredOnHomepage} onChange={(event) => updateField("featuredOnHomepage", event.target.checked)} />
+              <span>Show this role in Experience &amp; outcomes</span>
+            </label>
+
+            <label className="studio-field">
+              <span className="studio-form-label">Homepage order</span>
+              <input type="number" min="1" value={formData.homepageOrder} onChange={(event) => updateField("homepageOrder", Number(event.target.value) || 99)} className="studio-form-input" disabled={!formData.featuredOnHomepage} />
             </label>
           </div>
         </section>
