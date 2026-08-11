@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
   }
 
   if (body?._type === "project" && body.slug?.current) {
-    revalidatePath(`/projects/${body.slug.current}`);
-    revalidatePath("/projects");
+    revalidatePath(`/works/${body.slug.current}`);
+    revalidatePath("/works");
   }
 
   if (body?._type === "article" && body.slug?.current) {
@@ -38,7 +38,6 @@ export async function POST(request: NextRequest) {
 
   revalidatePath("/");
   revalidatePath("/about");
-  revalidatePath("/experience");
   revalidatePath("/contact");
 
   return Response.json({ revalidated: true, now: Date.now() });

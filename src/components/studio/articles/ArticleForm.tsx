@@ -1,7 +1,8 @@
 "use client";
 
-import { Save, X } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import Image from "next/image";
+import { ImagePlus, Save, Trash2, Upload, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useClient } from "sanity";
 
 import RichContentEditor from "../shared/RichContentEditor";
@@ -21,6 +22,27 @@ const articleStatuses = ["published", "draft", "hidden"] as const;
 
 type ArticleStatus = (typeof articleStatuses)[number];
 
+type ImageWithMetaDocument = {
+  _key?: string;
+  _type?: "imageWithMeta";
+  image?: unknown;
+  alt?: string;
+  caption?: string;
+  src?: string;
+};
+
+type ContentOption = {
+  _id: string;
+  title?: string;
+  status?: ArticleStatus;
+};
+
+type ContentReference = {
+  _key?: string;
+  _type?: "reference";
+  _ref?: string;
+};
+
 export type ArticleDocument = {
   _id?: string;
   _type?: "article";
@@ -38,6 +60,11 @@ export type ArticleDocument = {
   canonicalPath?: string;
   featuredOnHomepage?: boolean;
   homepageOrder?: number;
+  featuredOnArchive?: boolean;
+  archiveOrder?: number;
+  coverImage?: ImageWithMetaDocument;
+  relatedProjects?: ContentReference[];
+  relatedArticles?: ContentReference[];
 };
 
 type ArticleFormState = {
@@ -55,6 +82,11 @@ type ArticleFormState = {
   canonicalPath: string;
   featuredOnHomepage: boolean;
   homepageOrder: number;
+  featuredOnArchive: boolean;
+  archiveOrder: number;
+  coverImage?: ImageWithMetaDocument;
+  relatedProjectIds: string[];
+  relatedArticleIds: string[];
 };
 
 type ArticleFormProps = {
@@ -68,6 +100,40 @@ function today() {
 
 function normalizeArticleBody(body?: RichContentBlock[]) {
   return body?.length ? body : textToPortableBlocks("");
+}
+
+function keyFromText(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function refsFromIds(ids: string[]) {
+  return ids.map((id) => ({
+    _key: `reference-${id.replace(/[^a-zA-Z0-9]/g, "-")}`,
+    _type: "reference" as const,
+    _ref: id,
+  }));
+}
+
+function imageForSave(image?: ImageWithMetaDocument, altFallback = "Article cover image") {
+  if (!image?.image) {
+    return undefined;
+  }
+
+  const savedImage = { ...image };
+  delete savedImage.src;
+  return { ...savedImage, alt: image.alt?.trim() || altFallback };
+}
+
+function contentForSave(blocks: RichContentBlock[], altFallback: string) {
+  return normalizeRichContent(blocks)?.map((block) => {
+    if (block._type !== "imageWithMeta") {
+      return block;
+    }
+
+    const savedImage = { ...block };
+    delete savedImage.src;
+    return { ...savedImage, alt: block.alt?.trim() || altFallback };
+  });
 }
 
 function articleToFormState(article?: ArticleDocument | null): ArticleFormState {
@@ -86,16 +152,44 @@ function articleToFormState(article?: ArticleDocument | null): ArticleFormState 
     canonicalPath: article?.canonicalPath ?? "",
     featuredOnHomepage: article?.featuredOnHomepage ?? false,
     homepageOrder: article?.homepageOrder ?? 99,
+    featuredOnArchive: article?.featuredOnArchive ?? false,
+    archiveOrder: article?.archiveOrder ?? 99,
+    coverImage: article?.coverImage,
+    relatedProjectIds: article?.relatedProjects?.map((project) => project._ref).filter((id): id is string => Boolean(id)) ?? [],
+    relatedArticleIds: article?.relatedArticles?.map((relatedArticle) => relatedArticle._ref).filter((id): id is string => Boolean(id)) ?? [],
   };
 }
 
 export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
   const client = useClient({ apiVersion: "2026-03-01" });
   const [formData, setFormData] = useState<ArticleFormState>(() => articleToFormState(article));
+  const [projects, setProjects] = useState<ContentOption[]>([]);
+  const [relatedArticles, setRelatedArticles] = useState<ContentOption[]>([]);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
   const isEditing = Boolean(article?._id);
+  const selectedProjectIds = useMemo(() => new Set(formData.relatedProjectIds), [formData.relatedProjectIds]);
+  const selectedArticleIds = useMemo(() => new Set(formData.relatedArticleIds), [formData.relatedArticleIds]);
+
+  const fetchRelatedContent = useCallback(async () => {
+    try {
+      const [projectOptions, articleOptions] = await Promise.all([
+        client.fetch<ContentOption[]>(`*[_type == "project"] | order(title asc) {_id, title}`),
+        client.fetch<ContentOption[]>(`*[_type == "article"] | order(publishedAt desc, title asc) {_id, title, status}`),
+      ]);
+
+      setProjects(projectOptions);
+      setRelatedArticles(articleOptions.filter((item) => item._id !== article?._id));
+    } catch (fetchError) {
+      setError(fetchError instanceof Error ? fetchError.message : "Failed to load related content.");
+    }
+  }, [article?._id, client]);
+
+  useEffect(() => {
+    fetchRelatedContent();
+  }, [fetchRelatedContent]);
 
   function updateField<Key extends keyof ArticleFormState>(field: Key, value: ArticleFormState[Key]) {
     setFormData((previous) => ({ ...previous, [field]: value }));
@@ -106,6 +200,64 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
       ...previous,
       title,
       slug: isEditing && previous.slug ? previous.slug : slugify(title),
+    }));
+  }
+
+  function toggleRelatedContent(field: "relatedProjectIds" | "relatedArticleIds", id: string) {
+    setFormData((previous) => {
+      const ids = previous[field];
+
+      if (ids.includes(id)) {
+        return { ...previous, [field]: ids.filter((item) => item !== id) };
+      }
+
+      if (ids.length >= 3) {
+        setError("Choose up to three related items.");
+        return previous;
+      }
+
+      setError("");
+      return { ...previous, [field]: [...ids, id] };
+    });
+  }
+
+  async function handleCoverImageUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setUploading(true);
+    setError("");
+
+    try {
+      const asset = await client.assets.upload("image", file, { filename: file.name });
+      updateField("coverImage", {
+        _key: keyFromText("cover"),
+        _type: "imageWithMeta",
+        image: {
+          _type: "image",
+          asset: {
+            _type: "reference",
+            _ref: asset._id,
+          },
+        },
+        alt: formData.title || file.name,
+        caption: "",
+        src: asset.url,
+      });
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "Failed to upload cover image.");
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
+  }
+
+  function updateCoverImage(field: "alt" | "caption", value: string) {
+    setFormData((previous) => ({
+      ...previous,
+      coverImage: previous.coverImage ? { ...previous.coverImage, [field]: value } : previous.coverImage,
     }));
   }
 
@@ -133,15 +285,31 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
       publishedAt: formData.publishedAt,
       updatedAt: formData.updatedAt,
       tags: splitLines(formData.tags),
-      body: normalizeRichContent(formData.body),
+      body: contentForSave(formData.body, title),
       seoTitle: formData.seoTitle.trim(),
       seoDescription: formData.seoDescription.trim(),
       canonicalPath: formData.canonicalPath.trim(),
       featuredOnHomepage: formData.featuredOnHomepage,
       homepageOrder: formData.homepageOrder,
+      featuredOnArchive: formData.featuredOnArchive,
+      archiveOrder: formData.archiveOrder,
+      coverImage: imageForSave(formData.coverImage, title),
+      relatedProjects: formData.relatedProjectIds.length ? refsFromIds(formData.relatedProjectIds) : undefined,
+      relatedArticles: formData.relatedArticleIds.length ? refsFromIds(formData.relatedArticleIds) : undefined,
     };
 
-    const unsetFields = ["category", "excerpt", "publishedAt", "updatedAt", "seoTitle", "seoDescription", "canonicalPath"].filter(
+    const unsetFields = [
+      "category",
+      "excerpt",
+      "publishedAt",
+      "updatedAt",
+      "seoTitle",
+      "seoDescription",
+      "canonicalPath",
+      ...(!payload.coverImage ? ["coverImage"] : []),
+      ...(!payload.relatedProjects ? ["relatedProjects"] : []),
+      ...(!payload.relatedArticles ? ["relatedArticles"] : []),
+    ].filter(
       (field) => !String(payload[field as keyof typeof payload] ?? "").trim(),
     );
 
@@ -229,8 +397,89 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
         </section>
 
         <section className="studio-form-section">
-          <RichContentEditor label="Article Content" value={formData.body} onChange={(value) => updateField("body", value)} />
+          <RichContentEditor label="Article Content" value={formData.body} onChange={(value) => updateField("body", value)} allowImages allowTakeaways />
           {!formData.body.length && portableBlocksToText(formData.body) ? null : null}
+        </section>
+
+        <section className="studio-form-section">
+          <div className="studio-form-section-header">
+            <h3 className="studio-form-section-title">Cover image</h3>
+            <span className="studio-help-inline">{uploading ? "Uploading..." : "Optional hero for the article page"}</span>
+          </div>
+
+          {formData.coverImage?.src ? (
+            <div className="studio-asset-card studio-asset-card-wide">
+              <Image src={formData.coverImage.src} alt={formData.coverImage.alt || "Article cover image"} fill sizes="560px" className="object-cover" />
+              <div className="studio-asset-card-label">Article cover image</div>
+              <div className="studio-asset-card-actions">
+                <label className="studio-asset-action">
+                  <Upload size={15} />
+                  Replace
+                  <input type="file" accept="image/*" onChange={handleCoverImageUpload} />
+                </label>
+                <button type="button" className="studio-asset-action is-danger" onClick={() => updateField("coverImage", undefined)}>
+                  <Trash2 size={15} />
+                  Remove
+                </button>
+              </div>
+              <details className="studio-asset-details" open>
+                <summary>Edit image details</summary>
+                <label>
+                  <span>Alt text</span>
+                  <input value={formData.coverImage.alt ?? ""} onChange={(event) => updateCoverImage("alt", event.target.value)} className="studio-form-input" />
+                </label>
+                <label>
+                  <span>Caption</span>
+                  <input value={formData.coverImage.caption ?? ""} onChange={(event) => updateCoverImage("caption", event.target.value)} className="studio-form-input" />
+                </label>
+              </details>
+            </div>
+          ) : (
+            <label className="studio-asset-upload-tile studio-asset-upload-tile-wide">
+              <ImagePlus size={20} />
+              <strong>Add cover image</strong>
+              <span>The opening visual for this article</span>
+              <input type="file" accept="image/*" onChange={handleCoverImageUpload} />
+            </label>
+          )}
+        </section>
+
+        <section className="studio-form-section">
+          <h3 className="studio-form-section-title">Related work</h3>
+          <p className="studio-help-text">Choose up to three projects and three articles to show at the end of this article.</p>
+          <div className="studio-form-grid">
+            <fieldset className="studio-field studio-field-wide">
+              <legend className="studio-form-label">Related projects ({formData.relatedProjectIds.length}/3)</legend>
+              <div className="studio-tag-list">
+                {projects.map((project) => {
+                  const checked = selectedProjectIds.has(project._id);
+                  return (
+                    <label key={project._id} className="studio-checkbox-field">
+                      <input type="checkbox" checked={checked} disabled={!checked && formData.relatedProjectIds.length >= 3} onChange={() => toggleRelatedContent("relatedProjectIds", project._id)} />
+                      <span>{project.title || "Untitled project"}</span>
+                    </label>
+                  );
+                })}
+                {!projects.length ? <span className="studio-help-text">No projects available yet.</span> : null}
+              </div>
+            </fieldset>
+
+            <fieldset className="studio-field studio-field-wide">
+              <legend className="studio-form-label">Related articles ({formData.relatedArticleIds.length}/3)</legend>
+              <div className="studio-tag-list">
+                {relatedArticles.map((relatedArticle) => {
+                  const checked = selectedArticleIds.has(relatedArticle._id);
+                  return (
+                    <label key={relatedArticle._id} className="studio-checkbox-field">
+                      <input type="checkbox" checked={checked} disabled={!checked && formData.relatedArticleIds.length >= 3} onChange={() => toggleRelatedContent("relatedArticleIds", relatedArticle._id)} />
+                      <span>{relatedArticle.title || "Untitled article"}</span>
+                    </label>
+                  );
+                })}
+                {!relatedArticles.length ? <span className="studio-help-text">No other articles available yet.</span> : null}
+              </div>
+            </fieldset>
+          </div>
         </section>
 
         <section className="studio-form-section">
@@ -244,6 +493,21 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
             <label className="studio-field">
               <span className="studio-form-label">Homepage order</span>
               <input type="number" min="1" value={formData.homepageOrder} onChange={(event) => updateField("homepageOrder", Number(event.target.value) || 99)} className="studio-form-input" disabled={!formData.featuredOnHomepage} />
+            </label>
+          </div>
+        </section>
+
+        <section className="studio-form-section">
+          <h3 className="studio-form-section-title">Article archive</h3>
+          <div className="studio-form-grid">
+            <label className="studio-checkbox-field">
+              <input type="checkbox" checked={formData.featuredOnArchive} onChange={(event) => updateField("featuredOnArchive", event.target.checked)} />
+              <span>Use as the lead story in the article archive</span>
+            </label>
+
+            <label className="studio-field">
+              <span className="studio-form-label">Archive order</span>
+              <input type="number" min="1" value={formData.archiveOrder} onChange={(event) => updateField("archiveOrder", Number(event.target.value) || 99)} className="studio-form-input" />
             </label>
           </div>
         </section>
@@ -272,7 +536,7 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
           <button type="button" onClick={onComplete} className="studio-btn-cancel">
             Cancel
           </button>
-          <button type="submit" disabled={saving} className="studio-btn-primary">
+          <button type="submit" disabled={saving || uploading} className="studio-btn-primary">
             <Save size={16} />
             {saving ? "Saving..." : "Save Article"}
           </button>

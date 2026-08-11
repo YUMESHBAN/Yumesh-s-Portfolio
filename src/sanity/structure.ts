@@ -20,11 +20,11 @@ import {
 import type { ComponentType } from "react";
 import type { StructureResolver } from "sanity/structure";
 
-const singletonTypes = new Set(["personProfile", "siteSettings"]);
+const singletonTypes = new Set(["personProfile", "siteSettings", "aboutJourney"]);
 
 function singletonItem(
   S: Parameters<StructureResolver>[0],
-  typeName: "personProfile" | "siteSettings",
+  typeName: "personProfile" | "siteSettings" | "aboutJourney",
   title: string,
   icon: ComponentType,
 ) {
@@ -141,6 +141,7 @@ export const structure: StructureResolver = (S) =>
             .title("Career Timeline")
             .items([
               S.documentTypeListItem("experience").title("Experience").icon(CaseIcon),
+              singletonItem(S, "aboutJourney", "About Page Journey", TrendUpwardIcon),
               filteredListItem(S, "experience", "Current Roles", LaunchIcon, '_type == "experience" && current == true'),
               S.documentTypeListItem("education").title("Education").icon(BookIcon),
               S.documentTypeListItem("certification").title("Certifications").icon(BarChartIcon),

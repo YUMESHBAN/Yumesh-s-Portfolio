@@ -1,5 +1,6 @@
 import { createClient } from "@sanity/client";
 
+import { aboutJourney } from "../src/content/about-journey";
 import {
   articles,
   certifications,
@@ -64,6 +65,22 @@ function educationResultEntry(
   };
 }
 
+function aboutManifestoItem(entry: (typeof personProfile.aboutManifesto)[number], index: number) {
+  return {
+    _type: "aboutManifestoItem",
+    _key: `about-manifesto-${index}`,
+    ...entry,
+  };
+}
+
+function aboutJourneyChapter(entry: (typeof aboutJourney.chapters)[number], index: number) {
+  return {
+    _type: "aboutJourneyChapter",
+    _key: `about-journey-${index}`,
+    ...entry,
+  };
+}
+
 if (!projectId || !token) {
   throw new Error(
     "Missing NEXT_PUBLIC_SANITY_PROJECT_ID or SANITY_API_TOKEN. Add them to your environment before seeding Sanity.",
@@ -86,12 +103,19 @@ const docs: SeedDocument[] = [
     profileImage: undefined,
     image: undefined,
     longBio: personProfile.longBio.map(block),
+    aboutManifesto: personProfile.aboutManifesto.map(aboutManifestoItem),
   },
   {
     _id: "siteSettings",
     _type: "siteSettings",
     ...siteSettings,
     cvUrl: undefined,
+  },
+  {
+    _id: "aboutJourney",
+    _type: "aboutJourney",
+    ...aboutJourney,
+    chapters: aboutJourney.chapters.map(aboutJourneyChapter),
   },
   ...projects.map((project) => ({
     _id: `project-${project.slug}`,

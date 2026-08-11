@@ -172,7 +172,7 @@ export function SelectedWorkPreview({ projects }: { projects: Project[] }) {
                   </div>
                 </div>
                 <div className="mt-8 flex flex-wrap gap-3">
-                  <Link href={`/projects/${project.slug}`} className="site-button-primary">
+                  <Link href={`/works/${project.slug}`} className="site-button-primary">
                     View project details
                     <ArrowUpRight size={17} aria-hidden="true" />
                   </Link>

@@ -20,7 +20,7 @@ const certificationQuery = `*[_type == "certification"] | order(order asc, date 
   credentialId,
   description,
   credentialUrl,
-  credentialFile,
+  credentialFile{asset->{url, originalFilename}},
   relatedSkills,
   order
 }`;
@@ -157,7 +157,7 @@ export default function CertificationDashboard() {
         </div>
         <div className="studio-stat-card">
           <p className="studio-stat-label">With Links</p>
-          <p className="studio-stat-value studio-stat-orange">{certifications.filter((certification) => Boolean(certification.credentialUrl)).length}</p>
+          <p className="studio-stat-value studio-stat-orange">{certifications.filter((certification) => Boolean(certification.credentialUrl || certification.credentialFile?.asset?.url)).length}</p>
         </div>
         <div className="studio-stat-card">
           <p className="studio-stat-label">Hidden</p>
@@ -195,8 +195,8 @@ export default function CertificationDashboard() {
 
                 <div className="studio-card-footer">
                   <span>Order {certification.order ?? 99}</span>
-                  {certification.credentialUrl ? (
-                    <a href={certification.credentialUrl} target="_blank" rel="noreferrer" className="studio-inline-link">
+                  {certification.credentialUrl || certification.credentialFile?.asset?.url ? (
+                    <a href={certification.credentialUrl || certification.credentialFile?.asset?.url} target="_blank" rel="noreferrer" className="studio-inline-link">
                       <ExternalLink size={14} />
                       Credential
                     </a>

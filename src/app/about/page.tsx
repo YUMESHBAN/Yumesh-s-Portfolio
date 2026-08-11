@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Award, GraduationCap, MapPin } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, ArrowUpRight, CircleDot, Clapperboard, Download, MapPin, PanelsTopLeft } from "lucide-react";
 
+import { AboutJourney } from "@/components/about-journey";
+import { CompactStackMarquee } from "@/components/compact-stack-marquee";
 import { JsonLd } from "@/components/json-ld";
-import { SectionHeading } from "@/components/section-heading";
-import { TechLogo } from "@/components/tech-logo";
 import {
+  getAboutJourney,
   getCertifications,
   getEducation,
   getPersonProfile,
   getSiteSettings,
+  getSkillShowcases,
   getSkills,
+  getStackCategories,
 } from "@/lib/content";
 import { breadcrumbJsonLd, profilePageJsonLd } from "@/lib/structured-data";
 
@@ -19,186 +23,247 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "Who is Yumesh Ban?",
-    description:
-      "Learn who Yumesh Ban is: a full stack developer from Kathmandu, Nepal, BSc.CSIT graduate, and builder of Next.js, Sanity, React, Django, and MERN projects.",
+    description: "Learn who Yumesh Ban is: a full stack developer from Kathmandu, Nepal, BSc.CSIT graduate, and builder of Next.js, Sanity, React, Django, and MERN projects.",
     alternates: { canonical: "/about" },
-    openGraph: {
-      title: "Who is Yumesh Ban?",
-      description: settings.description,
-      url: "/about",
-    },
+    openGraph: { title: "Who is Yumesh Ban?", description: settings.description, url: "/about" },
   };
 }
 
 export default async function AboutPage() {
-  const [profile, settings, education, skills, certifications] = await Promise.all([
+  const [profile, settings, journey, education, skills, stackCategories, skillShowcases, certifications] = await Promise.all([
     getPersonProfile(),
     getSiteSettings(),
+    getAboutJourney(),
     getEducation(),
     getSkills(),
+    getStackCategories(),
+    getSkillShowcases(),
     getCertifications(),
   ]);
 
-  const groupedSkills = skills.reduce<Record<string, typeof skills>>((groups, skill) => {
-    groups[skill.category] = [...(groups[skill.category] ?? []), skill];
-    return groups;
-  }, {});
+  const bachelor = education.find((item) => item.level === "Bachelor") ?? education[0];
+  const earlierEducation = bachelor ? education.filter((item) => item !== bachelor).slice().reverse() : [];
+  const rankAchievement = bachelor?.achievements.find((achievement) => /ranked\s+1st|1st\s+out\s+of/i.test(achievement));
+  const rankValue = rankAchievement?.replace(/^ranked\s+/i, "").replace(/\s+students.*$/i, "").replace(/\s+in\s+.*$/i, "");
+  const bachelorResults = bachelor?.showResultEntries ? bachelor.resultEntries ?? [] : [];
+  const availability = profile.availability?.trim();
+  const principles = profile.aboutManifesto;
 
   return (
     <>
       <JsonLd data={profilePageJsonLd(profile, settings)} />
-      <JsonLd
-        data={breadcrumbJsonLd(
-          [
-            { name: "Home", href: "/" },
-            { name: "Who is Yumesh Ban?", href: "/about" },
-          ],
-          settings,
-        )}
-      />
+      <JsonLd data={breadcrumbJsonLd([{ name: "Home", href: "/" }, { name: "Who is Yumesh Ban?", href: "/about" }], settings)} />
 
-      <section className="site-section pt-32">
-        <div className="site-container grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
-          <div className="site-panel p-3">
-            <Image
-              src={profile.image}
-              alt="Yumesh Ban profile"
-              width={640}
-              height={640}
-              className="aspect-square rounded-lg object-cover"
-              priority
-            />
-            <div className="p-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-white/62">
-                <MapPin size={17} />
-                {profile.location}
-              </div>
-              <a href={`mailto:${profile.email}`} className="site-link mt-2 block font-semibold">
-                {profile.email}
-              </a>
-            </div>
-          </div>
-
-          <div>
-            <p className="site-eyebrow">Profile</p>
-            <h1 className="mt-4 text-balance text-5xl font-semibold leading-none text-white sm:text-6xl">
-              Who is Yumesh Ban?
+      <section className="about-hero relative z-10 isolate pt-22 sm:pt-24">
+        <div className="about-hero-grid pointer-events-none absolute inset-0 -z-22" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-64 bg-[linear-gradient(to_top,#0b0b0c_0%,rgba(11,11,12,0.72)_36%,transparent_100%)]" aria-hidden="true" />
+        <div className="site-container grid min-h-[calc(100svh-7rem)] items-center gap-8 lg:grid-cols-[minmax(0,1.04fr)_minmax(25rem,0.96fr)] lg:gap-6">
+          <div className="about-hero-copy relative z-20 max-w-3xl py-8 lg:py-8">
+            <p className="site-eyebrow">{"// The person behind the work"}</p>
+            <h1 className="mt-5 max-w-4xl text-balance text-[3.1rem] font-semibold leading-[0.96] tracking-[-0.055em] text-white sm:text-7xl lg:text-[5.1rem]">
+              I didn&apos;t start with code.
+              <span className="mt-4 block max-w-2xl text-[0.46em] font-medium leading-[1.14] tracking-[-0.035em] text-white/78 sm:mt-5">
+                I started by learning how stories, visuals, and details shape an experience.
+              </span>
             </h1>
-            <div className="site-muted mt-7 grid gap-5 text-lg leading-8">
-              {profile.longBio.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
-            </div>
+            <p className="mt-7 max-w-2xl text-base leading-8 text-white/62 sm:text-lg">
+              That instinct followed me from video editing and graphic design into full-stack development. Today, I bring both sides together to create products that feel clear, useful, and thoughtfully made.
+            </p>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            <div className="mt-8 grid border-y border-white/10 sm:grid-cols-2 xl:grid-cols-4">
               {[
-                ["Degree", "BSc.CSIT"],
-                ["Overall", profile.overallPercentage],
-                ["Final semester", profile.finalSemesterPercentage],
-              ].map(([label, value]) => (
-                <div key={label} className="site-panel p-5">
-                  <p className="text-xs font-semibold uppercase text-white/35">{label}</p>
-                  <p className="mt-2 text-xl font-semibold text-white">{value}</p>
+                { icon: MapPin, label: "Based in", value: profile.location },
+                { icon: Clapperboard, label: "Started with", value: "Visual storytelling" },
+                { icon: PanelsTopLeft, label: "Now focused on", value: "Full-stack products" },
+                { icon: CircleDot, label: "Currently", value: availability ?? "Building and learning" },
+              ].map(({ icon: Icon, label, value }) => (
+                <div key={label} className="flex items-start gap-3 border-b border-white/10 py-4 last:border-b-0 sm:[&:nth-child(odd)]:border-r sm:[&:nth-last-child(-n+2)]:border-b-0 sm:[&:nth-child(odd)]:pr-4 sm:[&:nth-child(even)]:pl-4 xl:border-b-0 xl:border-r xl:px-4 xl:first:pl-0 xl:last:border-r-0 xl:last:pr-0">
+                  <Icon className="mt-0.5 shrink-0 text-blue-300" size={16} aria-hidden="true" />
+                  <div>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/55">{label}</p>
+                    <p className="mt-1 text-sm font-medium leading-5 text-white/75">{value}</p>
+                  </div>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link href="/works" className="site-button-primary">View my works<ArrowRight size={17} aria-hidden="true" /></Link>
+              <a href={settings.cvUrl} className="site-button-secondary"><Download size={17} aria-hidden="true" />Download resume</a>
+            </div>
+
+            {profile.socialLinks.length ? (
+              <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Social profiles">
+                {profile.socialLinks.map((social) => (
+                  <a key={social.href} href={social.href} target="_blank" rel="noreferrer" className="site-link inline-flex items-center gap-1.5 text-xs font-medium">
+                    {social.label}<ArrowUpRight size={13} aria-hidden="true" />
+                  </a>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="about-portrait-stage relative mx-auto flex min-h-[30rem] w-full max-w-[35rem] items-end justify-center self-end overflow-hidden lg:min-h-[42rem] lg:max-w-none">
+            <div className="pointer-events-none absolute left-0 top-16 font-mono text-[10px] uppercase tracking-[0.2em] text-blue-200/45" aria-hidden="true">ABOUT / 01</div>
+            <Image src="/images/yumesh-office-coding.png" alt="Yumesh Ban coding at an office desk, viewed from behind" fill priority sizes="(min-width: 1024px) 44vw, 92vw" className="about-office-image object-cover object-[center_52%]" />
+            <div className="about-portrait-scrim pointer-events-none absolute inset-x-0 bottom-0 z-10 h-44" aria-hidden="true" />
+            <div className="about-portrait-caption absolute inset-x-0 bottom-0 z-20 px-5 py-4 sm:px-6 sm:py-5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="h-7 w-px shrink-0 bg-blue-300/70 shadow-[0_0_14px_rgba(147,197,253,0.45)]" aria-hidden="true" />
+                  <p className="font-mono text-[10px] uppercase leading-5 tracking-[0.16em] text-white/58">The person behind the products</p>
+                </div>
+                {availability ? <span className="inline-flex shrink-0 items-center gap-2 text-xs font-medium text-blue-200"><span className="h-1.5 w-1.5 rounded-full bg-blue-300 shadow-[0_0_12px_rgba(147,197,253,0.8)]" aria-hidden="true" />{availability}</span> : null}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="site-section border-t border-white/10">
-        <div className="site-container">
-          <SectionHeading
-            eyebrow="Education"
-            title="Academic foundation with measured results."
-            description="Education is included as proof of fundamentals, discipline, and the completed BSc.CSIT milestone."
-          />
-          <div className="mt-10 grid gap-5 lg:grid-cols-3">
-            {education.map((item) => (
-              <article key={item.institution} className="site-panel p-6">
-                <GraduationCap className="text-blue-400" size={24} />
-                <div className="mt-5 flex flex-wrap items-start justify-between gap-3">
+      <AboutJourney journey={journey} />
+
+      <section className="about-manifesto about-section-reveal py-14 sm:py-16 lg:py-20">
+        <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8">
+          <p className="site-eyebrow">{"// How I show up"}</p>
+          <h2 className="sr-only">The principles behind how I work</h2>
+
+          <div className="about-manifesto-list mt-10 sm:mt-12">
+            {principles.map((principle, index) => (
+              <article
+                key={`${principle.lineOne}-${principle.accent}`}
+                tabIndex={0}
+                className={`about-manifesto-item group relative py-5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-blue-300/70 sm:py-6 lg:w-[80%] ${index === 1 ? "about-manifesto-item-reversed lg:ml-auto lg:text-right" : ""}`}
+              >
+                <div className="flex items-center gap-5">
+                  <p className="font-mono text-base text-blue-300">{String(index + 1).padStart(2, "0")}</p>
+                  <span className="about-manifesto-rule h-px flex-1 bg-white/16" aria-hidden="true" />
+                </div>
+
+                <h3 className="about-manifesto-title mt-4 text-[clamp(2.65rem,6.4vw,5.2rem)] font-semibold uppercase leading-[0.88] tracking-[-0.065em] text-white">
+                  <span className="block">{principle.lineOne}</span>
+                  <span className="block">
+                    {principle.lineTwoLead} <span className="about-manifesto-accent text-blue-500">{principle.accent}</span>{principle.lineTwoTail ? ` ${principle.lineTwoTail}` : ""}
+                  </span>
+                </h3>
+
+                <div className="about-manifesto-copy relative mt-4 min-h-16">
+                  <div className={`about-manifesto-summary flex flex-wrap items-center gap-x-5 gap-y-2 ${index === 1 ? "lg:justify-end" : ""}`}>
+                    <p className="text-base text-white/58 sm:text-lg">{principle.summary}</p>
+                  </div>
+                  <div className={`about-manifesto-detail flex max-w-2xl gap-4 border-l border-blue-300/40 pl-4 ${index === 1 ? "lg:ml-auto lg:border-l-0 lg:border-r lg:pl-0 lg:pr-4" : ""}`}>
+                    <p className="text-sm leading-7 text-white/65 sm:text-base">{principle.description}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {bachelor ? (
+        <section className="about-section-reveal site-section">
+          <div className="site-container">
+            <div className="max-w-3xl">
+              <p className="site-eyebrow">{"// The foundation behind the work"}</p>
+              <h2 className="mt-3 text-balance text-4xl font-semibold leading-tight tracking-[-0.04em] text-white sm:text-5xl">An academic path measured by progress, not just completion.</h2>
+            </div>
+            <div className="mt-12 border-t border-white/10">
+              <article className="grid gap-10 border-b border-white/10 py-9 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.78fr)] lg:gap-16 lg:py-12">
+                <div>
+                  <div className="flex flex-wrap items-center gap-3"><span className="font-mono text-xs font-medium tracking-[0.16em] text-blue-300">01</span><span className="h-px w-10 bg-blue-300/60" aria-hidden="true" /><span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/55">{bachelor.level ?? "Education"}</span></div>
+                  <h3 className="mt-6 text-balance text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">{bachelor.degree}</h3>
+                  <p className="mt-5 text-sm font-medium text-blue-200/80">{bachelor.institution}</p>
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs uppercase tracking-[0.12em] text-white/50"><span>{bachelor.dateRange}</span><span aria-hidden="true">/</span><span>{bachelor.location}</span></div>
+                  <p className="mt-6 max-w-2xl text-sm leading-7 text-white/58">{bachelor.summary}</p>
+                </div>
+                <div className="border-t border-white/10 lg:border-l lg:border-t-0 lg:pl-10">
+                  {[
+                    { label: "Overall", value: profile.overallPercentage },
+                    { label: "Final semester", value: profile.finalSemesterPercentage },
+                    ...(rankValue ? [{ label: "Academic rank", value: rankValue }] : []),
+                  ].map((metric) => <div key={metric.label} className="flex items-baseline justify-between gap-5 border-b border-white/10 py-5 first:pt-0 last:border-b-0 last:pb-0"><p className="text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">{metric.value}</p><p className="text-right font-mono text-[10px] uppercase tracking-[0.14em] text-white/55">{metric.label}</p></div>)}
+                </div>
+                {bachelorResults.length ? <div className="border-t border-white/10 pt-6 lg:col-span-2 lg:pt-8">
+                  <div className="flex items-baseline justify-between gap-4"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Result breakdown</p><p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">{bachelorResults.length} visible {bachelorResults.length === 1 ? "result" : "results"}</p></div>
+                  <div className="mt-4 grid gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-2">
+                    {bachelorResults.map((result) => <div key={`${result.label}-${result.percentage}`} className="flex items-center justify-between gap-4 bg-[#0b0b0c] px-5 py-4 sm:px-6"><div><p className="text-base font-semibold tracking-[-0.02em] text-white">{result.label}</p>{result.note ? <p className="mt-1 text-sm text-white/52">{result.note}</p> : null}</div><p className="text-2xl font-semibold tracking-[-0.05em] text-blue-200">{result.percentage}%</p></div>)}
+                  </div>
+                </div> : null}
+              </article>
+
+              {earlierEducation.map((item, index) => (
+                <article key={`${item.institution}-${item.degree}`} className="grid gap-5 border-b border-white/10 py-8 sm:grid-cols-[4rem_minmax(0,1fr)] sm:gap-8 lg:grid-cols-[5rem_minmax(0,1fr)_minmax(16rem,0.62fr)] lg:py-10">
+                  <p className="font-mono text-xs font-medium tracking-[0.16em] text-blue-300">{String(index + 2).padStart(2, "0")}</p>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">{item.institution}</h2>
-                    <p className="mt-1 font-medium text-white/62">{item.degree}</p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1"><p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/55">{item.level ?? "Education"}</p><span className="text-xs uppercase tracking-[0.12em] text-white/45">{item.dateRange}</span></div>
+                    <h3 className="mt-4 text-2xl font-semibold tracking-[-0.035em] text-white sm:text-3xl">{item.degree}</h3>
+                    <p className="mt-3 text-sm font-medium text-blue-200/70">{item.institution}</p><p className="mt-1 text-xs text-white/50">{item.location}</p>
                   </div>
-                  {item.level ? <span className="site-chip">{item.level}</span> : null}
-                </div>
-                <p className="mt-2 text-sm text-white/48">{[item.dateRange, item.location].filter(Boolean).join(" / ")}</p>
-                <p className="site-muted mt-4 text-sm leading-6">{item.summary}</p>
-
-                {item.showResultStats !== false && item.resultStats ? (
-                  <div className="mt-5 grid gap-4 border-y border-white/10 py-4 sm:grid-cols-2">
-                    <div>
-                      <p className="text-xs font-semibold uppercase text-white/35">Highest</p>
-                      <p className="mt-1 text-2xl font-semibold text-white">{item.resultStats.highestPercentage}%</p>
-                      <p className="mt-1 text-xs font-medium text-white/48">{item.resultStats.highestLabel}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold uppercase text-white/35">Average</p>
-                      <p className="mt-1 text-2xl font-semibold text-white">{item.resultStats.averagePercentage}%</p>
-                      <p className="mt-1 text-xs font-medium text-white/48">
-                        {item.resultStats.visibleResultCount} visible result{item.resultStats.visibleResultCount === 1 ? "" : "s"}
-                      </p>
+                  <div className="sm:col-start-2 lg:col-start-3">
+                    <div className="border border-white/10 bg-white/[0.02] px-5 py-5 sm:px-6 sm:py-6">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-blue-200/65">Academic note</p>
+                      <p className="mt-3 text-base leading-8 text-white/72 sm:text-lg">{item.summary}</p>
+                      {item.achievements.length ? <div className="mt-5 flex flex-wrap gap-2.5">{item.achievements.map((achievement) => <span key={achievement} className="rounded-full border border-white/12 px-3 py-1.5 text-sm font-medium text-white/72">{achievement}</span>)}</div> : null}
                     </div>
                   </div>
-                ) : null}
-
-                <ul className="mt-5 grid list-disc gap-2 pl-5 text-sm leading-6 text-white/62 marker:text-blue-400">
-                  {item.achievements.map((achievement) => (
-                    <li key={achievement}>{achievement}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
+                </article>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
-      <section className="site-section border-t border-white/10">
-        <div className="site-container grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
-          <SectionHeading
-            eyebrow="Skills"
-            title="Technical skills grouped for fast scanning."
-            description="Frontend, backend, CMS, database, and tool strengths presented without clutter."
-          />
-          <div className="grid gap-4 sm:grid-cols-2">
-            {Object.entries(groupedSkills).map(([category, items]) => (
-              <div key={category} className="site-panel p-5">
-                <h2 className="font-semibold text-white">{category}</h2>
-                <div className="mt-4 grid gap-3">
-                  {items.map((item) => (
-                    <div key={item.name} className="flex items-center gap-3">
-                      <TechLogo name={item.name} iconName={item.iconName} />
-                      <div>
-                        <p className="font-medium text-white">{item.name}</p>
-                        <p className="text-sm text-white/45">{item.level}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+      <CompactStackMarquee skills={skills} categories={stackCategories} showcases={skillShowcases} />
+
+      {certifications.length ? (
+        <section className="about-section-reveal site-section">
+          <div className="site-container">
+            <div className="max-w-3xl">
+              <p className="site-eyebrow">{"// Still learning. Always building."}</p>
+              <h2 className="mt-3 text-balance text-4xl font-semibold leading-tight tracking-[-0.04em] text-white sm:text-5xl">Learning that keeps finding its way into the work.</h2>
+              <p className="mt-5 max-w-2xl text-sm leading-7 text-white/55">Backend systems, communication, consistency, and visual craft all contribute to how I build today.</p>
+            </div>
+            <div className="about-proof-shelf mt-12 border-y border-white/10 py-2 sm:py-3">
+              {certifications.map((certification, index) => (
+                <article key={`${certification.issuer}-${certification.title}`} tabIndex={certification.credentialUrl ? undefined : 0} aria-label={`${certification.title}, ${certification.issuer}`} className={`about-proof-shelf-item group relative border-b border-white/10 py-5 last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300/70 sm:py-6 ${certification.credentialUrl ? "cursor-pointer" : ""} ${index % 2 ? "lg:ml-10" : ""}`}>
+                  <span className="absolute -left-[1.05rem] top-8 h-3 w-3 border border-white/35 bg-[#0b0b0c] transition-colors duration-300 group-hover:border-blue-300 group-hover:bg-blue-300 group-focus-within:border-blue-300 group-focus-within:bg-blue-300" aria-hidden="true" />
+                  {certification.credentialUrl ? <a href={certification.credentialUrl} target="_blank" rel="noreferrer" className="absolute inset-0 z-10 focus-visible:outline-none" aria-label={`Open ${certification.title} credential in a new tab`} /> : null}
+                  <div className="grid gap-3 pr-1 sm:grid-cols-[minmax(0,1fr)_8rem_4rem_auto] sm:items-center sm:gap-6">
+                    <h3 className={`font-semibold leading-tight tracking-[-0.035em] text-white ${index === 0 ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"}`}>{certification.title}</h3>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/55">{certification.issuer}</p>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/55">{certification.date}</p>
+                    <span className={`inline-flex w-fit items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.13em] ${certification.credentialUrl ? "text-blue-300" : "text-white/35"}`}>{certification.credentialUrl ? "Open proof" : "Learning note"}<ArrowUpRight size={14} aria-hidden="true" /></span>
+                  </div>
+                  <div className="about-proof-shelf-detail grid grid-cols-[8rem_minmax(0,1fr)] gap-5 border border-blue-300/45 px-5 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:items-center sm:gap-8 sm:px-7">
+                    <div><p className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue-200/70">Issuer</p><p className="mt-2 text-sm font-medium text-white/75">{certification.issuer}</p></div>
+                    <p className="text-sm leading-7 text-white/62">{certification.description}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
-      <section className="site-section border-t border-white/10">
+      <section className="about-section-reveal site-section">
         <div className="site-container">
-          <SectionHeading
-            eyebrow="Certifications"
-            title="Learning proof beyond coursework."
-            description="Certificates and recognition support the story of continuous learning."
-          />
-          <div className="mt-10 grid gap-5 md:grid-cols-2">
-            {certifications.map((certification) => (
-              <article key={certification.title} className="site-panel p-6">
-                <Award className="text-blue-400" size={24} />
-                <h2 className="mt-5 text-xl font-semibold text-white">{certification.title}</h2>
-                <p className="mt-1 text-sm font-medium text-white/48">{certification.issuer}</p>
-                <p className="site-muted mt-3 text-sm leading-6">{certification.description}</p>
-              </article>
-            ))}
+          <div className="about-closing-invitation py-14 sm:py-20 lg:py-28">
+            <p className="site-eyebrow">{"// Now you know the person"}</p>
+            <h2 className="mt-7 max-w-6xl text-balance text-4xl font-semibold leading-[0.98] tracking-[-0.055em] text-white sm:text-5xl lg:text-6xl xl:text-7xl">
+              The best way to understand how I think is to <span className="text-blue-400">see what I&apos;ve built.</span>
+            </h2>
+
+            <div className="mt-12 border-t border-white/20 pt-5 sm:mt-16 sm:pt-7">
+              <div className={`grid gap-0 lg:items-center ${availability ? "lg:grid-cols-[minmax(17rem,26rem)_minmax(15rem,1fr)_minmax(13rem,auto)]" : "lg:grid-cols-[minmax(17rem,26rem)_minmax(15rem,1fr)]"}`}>
+                <Link href="/works" className="site-button-primary w-full">
+                  Explore works <ArrowRight size={17} aria-hidden="true" />
+                </Link>
+                <Link href="/contact" className="group mt-5 inline-flex min-h-16 items-center gap-2 border-t border-white/15 pt-5 font-mono text-xs uppercase tracking-[0.16em] text-white/72 transition-colors hover:text-blue-300 focus-visible:outline-none focus-visible:text-blue-300 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0 xl:pl-14">
+                  Start a conversation <ArrowUpRight size={17} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+                </Link>
+                {availability ? <p className="mt-5 inline-flex min-h-16 items-center gap-3 border-t border-white/15 pt-5 font-mono text-[10px] uppercase tracking-[0.15em] text-blue-200/75 lg:mt-0 lg:justify-self-end lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0 xl:pl-14"><span className="h-2.5 w-2.5 rounded-full bg-blue-400 shadow-[0_0_14px_rgba(96,165,250,0.8)]" aria-hidden="true" />{availability}</p> : null}
+              </div>
+            </div>
           </div>
         </div>
       </section>

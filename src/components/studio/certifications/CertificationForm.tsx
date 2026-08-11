@@ -1,7 +1,7 @@
 "use client";
 
 import { Save, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useClient } from "sanity";
 
 import { cleanOptionalFields, getErrorMessage } from "../shared/studio-utils";
@@ -22,6 +22,16 @@ type SkillReference = {
   _ref?: string;
 };
 
+type CredentialFile = {
+  _type?: "file";
+  asset?: {
+    _type?: "reference";
+    _ref?: string;
+    originalFilename?: string;
+    url?: string;
+  };
+};
+
 export type CertificationDocument = {
   _id?: string;
   _type?: "certification";
@@ -34,7 +44,7 @@ export type CertificationDocument = {
   credentialId?: string;
   description?: string;
   credentialUrl?: string;
-  credentialFile?: unknown;
+  credentialFile?: CredentialFile;
   relatedSkills?: SkillReference[];
   order?: number;
 };
@@ -49,6 +59,14 @@ type CertificationFormState = {
   credentialId: string;
   description: string;
   credentialUrl: string;
+  credentialFile?: {
+    _type: "file";
+    asset: {
+      _type: "reference";
+      _ref: string;
+    };
+  };
+  credentialFileName: string;
   relatedSkillIds: string[];
   order: number;
 };
@@ -81,6 +99,10 @@ function certificationToFormState(certification?: CertificationDocument | null):
     credentialId: certification?.credentialId ?? "",
     description: certification?.description ?? "",
     credentialUrl: certification?.credentialUrl ?? "",
+    credentialFile: certification?.credentialFile?.asset?._ref
+      ? { _type: "file", asset: { _type: "reference", _ref: certification.credentialFile.asset._ref } }
+      : undefined,
+    credentialFileName: certification?.credentialFile?.asset?.originalFilename ?? "",
     relatedSkillIds: certification?.relatedSkills?.map((skill) => skill._ref).filter((id): id is string => Boolean(id)) ?? [],
     order: certification?.order ?? 99,
   };
@@ -91,6 +113,7 @@ export default function CertificationForm({ certification, onComplete }: Certifi
   const [formData, setFormData] = useState<CertificationFormState>(() => certificationToFormState(certification));
   const [skills, setSkills] = useState<SkillOption[]>([]);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
   const isEditing = Boolean(certification?._id);
@@ -124,6 +147,27 @@ export default function CertificationForm({ certification, onComplete }: Certifi
     });
   }
 
+  async function uploadCredential(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setError("");
+    setUploading(true);
+
+    try {
+      const asset = await client.assets.upload("file", file, { filename: file.name, contentType: file.type });
+      setFormData((previous) => ({
+        ...previous,
+        credentialFile: { _type: "file", asset: { _type: "reference", _ref: asset._id } },
+        credentialFileName: asset.originalFilename ?? file.name,
+      }));
+    } catch (uploadError) {
+      setError(getErrorMessage(uploadError));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -148,11 +192,12 @@ export default function CertificationForm({ certification, onComplete }: Certifi
       credentialId: formData.credentialId.trim(),
       description: formData.description.trim(),
       credentialUrl: formData.credentialUrl.trim(),
+      credentialFile: formData.credentialFile,
       relatedSkills: refsFromIds(formData.relatedSkillIds),
       order: Number.isFinite(Number(formData.order)) ? Number(formData.order) : 99,
     };
 
-    const unsetFields = ["issuer", "date", "issueDate", "expiryDate", "credentialId", "description", "credentialUrl"].filter(
+    const unsetFields = ["issuer", "date", "issueDate", "expiryDate", "credentialId", "description", "credentialUrl", "credentialFile"].filter(
       (field) => !String(payload[field as keyof typeof payload] ?? "").trim(),
     );
 
@@ -233,8 +278,23 @@ export default function CertificationForm({ certification, onComplete }: Certifi
             </label>
 
             <label className="studio-field">
-              <span className="studio-form-label">Credential URL</span>
-              <input value={formData.credentialUrl} onChange={(event) => updateField("credentialUrl", event.target.value)} className="studio-form-input" placeholder="https://..." />
+              <span className="studio-form-label">Credential PDF or image URL</span>
+              <input value={formData.credentialUrl} onChange={(event) => updateField("credentialUrl", event.target.value)} className="studio-form-input" placeholder="https://.../certificate.pdf" />
+            </label>
+
+            <label className="studio-field studio-field-wide">
+              <span className="studio-form-label">Upload credential PDF or image</span>
+              <span className="studio-help-text">Use a PDF, JPG, PNG, or other image file. A pasted URL takes priority when both are set.</span>
+              <input type="file" accept="application/pdf,image/*" onChange={uploadCredential} className="studio-form-input" />
+              {uploading ? <span className="studio-help-text">Uploading credential…</span> : null}
+              {formData.credentialFileName ? (
+                <div className="mt-3 flex items-center gap-3">
+                  <span className="studio-help-text">Uploaded: {formData.credentialFileName}</span>
+                  <button type="button" onClick={() => setFormData((previous) => ({ ...previous, credentialFile: undefined, credentialFileName: "" }))} className="studio-btn-cancel">
+                    Remove file
+                  </button>
+                </div>
+              ) : null}
             </label>
 
             <label className="studio-field">
@@ -271,7 +331,7 @@ export default function CertificationForm({ certification, onComplete }: Certifi
           <button type="button" onClick={onComplete} className="studio-btn-cancel">
             Cancel
           </button>
-          <button type="submit" disabled={saving} className="studio-btn-primary">
+          <button type="submit" disabled={saving || uploading} className="studio-btn-primary">
             <Save size={16} />
             {saving ? "Saving..." : "Save Certification"}
           </button>

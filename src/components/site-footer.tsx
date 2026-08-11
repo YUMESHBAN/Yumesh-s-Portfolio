@@ -1,8 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 import type { PersonProfile, SiteSettings } from "@/types/content";
+
+const navigation = [
+  { href: "/about", label: "About" },
+  { href: "/works", label: "Works" },
+  { href: "/articles", label: "Writing" },
+  { href: "/privacy", label: "Privacy" },
+];
 
 export function SiteFooter({
   profile,
@@ -11,61 +18,73 @@ export function SiteFooter({
   profile: PersonProfile;
   settings: SiteSettings;
 }) {
+  const siteHost = settings.siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
   return (
     <footer className="border-t border-white/10 bg-[#0b0b0c] text-white">
-      <div className="site-container grid gap-10 py-12 lg:grid-cols-[1.3fr_0.7fr_0.7fr]">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/20 bg-white/10 shadow-[0_0_12px_rgba(96,165,250,0.25)]">
-              <Image
-                src="/images/yb-logo-abstract.png"
-                alt="Yumesh Ban Logo"
-                width={32}
-                height={32}
-                className="h-full w-full object-cover"
-              />
+      <div className="site-container py-12 sm:py-16">
+        <div className="grid gap-12 lg:grid-cols-[1.25fr_0.75fr] lg:gap-16">
+          <div>
+            <Link href="/" className="group inline-flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9bb5ee]/70" aria-label={`${profile.name} home`}>
+              <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden">
+                <Image src="/images/yb-logo-abstract.png" alt="" width={32} height={32} className="h-full w-full object-cover" />
+              </div>
+              <span>
+                <span className="block text-sm font-semibold tracking-[-0.02em]">{profile.name}</span>
+                <span className="block font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">Portfolio</span>
+              </span>
+            </Link>
+
+            <p className="mt-7 max-w-md text-2xl font-medium leading-tight tracking-[-0.03em] text-white sm:text-3xl">
+              Building useful products, thoughtfully.
+            </p>
+            <p className="site-muted mt-3 max-w-md text-sm leading-6">
+              From early ideas to polished web experiences.
+            </p>
+            <Link href="/contact" className="group mt-6 inline-flex items-center gap-2 text-sm font-medium text-blue-200 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9bb5ee]/70">
+              Let&apos;s work together
+              <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} aria-hidden="true" />
+            </Link>
+          </div>
+
+          <div className="grid gap-10 sm:grid-cols-2 sm:gap-8">
+            <nav aria-label="Footer navigation">
+              <p className="site-eyebrow">{"// Navigate"}</p>
+              <div className="mt-4 grid gap-2 text-sm">
+                {navigation.map((item) => (
+                  <Link key={item.href} href={item.href} className="site-link w-fit">
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </nav>
+
+            <div>
+              <p className="site-eyebrow">{"// Connect"}</p>
+              <div className="mt-4 grid gap-2 text-sm">
+                {profile.socialLinks.map((link) => (
+                  <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="site-link inline-flex w-fit items-center gap-1.5">
+                    {link.label}
+                    <ArrowUpRight size={13} aria-hidden="true" />
+                  </a>
+                ))}
+                <a href={`mailto:${profile.email}`} className="mt-2 w-fit text-sm text-blue-200 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9bb5ee]/70">
+                  {profile.email}
+                </a>
+              </div>
             </div>
-            <p className="site-eyebrow my-0">Yumesh Ban</p>
-          </div>
-          <p className="mt-4 max-w-xl text-2xl font-semibold leading-tight text-white">
-            Full stack developer building useful, polished web products.
-          </p>
-          <p className="site-muted mt-4 text-sm">
-            Official website for Yumesh Ban. Built with Next.js and Sanity.
-          </p>
-          <Link href="/contact" className="site-button-primary mt-6 w-fit">
-            Start a conversation
-            <ArrowRight size={17} />
-          </Link>
-        </div>
-
-        <div>
-          <p className="text-sm font-semibold uppercase text-white/35">Explore</p>
-          <div className="mt-4 grid gap-2 text-sm">
-            <Link href="/about" className="site-link">About</Link>
-            <Link href="/selected-work" className="site-link">Work</Link>
-            <Link href="/articles" className="site-link">Writing</Link>
-            <Link href="/experience" className="site-link">Experience</Link>
           </div>
         </div>
 
-        <div>
-          <p className="text-sm font-semibold uppercase text-white/35">Connect</p>
-          <div className="mt-4 grid gap-2 text-sm">
-            {profile.socialLinks.map((link) => (
-              <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="site-link">
-                {link.label}
-              </a>
-            ))}
-            <a href={`mailto:${profile.email}`} className="site-link">
-              {profile.email}
-            </a>
-          </div>
+        <div className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/35 sm:flex-row sm:items-center sm:justify-between">
+          <p>&copy; {new Date().getFullYear()} {profile.name}. All rights reserved.</p>
+          <p className="flex items-center gap-2">
+            <span className="size-1.5 rounded-full bg-blue-300 shadow-[0_0_8px_rgba(147,197,253,0.9)]" aria-hidden="true" />
+            {profile.location}
+            <span className="text-white/20" aria-hidden="true">/</span>
+            <a href={settings.siteUrl} className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9bb5ee]/70">{siteHost}</a>
+          </p>
         </div>
-      </div>
-      <div className="border-t border-white/10 px-4 py-5 text-center text-xs text-white/35">
-        <span>Copyright {new Date().getFullYear()} Yumesh Ban.</span>
-        <span className="ml-2">Canonical site: {settings.siteUrl}</span>
       </div>
     </footer>
   );

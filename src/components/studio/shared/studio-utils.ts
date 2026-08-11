@@ -29,6 +29,13 @@ export type CalloutBlock = {
   tone?: "Note" | "Tip" | "Warning" | "Result";
 };
 
+export type KeyTakeawayBlock = {
+  _key: string;
+  _type: "keyTakeawayBlock";
+  label?: string;
+  body?: string;
+};
+
 export type CodeBlock = {
   _key: string;
   _type: "codeBlock";
@@ -42,9 +49,11 @@ export type ImageWithMetaBlock = {
   alt?: string;
   caption?: string;
   image?: unknown;
+  src?: string;
+  layout?: "inline" | "wide" | "sideLeft" | "sideRight";
 };
 
-export type RichContentBlock = PortableTextBlock | CalloutBlock | CodeBlock | ImageWithMetaBlock;
+export type RichContentBlock = PortableTextBlock | CalloutBlock | KeyTakeawayBlock | CodeBlock | ImageWithMetaBlock;
 
 export function slugify(value: string) {
   return value
@@ -117,6 +126,10 @@ export function portableBlocksToText(blocks?: RichContentBlock[]) {
         return [block.title, block.body].filter(Boolean).join("\n");
       }
 
+      if (block._type === "keyTakeawayBlock") {
+        return [block.label, block.body].filter(Boolean).join("\n");
+      }
+
       if (block._type === "codeBlock") {
         return block.code ?? "";
       }
@@ -139,6 +152,10 @@ export function normalizeRichContent(blocks?: RichContentBlock[]) {
 
     if (block._type === "calloutBlock") {
       return Boolean(block.title?.trim() || block.body?.trim());
+    }
+
+    if (block._type === "keyTakeawayBlock") {
+      return Boolean(block.label?.trim() || block.body?.trim());
     }
 
     if (block._type === "codeBlock") {

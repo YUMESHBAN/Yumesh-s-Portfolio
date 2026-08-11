@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { checkContactRateLimit } from "@/lib/contact-rate-limit";
+
 export const runtime = "nodejs";
 
 const inquiryTypeLabels = {
@@ -9,12 +11,12 @@ const inquiryTypeLabels = {
 } as const;
 
 const contactSchema = z.object({
-  name: z.string().min(2).max(80),
-  email: z.string().email().max(120),
+  name: z.string().trim().min(2).max(80),
+  email: z.string().trim().email().max(120),
   inquiryType: z.enum(["job_opportunity", "freelance_project", "collaboration_other"]),
-  organizationOrProject: z.string().max(120).optional(),
-  subject: z.string().min(4).max(120),
-  message: z.string().min(10).max(3000),
+  organizationOrProject: z.string().trim().max(120).optional(),
+  subject: z.string().trim().min(4).max(120),
+  message: z.string().trim().min(10).max(3000),
   website: z.string().optional(),
 });
 
@@ -42,20 +44,22 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;");
 }
 
+function getClientAddress(request: Request) {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+
+  return forwardedFor?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
+}
+
 function getEmailConfig() {
-  const host = firstConfigured(process.env.SMTP_HOST, process.env.EMAIL_HOST);
-  const port = Number(firstConfigured(process.env.SMTP_PORT, process.env.EMAIL_PORT) || 587);
-  const user = firstConfigured(process.env.SMTP_USER, process.env.EMAIL_USER);
-  const pass = firstConfigured(process.env.SMTP_PASS, process.env.EMAIL_PASSWORD);
+  const host = firstConfigured(process.env.SMTP_HOST);
+  const port = Number(firstConfigured(process.env.SMTP_PORT) || 587);
+  const user = firstConfigured(process.env.SMTP_USER);
+  const pass = firstConfigured(process.env.SMTP_PASS);
   const from = firstConfigured(
     process.env.SMTP_FROM,
-    process.env.EMAIL_FROM,
     user ? `Yumesh Ban Portfolio <${user}>` : undefined,
   );
-  const recipients = [
-    ...commaList(process.env.CONTACT_TO_EMAIL),
-    ...commaList(process.env.ADMIN_EMAILS),
-  ];
+  const recipients = commaList(process.env.CONTACT_TO_EMAIL);
 
   return {
     host,
@@ -64,7 +68,7 @@ function getEmailConfig() {
     pass,
     from,
     to: recipients.length ? Array.from(new Set(recipients)) : user ? [user] : [],
-    secure: firstConfigured(process.env.SMTP_SECURE, process.env.EMAIL_SECURE) === "true" || port === 465,
+    secure: firstConfigured(process.env.SMTP_SECURE) === "true" || port === 465,
   };
 }
 
@@ -82,13 +86,22 @@ export async function POST(request: Request) {
     return Response.json({ message: "Thanks. Your message has been received." });
   }
 
+  const rateLimit = checkContactRateLimit(getClientAddress(request));
+
+  if (!rateLimit.allowed) {
+    return Response.json(
+      { message: "Too many messages. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
+    );
+  }
+
   const emailConfig = getEmailConfig();
 
   if (!emailConfig.host || !emailConfig.user || !emailConfig.pass || !emailConfig.from || emailConfig.to.length === 0) {
-    return Response.json({
-      message:
-        "Message validated. Email delivery is not configured yet, so add SMTP or EMAIL settings before production launch.",
-    });
+    return Response.json(
+      { message: "The contact form is temporarily unavailable. Please email me directly." },
+      { status: 503 },
+    );
   }
 
   try {

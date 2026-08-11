@@ -19,7 +19,7 @@ import { templates } from "./src/sanity/templates";
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "your-project-id";
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
-const singletonTypes = new Set(["personProfile", "siteSettings"]);
+const singletonTypes = new Set(["personProfile", "siteSettings", "aboutJourney"]);
 
 export default defineConfig({
   basePath: "/studio",

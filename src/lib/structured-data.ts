@@ -84,7 +84,7 @@ export function projectJsonLd(project: Project, profile: PersonProfile, settings
     "@type": "CreativeWork",
     name: project.title,
     description: project.summary,
-    url: absoluteUrl(`/projects/${project.slug}`, settings.siteUrl),
+    url: absoluteUrl(`/works/${project.slug}`, settings.siteUrl),
     creator: {
       "@type": "Person",
       name: profile.name,

@@ -8,7 +8,7 @@ import { getErrorMessage, portableBlocksToText } from "../shared/studio-utils";
 
 import ArticleForm, { type ArticleDocument } from "./ArticleForm";
 
-const articleQuery = `*[_type == "article"] | order(publishedAt desc, _createdAt desc) {
+const articleQuery = `*[_type == "article"] | order(featuredOnArchive desc, archiveOrder asc, publishedAt desc, _createdAt desc) {
   _id,
   _type,
   status,
@@ -19,12 +19,26 @@ const articleQuery = `*[_type == "article"] | order(publishedAt desc, _createdAt
   publishedAt,
   updatedAt,
   tags,
-  body,
+  body[]{
+    ...,
+    _type == "imageWithMeta" => {
+      ...,
+      "src": image.asset->url
+    }
+  },
   seoTitle,
   seoDescription,
   canonicalPath,
   featuredOnHomepage,
-  homepageOrder
+  homepageOrder,
+  featuredOnArchive,
+  archiveOrder,
+  coverImage {
+    ...,
+    "src": image.asset->url
+  },
+  relatedProjects,
+  relatedArticles
 }`;
 
 export default function ArticleDashboard() {
@@ -194,6 +208,7 @@ export default function ArticleDashboard() {
                     {article.publishedAt ?? "Draft"}
                   </span>
                   {article.featuredOnHomepage ? <span className="studio-badge studio-badge-info">Homepage #{article.homepageOrder ?? 99}</span> : null}
+                  {article.featuredOnArchive ? <span className="studio-badge studio-badge-info">Archive lead</span> : null}
                   {article.status === "hidden" ? (
                     <span className="studio-badge studio-badge-neutral">
                       <EyeOff size={12} />

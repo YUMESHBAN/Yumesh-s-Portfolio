@@ -11,7 +11,7 @@ import type { PersonProfile, SiteSettings } from "@/types/content";
 const navItems = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
-  { href: "/selected-work", label: "Work" },
+  { href: "/works", label: "Works" },
   { href: "/articles", label: "Writing" },
   { href: "/contact", label: "Contact" },
 ];
@@ -48,8 +48,8 @@ export function SiteHeader({
   }, []);
 
   const isActive = (href: string) => {
-    if (href === "/selected-work") {
-      return pathname === href || pathname?.startsWith("/projects");
+    if (href === "/works") {
+      return pathname === href || pathname?.startsWith(`${href}/`);
     }
 
     return pathname === href || (href !== "/" && pathname?.startsWith(href));
@@ -77,7 +77,7 @@ export function SiteHeader({
             className="group inline-flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300/70"
             aria-label={`${profile.name} home`}
           >
-            <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/20 bg-white/10 shadow-[0_0_12px_rgba(96,165,250,0.25)] transition-transform duration-300 group-hover:scale-105 group-hover:border-blue-400/40">
+            <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden">
               <Image
                 src="/images/yb-logo-abstract.png"
                 alt="Yumesh Ban Logo"
@@ -89,7 +89,6 @@ export function SiteHeader({
             </div>
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold tracking-[-0.02em] text-white transition-colors group-hover:text-blue-200">{profile.name}</span>
-              <span className="block truncate font-mono text-[10px] uppercase tracking-[0.16em] text-white/50">Portfolio</span>
             </span>
           </Link>
 

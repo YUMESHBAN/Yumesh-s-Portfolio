@@ -22,6 +22,17 @@ type SocialLink = {
   type?: string;
 };
 
+type AboutManifestoItem = {
+  _key?: string;
+  _type?: "aboutManifestoItem";
+  lineOne?: string;
+  lineTwoLead?: string;
+  accent?: string;
+  lineTwoTail?: string;
+  summary?: string;
+  description?: string;
+};
+
 type PersonProfileDocument = {
   _id?: string;
   name?: string;
@@ -39,6 +50,7 @@ type PersonProfileDocument = {
   finalSemesterPercentage?: string;
   ctaLinks?: SocialLink[];
   socialLinks?: SocialLink[];
+  aboutManifesto?: AboutManifestoItem[];
 };
 
 type SiteSettingsDocument = {
@@ -73,6 +85,7 @@ type ProfileFormState = {
   finalSemesterPercentage: string;
   ctaLinks: string;
   socialLinks: string;
+  aboutManifesto: AboutManifestoItem[];
   siteUrl: string;
   siteTitle: string;
   siteDescription: string;
@@ -96,7 +109,8 @@ const dashboardQuery = `{
     overallPercentage,
     finalSemesterPercentage,
     ctaLinks,
-    socialLinks
+    socialLinks,
+    aboutManifesto
   },
   "settings": *[_type == "siteSettings"][0]{
     _id,
@@ -157,6 +171,7 @@ function dashboardToFormState(data?: DashboardData | null): ProfileFormState {
     finalSemesterPercentage: profile?.finalSemesterPercentage ?? "90.8%",
     ctaLinks: socialLinksToText(profile?.ctaLinks),
     socialLinks: socialLinksToText(profile?.socialLinks),
+    aboutManifesto: profile?.aboutManifesto ?? [],
     siteUrl: settings?.siteUrl ?? "",
     siteTitle: settings?.title ?? "Yumesh Ban - Full Stack Developer in Kathmandu, Nepal",
     siteDescription: settings?.description ?? "",
@@ -194,6 +209,19 @@ export default function ProfileDashboard() {
 
   function updateField<Key extends keyof ProfileFormState>(field: Key, value: ProfileFormState[Key]) {
     setFormData((previous) => ({ ...previous, [field]: value }));
+  }
+
+  function updateManifestoItem(
+    index: number,
+    field: Exclude<keyof AboutManifestoItem, "_key" | "_type">,
+    value: string,
+  ) {
+    setFormData((previous) => ({
+      ...previous,
+      aboutManifesto: previous.aboutManifesto.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item,
+      ),
+    }));
   }
 
   function navigateTo(path: string) {
@@ -237,6 +265,16 @@ export default function ProfileDashboard() {
       finalSemesterPercentage: formData.finalSemesterPercentage.trim(),
       ctaLinks: socialTextToLinks(formData.ctaLinks),
       socialLinks: socialTextToLinks(formData.socialLinks),
+      aboutManifesto: formData.aboutManifesto.map((item, index) => ({
+        _key: item._key ?? `manifesto-${index + 1}`,
+        _type: "aboutManifestoItem" as const,
+        lineOne: item.lineOne?.trim(),
+        lineTwoLead: item.lineTwoLead?.trim(),
+        accent: item.accent?.trim(),
+        ...(item.lineTwoTail?.trim() ? { lineTwoTail: item.lineTwoTail.trim() } : {}),
+        summary: item.summary?.trim(),
+        description: item.description?.trim(),
+      })),
     };
 
     const settingsPayload = {
@@ -458,6 +496,86 @@ export default function ProfileDashboard() {
           </section>
 
           <section className="studio-form-section">
+            <h3 className="studio-form-section-title">About Page Manifesto</h3>
+            <p className="studio-category-hint">
+              These three principles appear in the “How I show up” section. The description is revealed on hover or keyboard focus.
+            </p>
+            <div className="studio-manifesto-editor">
+              {formData.aboutManifesto.map((item, index) => (
+                <fieldset key={item._key ?? index} className="studio-manifesto-item">
+                  <legend>Principle {String(index + 1).padStart(2, "0")}</legend>
+                  <div className="studio-form-grid">
+                    <label className="studio-field">
+                      <span className="studio-form-label">First Line *</span>
+                      <input
+                        required
+                        value={item.lineOne ?? ""}
+                        onChange={(event) => updateManifestoItem(index, "lineOne", event.target.value)}
+                        className="studio-form-input"
+                        placeholder="I make the"
+                      />
+                    </label>
+
+                    <label className="studio-field">
+                      <span className="studio-form-label">Second Line Lead *</span>
+                      <input
+                        required
+                        value={item.lineTwoLead ?? ""}
+                        onChange={(event) => updateManifestoItem(index, "lineTwoLead", event.target.value)}
+                        className="studio-form-input"
+                        placeholder="problem"
+                      />
+                    </label>
+
+                    <label className="studio-field">
+                      <span className="studio-form-label">Blue Accent *</span>
+                      <input
+                        required
+                        value={item.accent ?? ""}
+                        onChange={(event) => updateManifestoItem(index, "accent", event.target.value)}
+                        className="studio-form-input"
+                        placeholder="clear."
+                      />
+                    </label>
+
+                    <label className="studio-field">
+                      <span className="studio-form-label">Text After Accent</span>
+                      <input
+                        value={item.lineTwoTail ?? ""}
+                        onChange={(event) => updateManifestoItem(index, "lineTwoTail", event.target.value)}
+                        className="studio-form-input"
+                        placeholder="work. (optional)"
+                      />
+                    </label>
+
+                    <label className="studio-field studio-field-wide">
+                      <span className="studio-form-label">Short Summary *</span>
+                      <input
+                        required
+                        value={item.summary ?? ""}
+                        onChange={(event) => updateManifestoItem(index, "summary", event.target.value)}
+                        className="studio-form-input"
+                        placeholder="Understand before adding."
+                      />
+                    </label>
+
+                    <label className="studio-field studio-field-wide">
+                      <span className="studio-form-label">Hover-Reveal Description *</span>
+                      <textarea
+                        required
+                        value={item.description ?? ""}
+                        onChange={(event) => updateManifestoItem(index, "description", event.target.value)}
+                        className="studio-form-textarea"
+                        rows={3}
+                      />
+                    </label>
+                  </div>
+                </fieldset>
+              ))}
+            </div>
+          </section>
+
+          <section className="studio-form-section">
             <h3 className="studio-form-section-title">Social and SEO</h3>
             <div className="studio-form-grid">
               <label className="studio-field">
@@ -478,7 +596,7 @@ export default function ProfileDashboard() {
                   onChange={(event) => updateField("ctaLinks", event.target.value)}
                   className="studio-form-textarea"
                   rows={5}
-                  placeholder={"View Projects | /projects\nContact | /contact"}
+                  placeholder={"View Works | /works\nContact | /contact"}
                 />
               </label>
 

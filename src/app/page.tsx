@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, Clock3, Mail, MapPin, Network } from "lucide-react";
+import { ArrowRight, Clock3, Mail, MapPin } from "lucide-react";
 
 import { LandingSection } from "@/components/landing-section";
+import { ContactChannelNetwork } from "@/components/contact-channel-network";
 import { HowIWorkSection } from "@/components/how-i-work-section";
 import { SelectedWorkPreview } from "@/components/selected-work-preview";
 import { SectionHeading } from "@/components/section-heading";
@@ -52,7 +53,7 @@ export default async function HomePage() {
           <SelectedWorkPreview projects={featuredProjects} />
 
           <div className="mt-7 flex justify-center border-t border-white/10 pt-7 sm:justify-end">
-            <Link href="/selected-work" className="site-button-primary w-fit">
+            <Link href="/works" className="site-button-primary w-fit">
               View project archive
               <ArrowRight size={17} />
             </Link>
@@ -148,7 +149,7 @@ export default async function HomePage() {
               />
             </div>
 
-            <div className="mt-10 ">
+            <div className="mt-10">
               {homepageExperiences.map((experience, experienceIndex) => {
                 const visibleAchievementCount = Math.min(experience.achievements.length, 2);
                 const isLastExperience = experienceIndex === homepageExperiences.length ;
@@ -210,30 +211,31 @@ export default async function HomePage() {
                     ) : null}
                     </article>
 
-                    <div className="relative hidden overflow-visible lg:col-start-2 lg:block">
-                      <div className="absolute bottom-0 left-[56%] top-0 w-px bg-white/25" aria-hidden="true" />
+                    <div className="relative hidden overflow-visible lg:col-start-2 lg:block" data-experience-graph>
+                      <div className="absolute bottom-0 left-[56%] top-0 w-px bg-white/25" data-experience-spine aria-hidden="true" />
                       <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" aria-hidden="true">
                         {graphAchievements.map(({ achievementIndex, position, endpointPosition, bendPosition, tailPosition, direction, endpointX }) => (
-                          <g key={`${experience.company}-branch-${achievementIndex}`}>
-                            <path d={`M56 ${position}C${56 + direction * 16} ${position} ${endpointX} ${bendPosition} ${endpointX} ${endpointPosition}`} vectorEffect="non-scaling-stroke" stroke="#60A5FA" strokeOpacity="0.72" strokeWidth="1.75" />
-                            <path d={`M${endpointX} ${endpointPosition}V${tailPosition}`} vectorEffect="non-scaling-stroke" stroke="#60A5FA" strokeOpacity="0.34" strokeWidth="1.5" strokeDasharray="4 7" />
+                          <g key={`${experience.company}-branch-${achievementIndex}`} data-experience-branch={achievementIndex}>
+                            <path d={`M56 ${position}C${56 + direction * 16} ${position} ${endpointX} ${bendPosition} ${endpointX} ${endpointPosition}`} vectorEffect="non-scaling-stroke" stroke="#60A5FA" strokeOpacity="0.14" strokeWidth="1.5" />
+                            <path data-experience-arc pathLength="1" d={`M56 ${position}C${56 + direction * 16} ${position} ${endpointX} ${bendPosition} ${endpointX} ${endpointPosition}`} vectorEffect="non-scaling-stroke" stroke="#60A5FA" strokeOpacity="0.72" strokeWidth="1.75" />
+                            <path data-experience-tail d={`M${endpointX} ${endpointPosition}V${tailPosition}`} vectorEffect="non-scaling-stroke" stroke="#60A5FA" strokeOpacity="0.34" strokeWidth="1.5" strokeDasharray="4 7" />
                           </g>
                         ))}
                       </svg>
 
-                      <span className={`absolute left-[56%] top-0 grid h-5 w-5 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 ${experience.current ? "h-9 w-9 border-blue-400 bg-blue-400 text-[#0B1220] shadow-[0_0_24px_rgba(96,165,250,0.32)]" : "border-blue-300/85 bg-[#0B1220]"}`}>
+                      <span className={`absolute left-[56%] top-0 grid h-5 w-5 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 ${experience.current ? "h-9 w-9 border-blue-400 bg-blue-400 text-[#0B1220] shadow-[0_0_24px_rgba(96,165,250,0.32)]" : "border-blue-300/85 bg-[#0B1220]"}`} data-experience-milestone>
                         {experience.current ? "✓" : null}
                       </span>
-                      <div className={`absolute top-0 w-[40%] -translate-y-1/2 ${labelOnRight ? "left-[62%] text-left" : "left-[12%] text-right"}`}>
+                      <div className={`absolute top-0 w-[40%] -translate-y-1/2 ${labelOnRight ? "left-[62%] text-left" : "left-[12%] text-right"}`} data-experience-role-label>
                         <p className="text-[12px] font-semibold leading-3 text-blue-200/80">{experience.role}</p>
                         <p className="mt-1 text-[10px] leading-3 text-blue-300/50">{experience.company}</p>
                       </div>
 
                       {graphAchievements.map(({ achievement, achievementIndex, position, endpointPosition, labelPosition, direction, endpointX }) => (
-                          <div key={`${experience.company}-achievement-${achievementIndex}`} className="pointer-events-none absolute inset-0">
-                            <span className="absolute left-[56%] h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-blue-300/85 bg-[#0B1220]" style={{ top: `${position}%` }} />
-                            <span className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-blue-300/85 bg-[#0B1220]" style={{ left: `${endpointX}%`, top: `${endpointPosition}%` }} />
-                            <div className={`group pointer-events-auto absolute w-[26%] ${direction === -1 ? "left-12 text-right" : "right-0 text-left"}`} style={{ top: `${labelPosition}%` }}>
+                          <div key={`${experience.company}-achievement-${achievementIndex}`} className="pointer-events-none absolute inset-0" data-experience-achievement={achievementIndex}>
+                            <span className="absolute left-[56%] h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-blue-300/85 bg-[#0B1220]" style={{ top: `${position}%` }} data-experience-origin />
+                            <span className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-blue-300/85 bg-[#0B1220]" style={{ left: `${endpointX}%`, top: `${endpointPosition}%` }} data-experience-endpoint />
+                            <div className={`group pointer-events-auto absolute w-[26%] ${direction === -1 ? "left-12 text-right" : "right-0 text-left"}`} style={{ top: `${labelPosition}%` }} data-experience-label>
                               <p className="cursor-help text-[10px] leading-3 text-blue-200/65 line-clamp-2">{shortAchievement(achievement)}</p>
                               <div className={`pointer-events-none absolute bottom-full mb-2 w-[180px] rounded-md border border-blue-400/30 bg-[#0B1220]/95 px-2.5 py-2 text-left text-[9px] leading-3 text-blue-100 opacity-0 shadow-[0_10px_26px_rgba(0,0,0,0.45)] transition-opacity duration-150 group-hover:opacity-100 ${direction === -1 ? "left-0" : "right-0"}`}>
                                 {achievement}
@@ -245,16 +247,12 @@ export default async function HomePage() {
                   </div>
                 );
               })}
-              <Link href="/experience" className="site-link mt-10 inline-flex items-center gap-2 text-sm font-semibold lg:w-3/5">
-                View full experience
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      <StackScrollExperience skills={skills} categories={stackCategories} showcases={skillShowcases} />
+      <StackScrollExperience skills={skills} categories={stackCategories} showcases={skillShowcases} variant="dial" />
 
       {featuredArticles.length ? (
         <section className="site-section border-t border-white/10">
@@ -287,18 +285,14 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      <section className="site-section border-t border-white/10">
-        <div className="site-container relative isolate overflow-hidden">
-          <Network
-            className="pointer-events-none absolute right-0 top-1/2 -z-10 hidden h-[31rem] w-[31rem] -translate-y-1/2 text-blue-300/[0.09] lg:block"
-            strokeWidth={0.7}
-            aria-hidden="true"
-          />
+      <section className="site-section py-[3.6rem] sm:py-[4.5rem] lg:py-[5.4rem]">
+        <div className="site-container relative isolate overflow-visible">
+          <ContactChannelNetwork targetId="contact-channel-button" actionId="contact-channel-action" />
 
-          <div className="grid gap-12 lg:grid-cols-[9rem_minmax(0,1fr)_17rem] lg:gap-10">
+          <div className="grid gap-10 lg:grid-cols-[8rem_minmax(0,1fr)_18rem] lg:gap-9">
             <aside className="relative border-b border-white/10 pb-8 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-8">
               <p className="font-mono text-xs uppercase tracking-[0.22em] text-blue-300 lg:[writing-mode:vertical-rl]">{"// Open channel"}</p>
-              <div className="mt-8 grid gap-7 lg:mt-52">
+              <div className="mt-8 grid gap-6 lg:mt-44">
                 <div>
                   <MapPin className="text-blue-400" size={24} aria-hidden="true" />
                   <p className="mt-4 font-mono text-xs uppercase tracking-[0.14em] text-blue-300">Location</p>
@@ -313,19 +307,19 @@ export default async function HomePage() {
               </div>
             </aside>
 
-            <div className="relative z-10 lg:pt-28">
-              <p className="site-eyebrow">{"// Let&apos;s build something meaningful"}</p>
-              <h2 className="mt-8 max-w-3xl text-balance text-5xl font-medium leading-[0.98] tracking-[-0.04em] text-white sm:text-7xl lg:text-8xl">
+            <div className="relative z-10 lg:pt-24">
+              <p className="site-eyebrow">{"// Let's build something meaningful"}</p>
+              <h2 className="mt-7 max-w-3xl text-balance text-[2.7rem] font-medium leading-[0.98] tracking-[-0.04em] text-white sm:text-[4rem] lg:text-[5.4rem]">
                 The next good project starts with a clear hello.
               </h2>
-              <p className="site-muted mt-10 max-w-md text-base leading-8 sm:text-lg">
+              <p className="site-muted mt-9 max-w-md text-base leading-7 sm:text-lg">
                 I help founders and teams ship thoughtful digital products — from the first idea to production.
               </p>
-              <p className="site-muted mt-1 text-base leading-8 sm:text-lg">Let&apos;s create something that lasts.</p>
+              <p className="site-muted mt-1 text-base leading-7 sm:text-lg">Let&apos;s create something that lasts.</p>
             </div>
 
-            <div className="relative z-10 flex flex-col justify-end lg:min-h-[35rem] lg:pb-16">
-              <Link href="/contact" className="site-button-primary w-full justify-between sm:w-72">
+            <div id="contact-channel-action" className="relative z-10 flex flex-col justify-end lg:min-h-[31.5rem] lg:pb-14">
+              <Link id="contact-channel-button" href="/contact" className="site-button-primary contact-channel-button w-full justify-between">
                 Contact me
                 <ArrowRight size={19} />
               </Link>

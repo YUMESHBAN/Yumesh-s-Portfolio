@@ -13,8 +13,16 @@ export const personProfileQuery = `*[_type == "personProfile"][0]{
   degree,
   overallPercentage,
   finalSemesterPercentage,
+  aboutManifesto[]{lineOne, lineTwoLead, accent, lineTwoTail, summary, description},
   ctaLinks[]{label, href, type},
   socialLinks[]{label, href, type}
+}`;
+export const aboutJourneyQuery = `*[_type == "aboutJourney"][0]{
+  eyebrow,
+  rangeLabel,
+  title,
+  introduction,
+  chapters[]{era, title, context, dateRange, location, story, lesson, outcome}
 }`;
 export const siteSettingsQuery = `*[_type == "siteSettings"][0]{
   siteUrl,
@@ -38,6 +46,10 @@ const projectFields = `{
   audience,
   goals,
   responsibilities,
+  problem,
+  process,
+  solution,
+  results,
   metrics,
   relatedSkills[]->{_id, name, category, level},
   techStack,
@@ -74,6 +86,10 @@ export const projectBySlugQuery = `*[_type == "project" && slug.current == $slug
   audience,
   goals,
   responsibilities,
+  problem,
+  process,
+  solution,
+  results,
   metrics,
   relatedSkills[]->{_id, name, category, level},
   techStack,
@@ -185,6 +201,7 @@ export const skillShowcasesQuery = `*[_type == "skillShowcase" && (!defined(stat
     title,
     "slug": slug.current,
     summary,
+    role,
     type,
     liveUrl,
     repoUrl,
@@ -206,14 +223,16 @@ export const certificationsQuery = `*[_type == "certification" && (!defined(stat
   expiryDate,
   credentialId,
   description,
-  credentialUrl,
+  "credentialUrl": coalesce(credentialUrl, credentialFile.asset->url),
   relatedSkills[]->{_id, name, category, level},
   order
 }`;
-export const articlesQuery = `*[_type == "article" && (!defined(status) || status == "published")] | order(publishedAt desc){
+export const articlesQuery = `*[_type == "article" && (!defined(status) || status == "published")] | order(featuredOnArchive desc, archiveOrder asc, publishedAt desc){
   status,
   featuredOnHomepage,
   homepageOrder,
+  featuredOnArchive,
+  archiveOrder,
   title,
   "slug": slug.current,
   category,
@@ -227,6 +246,8 @@ export const featuredHomepageArticlesQuery = `*[_type == "article" && (!defined(
   status,
   featuredOnHomepage,
   homepageOrder,
+  featuredOnArchive,
+  archiveOrder,
   title,
   "slug": slug.current,
   category,
@@ -240,6 +261,8 @@ export const articleBySlugQuery = `*[_type == "article" && slug.current == $slug
   status,
   featuredOnHomepage,
   homepageOrder,
+  featuredOnArchive,
+  archiveOrder,
   title,
   "slug": slug.current,
   category,
@@ -247,5 +270,26 @@ export const articleBySlugQuery = `*[_type == "article" && slug.current == $slug
   publishedAt,
   updatedAt,
   tags,
-  body
+  coverImage{image, alt, caption, "src": image.asset->url},
+  body[]{
+    ...,
+    _type == "imageWithMeta" => {
+      ...,
+      "src": image.asset->url
+    }
+  },
+  relatedProjects[]->{
+    title,
+    "slug": slug.current,
+    type,
+    summary,
+    featuredImage{image, alt, caption, "src": image.asset->url}
+  },
+  relatedArticles[]->{
+    title,
+    "slug": slug.current,
+    category,
+    excerpt,
+    publishedAt
+  }
 }`;

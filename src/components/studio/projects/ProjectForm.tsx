@@ -897,7 +897,7 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
 
             <label className="studio-field">
               <span className="studio-form-label">Canonical Path</span>
-              <input value={formData.canonicalPath} onChange={(event) => updateField("canonicalPath", event.target.value)} className="studio-form-input" placeholder="/projects/project-slug" />
+              <input value={formData.canonicalPath} onChange={(event) => updateField("canonicalPath", event.target.value)} className="studio-form-input" placeholder="/works/project-slug" />
             </label>
 
             <label className="studio-field studio-field-wide">

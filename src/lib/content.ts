@@ -10,8 +10,10 @@ import {
   stackCategories,
   skills,
 } from "@/content/fallback";
+import { aboutJourney } from "@/content/about-journey";
 import { sanityFetch } from "@/sanity/client";
 import {
+  aboutJourneyQuery,
   articleBySlugQuery,
   articlesQuery,
   certificationsQuery,
@@ -30,7 +32,9 @@ import {
 } from "@/sanity/queries";
 import { urlForImage } from "@/sanity/image";
 import type {
+  AboutJourney,
   Article,
+  ArticleSource,
   Certification,
   Education,
   EducationResultEntry,
@@ -42,6 +46,8 @@ import type {
   Skill,
   SkillShowcase,
   StackCategory,
+  RichContentBlock,
+  RichImageBlock,
 } from "@/types/content";
 import { sortByOrder } from "@/lib/utils";
 
@@ -116,17 +122,73 @@ function normalizePersonProfile(profile: PersonProfile | null | undefined): Pers
   return {
     ...source,
     longBio: normalizeTextArray(source.longBio),
+    aboutManifesto: source.aboutManifesto?.length ? source.aboutManifesto : personProfile.aboutManifesto,
   };
 }
 
-function normalizeArticle(article: Article | null | undefined): Article | null {
+function legacyTextBlock(text: string, index: number): RichContentBlock {
+  return {
+    _key: `legacy-${index}`,
+    _type: "block",
+    style: "normal",
+    markDefs: [],
+    children: [{ _key: `legacy-span-${index}`, _type: "span", text }],
+  };
+}
+
+function normalizeRichContent(value: unknown): RichContentBlock[] {
+  const items = Array.isArray(value) ? value : [value];
+
+  return items.flatMap((item, index) => {
+    if (typeof item === "string") {
+      const text = item.trim();
+      return text ? [legacyTextBlock(text, index)] : [];
+    }
+
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+
+    const block = item as Record<string, unknown>;
+
+    if (block._type === "imageWithMeta") {
+      const image = normalizeProjectImage(block as RichImageBlock);
+      return [
+        {
+          ...block,
+          ...image,
+          _type: "imageWithMeta",
+        } as RichImageBlock,
+      ];
+    }
+
+    if (
+      block._type === "block" ||
+      block._type === "calloutBlock" ||
+      block._type === "keyTakeawayBlock" ||
+      block._type === "codeBlock"
+    ) {
+      return [block as RichContentBlock];
+    }
+
+    const text = valueToText(item);
+    return text ? [legacyTextBlock(text, index)] : [];
+  });
+}
+
+function normalizeArticle(article: ArticleSource | null | undefined): Article | null {
   if (!article) {
     return null;
   }
 
   return {
     ...article,
-    body: normalizeTextArray(article.body),
+    body: normalizeRichContent(article.body),
+    coverImage: normalizeProjectImage(article.coverImage),
+    relatedProjects: article.relatedProjects?.map((project) => ({
+      ...project,
+      featuredImage: normalizeProjectImage(project.featuredImage),
+    })),
   };
 }
 
@@ -228,6 +290,15 @@ export async function getPersonProfile() {
   });
 
   return normalizePersonProfile(data);
+}
+
+export async function getAboutJourney() {
+  const data = await sanityFetch<AboutJourney>({
+    query: aboutJourneyQuery,
+    fallback: aboutJourney,
+  });
+
+  return data.chapters?.length ? data : aboutJourney;
 }
 
 export async function getProjects() {
@@ -334,7 +405,7 @@ export async function getCertifications() {
 }
 
 export async function getArticles() {
-  const data = await sanityFetch<Article[]>({
+  const data = await sanityFetch<ArticleSource[]>({
     query: articlesQuery,
     fallback: articles,
   });
@@ -347,7 +418,7 @@ export async function getFeaturedHomepageArticles() {
     .filter((article) => article.featuredOnHomepage)
     .sort((a, b) => (a.homepageOrder ?? 99) - (b.homepageOrder ?? 99))
     .slice(0, 3);
-  const data = await sanityFetch<Article[]>({
+  const data = await sanityFetch<ArticleSource[]>({
     query: featuredHomepageArticlesQuery,
     fallback,
   });
@@ -357,7 +428,7 @@ export async function getFeaturedHomepageArticles() {
 
 export async function getArticleBySlug(slug: string) {
   const fallback = articles.find((article) => article.slug === slug) ?? null;
-  const article = await sanityFetch<Article | null>({
+  const article = await sanityFetch<ArticleSource | null>({
     query: articleBySlugQuery,
     params: { slug },
     fallback,

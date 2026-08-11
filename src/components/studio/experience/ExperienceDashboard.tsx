@@ -1,12 +1,13 @@
 "use client";
 
-import { BriefcaseBusiness, EyeOff, MapPin, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { BookOpenText, BriefcaseBusiness, EyeOff, MapPin, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useClient } from "sanity";
 
 import { getErrorMessage } from "../shared/studio-utils";
 
 import ExperienceForm, { type ExperienceDocument } from "./ExperienceForm";
+import AboutJourneyEditor from "./AboutJourneyEditor";
 
 const experienceQuery = `*[_type == "experience"] | order(featuredOnHomepage desc, homepageOrder asc, current desc, startDate desc, _createdAt desc) {
   _id,
@@ -35,7 +36,7 @@ export default function ExperienceDashboard() {
   const client = useClient({ apiVersion: "2026-03-01" });
   const [experiences, setExperiences] = useState<ExperienceDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"list" | "form">("list");
+  const [view, setView] = useState<"list" | "form" | "journey">("list");
   const [editingExperience, setEditingExperience] = useState<ExperienceDocument | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCurrentOnly, setShowCurrentOnly] = useState(false);
@@ -126,6 +127,27 @@ export default function ExperienceDashboard() {
     );
   }
 
+  if (view === "journey") {
+    return (
+      <div className="studio-page-container">
+        <div className="studio-header">
+          <div>
+            <p className="studio-eyebrow">About Page Narrative</p>
+            <h1 className="studio-header-title">About Journey</h1>
+            <p className="studio-header-subtitle">Edit the section introduction and the four chapters shown on the About page.</p>
+          </div>
+          <div className="studio-header-actions">
+            <button type="button" onClick={() => setView("list")} className="studio-btn-secondary">
+              <BriefcaseBusiness size={16} />
+              Experience list
+            </button>
+          </div>
+        </div>
+        <AboutJourneyEditor />
+      </div>
+    );
+  }
+
   return (
     <div className="studio-page-container">
       <div className="studio-header">
@@ -135,32 +157,38 @@ export default function ExperienceDashboard() {
           <p className="studio-header-subtitle">Homepage entries are listed first in their website display order, followed by the remaining roles.</p>
         </div>
 
-        <div className="studio-filters">
-          <div className="studio-search-wrapper">
-            <Search className="studio-search-icon" size={16} />
-            <input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="studio-search-input"
-              placeholder="Search experience..."
-            />
+        <div className="studio-header-actions">
+          <div className="studio-filters">
+            <div className="studio-search-wrapper">
+              <Search className="studio-search-icon" size={16} />
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="studio-search-input"
+                placeholder="Search experience..."
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowCurrentOnly((current) => !current)}
+              className={`studio-filter-btn ${showCurrentOnly ? "studio-filter-btn-active" : "studio-filter-btn-inactive"}`}
+            >
+              <BriefcaseBusiness size={15} />
+              Current
+            </button>
+
+            <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className="studio-select">
+              <option value="all">All Statuses</option>
+              <option value="published">Published</option>
+              <option value="draft">Draft</option>
+              <option value="hidden">Hidden</option>
+            </select>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setShowCurrentOnly((current) => !current)}
-            className={`studio-filter-btn ${showCurrentOnly ? "studio-filter-btn-active" : "studio-filter-btn-inactive"}`}
-          >
-            <BriefcaseBusiness size={15} />
-            Current
+          <button type="button" onClick={() => setView("journey")} className="studio-btn-secondary">
+            <BookOpenText size={16} />
+            About journey
           </button>
-
-          <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className="studio-select">
-            <option value="all">All Statuses</option>
-            <option value="published">Published</option>
-            <option value="draft">Draft</option>
-            <option value="hidden">Hidden</option>
-          </select>
         </div>
       </div>
 

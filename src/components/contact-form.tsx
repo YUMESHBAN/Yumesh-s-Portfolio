@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useId, useState } from "react";
+import Link from "next/link";
 import { Send } from "lucide-react";
 
 type FormState = "idle" | "submitting" | "success" | "error";
@@ -28,6 +29,7 @@ const inquiryPaths: Array<{ value: InquiryType; label: string; description: stri
 ];
 
 export function ContactForm() {
+  const statusId = useId();
   const [state, setState] = useState<FormState>("idle");
   const [message, setMessage] = useState("");
   const [inquiryType, setInquiryType] = useState<InquiryType>("job_opportunity");
@@ -59,6 +61,7 @@ export function ContactForm() {
       setState("success");
       setMessage(payload.message || "Thanks. Your message is ready for Yumesh.");
       form.reset();
+      setInquiryType("job_opportunity");
     } catch {
       setState("error");
       setMessage("The message could not be sent right now. Please email me directly.");
@@ -66,11 +69,12 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="site-panel grid gap-4 p-5 sm:p-6">
+    <form onSubmit={handleSubmit} aria-describedby={message ? statusId : undefined} className="site-panel grid gap-4 p-5 sm:p-6">
       <input type="text" name="website" className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
+      <input type="hidden" name="inquiryType" value={inquiryType} />
 
-      <div>
-        <p className="text-sm font-semibold text-white">What brings you here?</p>
+      <fieldset>
+        <legend className="text-sm font-semibold text-white">What brings you here?</legend>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
           {inquiryPaths.map((path) => {
             const isSelected = path.value === inquiryType;
@@ -93,23 +97,7 @@ export function ContactForm() {
             );
           })}
         </div>
-      </div>
-
-      <label className="grid gap-2 text-sm font-semibold text-white">
-        Inquiry type
-        <select
-          name="inquiryType"
-          value={inquiryType}
-          onChange={(event) => setInquiryType(event.target.value as InquiryType)}
-          className="rounded-md border border-white/10 bg-white/[0.055] px-4 py-3 font-normal text-white outline-none transition focus:border-blue-400 focus:bg-white/[0.08] focus-visible:ring-2 focus-visible:ring-blue-400/40"
-        >
-          {inquiryPaths.map((path) => (
-            <option key={path.value} value={path.value} className="bg-zinc-900">
-              {path.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      </fieldset>
 
       <label className="grid gap-2 text-sm font-semibold text-white">
         Name
@@ -117,6 +105,8 @@ export function ContactForm() {
           name="name"
           required
           minLength={2}
+          maxLength={80}
+          autoComplete="name"
           className="rounded-md border border-white/10 bg-white/[0.055] px-4 py-3 font-normal text-white outline-none transition placeholder:text-white/30 focus:border-blue-400 focus:bg-white/[0.08] focus-visible:ring-2 focus-visible:ring-blue-400/40"
           placeholder="Your name"
         />
@@ -128,6 +118,8 @@ export function ContactForm() {
           name="email"
           type="email"
           required
+          maxLength={120}
+          autoComplete="email"
           className="rounded-md border border-white/10 bg-white/[0.055] px-4 py-3 font-normal text-white outline-none transition placeholder:text-white/30 focus:border-blue-400 focus:bg-white/[0.08] focus-visible:ring-2 focus-visible:ring-blue-400/40"
           placeholder="you@example.com"
         />
@@ -149,6 +141,7 @@ export function ContactForm() {
           name="subject"
           required
           minLength={4}
+          maxLength={120}
           className="rounded-md border border-white/10 bg-white/[0.055] px-4 py-3 font-normal text-white outline-none transition placeholder:text-white/30 focus:border-blue-400 focus:bg-white/[0.08] focus-visible:ring-2 focus-visible:ring-blue-400/40"
           placeholder="Project, job, collaboration..."
         />
@@ -160,6 +153,7 @@ export function ContactForm() {
           name="message"
           required
           minLength={10}
+          maxLength={3000}
           rows={6}
           className="resize-y rounded-md border border-white/10 bg-white/[0.055] px-4 py-3 font-normal text-white outline-none transition placeholder:text-white/30 focus:border-blue-400 focus:bg-white/[0.08] focus-visible:ring-2 focus-visible:ring-blue-400/40"
           placeholder={selectedPath.messagePlaceholder}
@@ -175,8 +169,15 @@ export function ContactForm() {
         {state === "submitting" ? "Sending..." : "Send message"}
       </button>
 
+      <p className="text-xs leading-5 text-white/60">
+        By sending this form, you agree that your message can be used to respond to your inquiry. Read the{" "}
+        <Link href="/privacy" className="site-link text-blue-200">Privacy Policy</Link>.
+      </p>
+
       {message ? (
         <p
+          id={statusId}
+          role={state === "error" ? "alert" : "status"}
           aria-live="polite"
           className={state === "error" ? "text-sm font-semibold text-red-300" : "text-sm font-semibold text-blue-300"}
         >

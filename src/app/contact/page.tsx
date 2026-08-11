@@ -3,7 +3,7 @@ import { Github, Linkedin, Mail, MapPin } from "lucide-react";
 
 import { ContactForm } from "@/components/contact-form";
 import { SectionHeading } from "@/components/section-heading";
-import { getPersonProfile, getSiteSettings } from "@/lib/content";
+import { getPersonProfile } from "@/lib/content";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ContactPage() {
-  const [profile] = await Promise.all([getPersonProfile(), getSiteSettings()]);
+  const profile = await getPersonProfile();
   const github = profile.socialLinks.find((link) => link.label === "GitHub");
   const linkedin = profile.socialLinks.find((link) => link.label === "LinkedIn");
 
@@ -32,7 +32,7 @@ export default async function ContactPage() {
             <a href={`mailto:${profile.email}`} className="site-link flex items-center gap-3 border-b border-white/10 py-4 font-medium">
               <Mail className="text-blue-400" size={20} />
               <span>
-                <span className="block text-sm text-white/60">Email — fastest route</span>
+                <span className="block text-sm text-white/60">Email &mdash; fastest route</span>
                 {profile.email}
               </span>
             </a>
@@ -44,7 +44,7 @@ export default async function ContactPage() {
               <a href={github.href} target="_blank" rel="noreferrer" className="site-link flex items-center gap-3 border-b border-white/10 py-4 font-medium">
                 <Github className="text-blue-400" size={20} />
                 <span>
-                  <span className="block text-sm text-white/60">GitHub — technical work</span>
+                  <span className="block text-sm text-white/60">GitHub &mdash; technical work</span>
                   GitHub
                 </span>
               </a>
@@ -53,7 +53,7 @@ export default async function ContactPage() {
               <a href={linkedin.href} target="_blank" rel="noreferrer" className="site-link flex items-center gap-3 py-4 font-medium">
                 <Linkedin className="text-blue-400" size={20} />
                 <span>
-                  <span className="block text-sm text-white/60">LinkedIn — professional context</span>
+                  <span className="block text-sm text-white/60">LinkedIn &mdash; professional context</span>
                   LinkedIn
                 </span>
               </a>

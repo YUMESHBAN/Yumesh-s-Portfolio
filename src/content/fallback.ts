@@ -1,5 +1,5 @@
 import type {
-  Article,
+  LegacyArticle,
   Certification,
   Education,
   Experience,
@@ -44,6 +44,30 @@ export const personProfile: PersonProfile = {
   degree: "Bachelor of Science in Computer Science and Information Technology",
   overallPercentage: "80%+",
   finalSemesterPercentage: "90.8%",
+  aboutManifesto: [
+    {
+      lineOne: "I make the",
+      lineTwoLead: "problem",
+      accent: "clear.",
+      summary: "Understand before adding.",
+      description: "I start by understanding the real problem. Clear decisions early make the product easier to build, use, and grow.",
+    },
+    {
+      lineOne: "I keep design",
+      lineTwoLead: "and code",
+      accent: "close.",
+      summary: "Usability and implementation together.",
+      description: "I care about how an interface feels and how the system behind it behaves. The strongest products make both sides support each other.",
+    },
+    {
+      lineOne: "I turn learning",
+      lineTwoLead: "into",
+      accent: "shipped",
+      lineTwoTail: "work.",
+      summary: "Practice over theory.",
+      description: "I turn new knowledge into practical work, test it against real constraints, and carry the useful lessons into the next build.",
+    },
+  ],
   socialLinks: [
     { label: "LinkedIn", href: "https://www.linkedin.com/in/ban-yumesh" },
     { label: "GitHub", href: "https://github.com/YUMESHBAN" },
@@ -548,10 +572,11 @@ export const certifications: Certification[] = [
   },
 ];
 
-export const articles: Article[] = [
+export const articles: LegacyArticle[] = [
   {
     featuredOnHomepage: true,
     homepageOrder: 3,
+    archiveOrder: 3,
     title: "Who is Yumesh Ban?",
     slug: "who-is-yumesh-ban",
     excerpt:
@@ -567,6 +592,8 @@ export const articles: Article[] = [
   {
     featuredOnHomepage: true,
     homepageOrder: 1,
+    featuredOnArchive: true,
+    archiveOrder: 1,
     title: "How I Built Merry Crochets with Next.js, Sanity, Stripe, and Clerk",
     slug: "merry-crochets-nextjs-sanity-stripe-clerk",
     excerpt:
@@ -582,6 +609,7 @@ export const articles: Article[] = [
   {
     featuredOnHomepage: true,
     homepageOrder: 2,
+    archiveOrder: 2,
     title: "My Journey from BSc.CSIT Student to Full Stack Developer",
     slug: "bsc-csit-student-to-full-stack-developer",
     excerpt:

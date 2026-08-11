@@ -49,7 +49,7 @@ const seoFields = [
     name: "canonicalPath",
     title: "Canonical path",
     type: "string",
-    description: "Optional path such as /projects/merry-crochets. Leave blank to use the generated page path.",
+    description: "Optional path such as /works/merry-crochets. Leave blank to use the generated page path.",
   }),
   defineField({
     name: "seoImage",
@@ -85,6 +85,20 @@ export const schemaTypes = [
         validation: (Rule) => Rule.required(),
       }),
       defineField({ name: "caption", title: "Caption", type: "string" }),
+      defineField({
+        name: "layout",
+        title: "Article layout",
+        type: "string",
+        options: {
+          list: [
+            { title: "Inline", value: "inline" },
+            { title: "Wide", value: "wide" },
+            { title: "Side left", value: "sideLeft" },
+            { title: "Side right", value: "sideRight" },
+          ],
+        },
+        initialValue: "inline",
+      }),
     ],
     preview: {
       select: {
@@ -152,7 +166,7 @@ export const schemaTypes = [
         name: "tone",
         title: "Tone",
         type: "string",
-        options: { list: ["Note", "Tip", "Warning", "Result"] },
+        options: { list: ["Note", "Tip", "Warning", "Result", "Finding", "Conclusion"] },
         initialValue: "Note",
       }),
     ],
@@ -167,6 +181,21 @@ export const schemaTypes = [
           title: title || `${tone || "Note"} callout`,
           subtitle: body,
         };
+      },
+    },
+  }),
+  defineType({
+    name: "keyTakeawayBlock",
+    title: "Key Takeaway",
+    type: "object",
+    fields: [
+      defineField({ name: "label", title: "Label", type: "string", initialValue: "Key takeaway" }),
+      defineField({ name: "body", title: "Takeaway", type: "text", rows: 3, validation: (Rule) => Rule.required() }),
+    ],
+    preview: {
+      select: { title: "label", subtitle: "body" },
+      prepare({ title, subtitle }) {
+        return { title: title || "Key takeaway", subtitle };
       },
     },
   }),
@@ -213,6 +242,7 @@ export const schemaTypes = [
             { title: "Strong", value: "strong" },
             { title: "Emphasis", value: "em" },
             { title: "Code", value: "code" },
+            { title: "Highlight", value: "highlight" },
           ],
           annotations: [
             {
@@ -233,6 +263,7 @@ export const schemaTypes = [
       },
       { type: "imageWithMeta" },
       { type: "calloutBlock" },
+      { type: "keyTakeawayBlock" },
       { type: "codeBlock" },
     ],
   }),
@@ -283,6 +314,47 @@ export const schemaTypes = [
     },
   }),
   defineType({
+    name: "aboutJourneyChapter",
+    title: "About Journey Chapter",
+    type: "object",
+    fields: [
+      defineField({ name: "era", title: "Year / era", type: "string", validation: (Rule) => Rule.required() }),
+      defineField({ name: "title", type: "string", validation: (Rule) => Rule.required() }),
+      defineField({ name: "context", title: "Role or education context", type: "string", validation: (Rule) => Rule.required() }),
+      defineField({ name: "dateRange", title: "Date range", type: "string", validation: (Rule) => Rule.required() }),
+      defineField({ name: "location", type: "string", validation: (Rule) => Rule.required() }),
+      defineField({ name: "story", type: "text", rows: 3, validation: (Rule) => Rule.required() }),
+      defineField({ name: "lesson", title: "What this taught me", type: "text", rows: 3, validation: (Rule) => Rule.required() }),
+      defineField({ name: "outcome", title: "Proof from this chapter", type: "text", rows: 2, validation: (Rule) => Rule.required() }),
+    ],
+    preview: {
+      select: { title: "title", subtitle: "era" },
+    },
+  }),
+  defineType({
+    name: "aboutJourney",
+    title: "About Page Journey",
+    type: "document",
+    icon: CaseIcon,
+    description: "Editorial copy and chapters for the journey section on the About page.",
+    fields: [
+      defineField({ name: "eyebrow", title: "Section eyebrow", type: "string", validation: (Rule) => Rule.required() }),
+      defineField({ name: "rangeLabel", title: "Timeline range", type: "string", validation: (Rule) => Rule.required() }),
+      defineField({ name: "title", title: "Section heading", type: "string", validation: (Rule) => Rule.required() }),
+      defineField({ name: "introduction", title: "Section introduction", type: "text", rows: 3, validation: (Rule) => Rule.required() }),
+      defineField({
+        name: "chapters",
+        title: "Journey chapters",
+        type: "array",
+        of: [{ type: "aboutJourneyChapter" }],
+        validation: (Rule) => Rule.required().length(4),
+      }),
+    ],
+    preview: {
+      select: { title: "title", subtitle: "rangeLabel" },
+    },
+  }),
+  defineType({
     name: "personProfile",
     title: "Person Profile",
     type: "document",
@@ -303,6 +375,78 @@ export const schemaTypes = [
       defineField({ name: "degree", type: "string" }),
       defineField({ name: "overallPercentage", type: "string" }),
       defineField({ name: "finalSemesterPercentage", type: "string" }),
+      defineField({
+        name: "aboutManifesto",
+        title: "About page manifesto",
+        type: "array",
+        description: "The three principles shown in the large manifesto section on the About page.",
+        validation: (Rule) => Rule.max(3),
+        of: [
+          {
+            name: "aboutManifestoItem",
+            title: "Manifesto principle",
+            type: "object",
+            fields: [
+              defineField({
+                name: "lineOne",
+                title: "First line",
+                type: "string",
+                description: "Example: I make the",
+                validation: (Rule) => Rule.required(),
+              }),
+              defineField({
+                name: "lineTwoLead",
+                title: "Second line before highlight",
+                type: "string",
+                description: "Example: problem",
+                validation: (Rule) => Rule.required(),
+              }),
+              defineField({
+                name: "accent",
+                title: "Blue highlighted text",
+                type: "string",
+                description: "Example: clear.",
+                validation: (Rule) => Rule.required(),
+              }),
+              defineField({
+                name: "lineTwoTail",
+                title: "Second line after highlight",
+                type: "string",
+                description: "Optional text after the blue highlight, such as work.",
+              }),
+              defineField({
+                name: "summary",
+                title: "Short statement",
+                type: "string",
+                description: "Visible before the hover or keyboard reveal.",
+                validation: (Rule) => Rule.required(),
+              }),
+              defineField({
+                name: "description",
+                title: "Reveal description",
+                type: "text",
+                rows: 3,
+                description: "The fuller explanation revealed on hover or keyboard focus.",
+                validation: (Rule) => Rule.required(),
+              }),
+            ],
+            preview: {
+              select: {
+                lineOne: "lineOne",
+                lineTwoLead: "lineTwoLead",
+                accent: "accent",
+                subtitle: "summary",
+              },
+              prepare({ lineOne, lineTwoLead, accent, subtitle }) {
+                return {
+                  title: [lineOne, lineTwoLead, accent].filter(Boolean).join(" "),
+                  subtitle,
+                };
+              },
+            },
+          },
+        ],
+      }),
       defineField({
         name: "ctaLinks",
         title: "CTA links",
@@ -727,6 +871,8 @@ export const schemaTypes = [
         initialValue: 99,
         hidden: ({ document }) => !document?.featuredOnHomepage,
       }),
+      defineField({ name: "featuredOnArchive", title: "Feature in article archive", type: "boolean", initialValue: false }),
+      defineField({ name: "archiveOrder", title: "Archive order", type: "number", initialValue: 99 }),
       defineField({ name: "coverImage", title: "Cover image", type: "imageWithMeta" }),
       defineField({ name: "tags", type: "array", of: [{ type: "string" }] }),
       defineField({ name: "body", type: "richContent" }),

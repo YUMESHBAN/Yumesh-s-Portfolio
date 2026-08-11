@@ -12,6 +12,7 @@ export type ImageWithMeta = {
   url?: string;
   alt?: string;
   caption?: string;
+  layout?: "inline" | "wide" | "sideLeft" | "sideRight";
 };
 
 export type LinkItem = {
@@ -24,6 +25,84 @@ export type MetricItem = {
   label: string;
   value: string;
   note?: string;
+};
+
+export type RichTextSpan = {
+  _key?: string;
+  _type: "span";
+  marks?: string[];
+  text: string;
+};
+
+export type RichTextBlock = {
+  _key?: string;
+  _type: "block";
+  children?: RichTextSpan[];
+  markDefs?: unknown[];
+  style?: "normal" | "h2" | "h3" | "blockquote";
+  listItem?: "bullet" | "number";
+};
+
+export type RichCalloutBlock = {
+  _key?: string;
+  _type: "calloutBlock";
+  title?: string;
+  body?: string;
+  tone?: "Note" | "Tip" | "Warning" | "Result" | "Finding" | "Conclusion";
+};
+
+export type RichKeyTakeawayBlock = {
+  _key?: string;
+  _type: "keyTakeawayBlock";
+  label?: string;
+  body?: string;
+};
+
+export type RichCodeBlock = {
+  _key?: string;
+  _type: "codeBlock";
+  language?: string;
+  code?: string;
+};
+
+export type RichImageBlock = {
+  _key?: string;
+  _type: "imageWithMeta";
+  alt?: string;
+  caption?: string;
+  image?: unknown;
+  src?: string;
+  layout?: ImageWithMeta["layout"];
+};
+
+export type RichContentBlock = RichTextBlock | RichCalloutBlock | RichKeyTakeawayBlock | RichCodeBlock | RichImageBlock;
+
+export type AboutManifestoItem = {
+  lineOne: string;
+  lineTwoLead: string;
+  accent: string;
+  lineTwoTail?: string;
+  summary: string;
+  description: string;
+};
+
+export type AboutJourneyChapter = {
+  era: string;
+  title: string;
+  context: string;
+  dateRange: string;
+  location: string;
+  story: string;
+  lesson: string;
+  outcome: string;
+};
+
+export type AboutJourney = {
+  eyebrow: string;
+  rangeLabel: string;
+  title: string;
+  introduction: string;
+  chapters: AboutJourneyChapter[];
 };
 
 export type SkillReference = {
@@ -48,6 +127,7 @@ export type PersonProfile = {
   degree: string;
   overallPercentage: string;
   finalSemesterPercentage: string;
+  aboutManifesto: AboutManifestoItem[];
   ctaLinks?: LinkItem[];
   socialLinks: SocialLink[];
 };
@@ -75,6 +155,10 @@ export type Project = {
   audience?: string;
   goals?: string[];
   responsibilities?: string[];
+  problem?: RichContentBlock[];
+  process?: RichContentBlock[];
+  solution?: RichContentBlock[];
+  results?: RichContentBlock[];
   metrics?: MetricItem[];
   relatedSkills?: SkillReference[];
   techStack: string[];
@@ -173,6 +257,7 @@ export type ShowcaseProject = {
   title: string;
   slug: string;
   summary?: string;
+  role?: string;
   type?: Project["type"];
   liveUrl?: string;
   repoUrl?: string;
@@ -212,6 +297,8 @@ export type Article = {
   status?: ContentStatus;
   featuredOnHomepage?: boolean;
   homepageOrder?: number;
+  featuredOnArchive?: boolean;
+  archiveOrder?: number;
   title: string;
   slug: string;
   category?: string;
@@ -219,5 +306,24 @@ export type Article = {
   publishedAt: string;
   updatedAt?: string;
   tags: string[];
+  coverImage?: ImageWithMeta;
+  relatedProjects?: ArticleRelatedProject[];
+  relatedArticles?: ArticleRelatedArticle[];
+  body: RichContentBlock[];
+};
+
+export type ArticleRelatedProject = Pick<Project, "title" | "slug" | "summary" | "type" | "featuredImage">;
+
+export type ArticleRelatedArticle = {
+  title: string;
+  slug: string;
+  category?: string;
+  excerpt: string;
+  publishedAt: string;
+};
+
+export type LegacyArticle = Omit<Article, "body"> & {
   body: string[];
 };
+
+export type ArticleSource = Article | LegacyArticle;
