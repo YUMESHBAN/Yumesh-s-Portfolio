@@ -104,8 +104,10 @@ export default async function AboutPage() {
           </div>
 
           <div className="about-portrait-stage relative mx-auto flex min-h-[30rem] w-full max-w-[35rem] items-end justify-center self-end overflow-hidden lg:min-h-[42rem] lg:max-w-none">
-            <div className="pointer-events-none absolute left-0 top-16 font-mono text-[10px] uppercase tracking-[0.2em] text-blue-200/45" aria-hidden="true">ABOUT / 01</div>
-            <Image src="/images/yumesh-office-coding.png" alt="Yumesh Ban coding at an office desk, viewed from behind" fill priority sizes="(min-width: 1024px) 44vw, 92vw" className="about-office-image object-cover object-[center_52%]" />
+            <div className="pointer-events-none absolute left-0 top-16 z-20 font-mono text-[10px] uppercase tracking-[0.2em] text-blue-200/45" aria-hidden="true">ABOUT / 01</div>
+            <Image src="/images/yumesh-office-coding-dot-art.svg" alt="Yumesh Ban coding at an office desk, viewed from behind" fill priority unoptimized sizes="(min-width: 1024px) 44vw, 92vw" className="about-office-image object-cover object-[center_52%]" />
+            <Image src="/images/yumesh-office-coding.png" alt="" fill loading="eager" sizes="(min-width: 1024px) 44vw, 92vw" className="about-office-original-image object-cover object-[center_52%]" aria-hidden="true" />
+            <div className="about-portrait-hover-grid" aria-hidden="true" />
             <div className="about-portrait-scrim pointer-events-none absolute inset-x-0 bottom-0 z-10 h-44" aria-hidden="true" />
             <div className="about-portrait-caption absolute inset-x-0 bottom-0 z-20 px-5 py-4 sm:px-6 sm:py-5">
               <div className="flex items-center justify-between gap-4">

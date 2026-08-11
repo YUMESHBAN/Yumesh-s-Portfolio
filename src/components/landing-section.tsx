@@ -58,8 +58,8 @@ export function LandingSection({ profile, settings }: { profile: PersonProfile; 
             <Image
               src="/images/yumesh-hero-cutout.png"
               alt="Yumesh Ban portrait"
-              width={1080}
-              height={1456}
+              width={1086}
+              height={1448}
               priority
               sizes="(min-width: 1024px) 50vw, (min-width: 640px) 72vw, 92vw"
               className="hero-portrait-image max-h-[560px] w-full object-contain object-bottom lg:max-h-[700px]"

@@ -93,6 +93,15 @@ export function StackScrollExperience({
   const dialSweep = `${38 + activeCategoryIndex * dialStep}deg`;
   const dialAngle = `${-52 + activeCategoryIndex * dialStep}deg`;
 
+  function activateProof(index: number) {
+    if (requestedProofIndexRef.current !== null && requestedProofIndexRef.current !== index) {
+      return;
+    }
+
+    requestedProofIndexRef.current = null;
+    setActiveProofIndex(index);
+  }
+
   useLayoutEffect(() => {
     const root = rootRef.current;
     const leftRail = leftRailRef.current;
@@ -194,15 +203,6 @@ export function StackScrollExperience({
     requestedProofIndexRef.current = proofIndex;
     setActiveProofIndex(proofIndex);
     scrollTo(proof.id);
-  }
-
-  function activateProof(index: number) {
-    if (requestedProofIndexRef.current !== null && requestedProofIndexRef.current !== index) {
-      return;
-    }
-
-    requestedProofIndexRef.current = null;
-    setActiveProofIndex(index);
   }
 
   if (!categoryData.length || !proofs.length || !activeCategory) {

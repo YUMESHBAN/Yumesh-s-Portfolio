@@ -189,9 +189,9 @@ export function ProjectCaseStudy({ project, index, total, nextProject }: CaseStu
     ["Role", project.role],
     ["Association", project.association],
     ["Timeline", project.dateRange],
-    ...(project.duration ? [["Duration", project.duration]] : []),
-    ...(project.teamSize ? [["Team", project.teamSize]] : []),
   ];
+  if (project.duration) metadata.push(["Duration", project.duration]);
+  if (project.teamSize) metadata.push(["Team", project.teamSize]);
 
   return (
     <article className="pt-28 sm:pt-32">
