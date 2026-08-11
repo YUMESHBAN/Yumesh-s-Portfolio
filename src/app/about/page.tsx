@@ -236,7 +236,7 @@ export default async function AboutPage() {
                     <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/55">{certification.date}</p>
                     <span className={`inline-flex w-fit items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.13em] ${certification.credentialUrl ? "text-blue-300" : "text-white/35"}`}>{certification.credentialUrl ? "Open proof" : "Learning note"}<ArrowUpRight size={14} aria-hidden="true" /></span>
                   </div>
-                  <div className="about-proof-shelf-detail grid grid-cols-[8rem_minmax(0,1fr)] gap-5 border border-blue-300/45 px-5 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:items-center sm:gap-8 sm:px-7">
+                  <div className="about-proof-shelf-detail grid grid-cols-1 gap-3 border border-blue-300/45 px-5 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:items-center sm:gap-8 sm:px-7">
                     <div><p className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue-200/70">Issuer</p><p className="mt-2 text-sm font-medium text-white/75">{certification.issuer}</p></div>
                     <p className="text-sm leading-7 text-white/62">{certification.description}</p>
                   </div>

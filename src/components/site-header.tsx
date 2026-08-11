@@ -93,7 +93,7 @@ export function SiteHeader({
           </Link>
 
         <nav
-          className={`absolute left-1/2 hidden transition-transform duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none md:flex ${
+          className={`absolute left-1/2 hidden transition-transform duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none xl:flex ${
             isScrolled ? "-translate-x-1/2" : "-translate-x-1/2 lg:translate-x-[calc(-50%+16rem)]"
           }`}
           aria-label="Primary navigation"
@@ -121,7 +121,7 @@ export function SiteHeader({
 
         <a
           href={settings.cvUrl}
-          className="ml-auto hidden items-center gap-2 rounded-xl border border-blue-300/30 bg-blue-300/[0.1] px-4 py-2.5 text-sm font-medium text-blue-100 transition hover:border-blue-200/60 hover:bg-blue-300 hover:text-[#0b0b0c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300/70 md:inline-flex"
+          className="ml-auto hidden items-center gap-2 rounded-xl border border-blue-300/30 bg-blue-300/[0.1] px-4 py-2.5 text-sm font-medium text-blue-100 transition hover:border-blue-200/60 hover:bg-blue-300 hover:text-[#0b0b0c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300/70 xl:inline-flex"
           aria-label="Download Yumesh Ban CV"
         >
           Resume
@@ -131,7 +131,7 @@ export function SiteHeader({
         <button
           type="button"
           onClick={() => setMenuOpen((current) => !current)}
-          className="grid size-10 place-items-center rounded-lg border border-white/[0.1] bg-white/[0.04] text-white transition hover:border-blue-300/40 hover:bg-blue-300/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300/70 md:hidden"
+          className="grid size-10 place-items-center rounded-lg border border-white/[0.1] bg-white/[0.04] text-white transition hover:border-blue-300/40 hover:bg-blue-300/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300/70 xl:hidden"
           aria-label="Toggle navigation menu"
           aria-expanded={menuOpen}
         >
@@ -140,7 +140,7 @@ export function SiteHeader({
         </div>
 
       {menuOpen ? (
-        <nav className="site-container grid gap-1 border-t border-white/[0.07] px-0 pb-4 pt-3 md:hidden" aria-label="Mobile navigation">
+        <nav className="site-container grid gap-1 border-t border-white/[0.07] px-0 pb-4 pt-3 xl:hidden" aria-label="Mobile navigation">
           {navItems.map((item) => (
             <Link
               key={item.href}

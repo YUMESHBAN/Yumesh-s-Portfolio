@@ -1023,7 +1023,7 @@ a {
   }
 
   .compact-stack-section {
-    overflow: clip;
+    overflow: hidden;
   }
 
   .compact-stack-heading-grid {
@@ -1662,6 +1662,10 @@ a {
     .greeting-rotator-word {
       animation: none;
     }
+  }
+
+  .hero-portrait-stage {
+    overflow: clip;
   }
 
   .hero-portrait-ring {
