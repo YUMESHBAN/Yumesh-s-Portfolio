@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, X } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 
 import { TechLogo } from "@/components/tech-logo";
@@ -12,6 +12,7 @@ type ProvenSkill = {
   key: string;
   index: number;
   skill: Skill;
+  proofs: SkillShowcase[];
   proof: SkillShowcase;
   image?: ImageWithMeta;
 };
@@ -42,32 +43,40 @@ export function CompactStackMarquee({
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const marqueeViewportRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const groupRef = useRef<HTMLUListElement>(null);
   const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
   const mosaicButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
   const clickPauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suppressFocusPreview = useRef(false);
+  const suppressNextClickRef = useRef(false);
+  const touchStartRef = useRef<{ x: number; y: number; offset: number } | null>(null);
+  const isDraggingRef = useRef(false);
   const [previewKey, setPreviewKey] = useState<string | null>(null);
   const [pinnedKey, setPinnedKey] = useState<string | null>(null);
   const [rovingKey, setRovingKey] = useState<string | null>(null);
   const [isClickPaused, setIsClickPaused] = useState(false);
   const [ignoreMarqueeHoverPause, setIgnoreMarqueeHoverPause] = useState(false);
   const [marqueeDelay, setMarqueeDelay] = useState("0s");
+  const [activeProofIndex, setActiveProofIndex] = useState(0);
 
   const provenSkills = useMemo<ProvenSkill[]>(() => {
     return [...skills]
       .sort((a, b) => a.order - b.order)
       .flatMap((skill) => {
-        const proof = showcases.find((showcase) => sameSkill(skill, showcase.skill));
+        const matchingProofs = showcases.filter((showcase) => sameSkill(skill, showcase.skill));
 
-        if (!proof) return [];
+        if (!matchingProofs.length) return [];
 
+        const firstProof = matchingProofs[0];
         return [{
           key: itemKey(skill),
           index: 0,
           skill,
-          proof,
-          image: proof.image ?? proof.project?.featuredImage,
+          proofs: matchingProofs,
+          proof: firstProof,
+          image: firstProof.image ?? firstProof.project?.featuredImage,
         }];
       })
       .map((item, index) => ({ ...item, index }));
@@ -88,9 +97,29 @@ export function CompactStackMarquee({
     return rows;
   }, []);
 
+  useEffect(() => {
+    setActiveProofIndex(0);
+  }, [activeKey]);
+
+  const currentProof = activeItem?.proofs[activeProofIndex] ?? activeItem?.proofs[0];
+  const currentImage = currentProof ? (currentProof.image ?? currentProof.project?.featuredImage) : undefined;
+
   useEffect(() => () => {
     if (clickPauseTimeoutRef.current) clearTimeout(clickPauseTimeoutRef.current);
   }, []);
+
+  useEffect(() => {
+    if (!pinnedKey) return;
+    const pinnedItem = provenSkills.find((item) => item.key === pinnedKey);
+    if (!pinnedItem) return;
+
+    function handleResize() {
+      if (pinnedItem) centerMarqueeOn(pinnedItem);
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [pinnedKey, provenSkills]);
 
   function focusItem(index: number) {
     const next = provenSkills[index];
@@ -148,25 +177,36 @@ export function CompactStackMarquee({
     }
   }
 
-  function centerMarqueeOn(item: ProvenSkill) {
+  function centerMarqueeOn(item: ProvenSkill, trigger?: HTMLButtonElement | null) {
     const viewport = marqueeViewportRef.current;
     const button = buttonRefs.current.get(item.key);
     const listItem = button?.parentElement;
-    const group = listItem?.parentElement;
+    const group = groupRef.current ?? listItem?.parentElement;
 
     if (!viewport || !button || !listItem || !group) return;
 
     const groupWidth = group.clientWidth;
     if (!groupWidth) return;
 
-    const itemCenter = listItem.offsetLeft + button.offsetWidth / 2;
-    const progress = (itemCenter + groupWidth - viewport.clientWidth / 2) / groupWidth;
+    let itemCenter = listItem.offsetLeft + button.offsetWidth / 2;
+    if (trigger && trigger.parentElement && group.nextElementSibling?.contains(trigger)) {
+      itemCenter = trigger.parentElement.offsetLeft + groupWidth + trigger.offsetWidth / 2;
+    }
+
+    const progress = (itemCenter - viewport.clientWidth / 2) / groupWidth;
     const normalizedProgress = progress - Math.floor(progress);
 
-    setMarqueeDelay(`-${(marqueeDurationSeconds * normalizedProgress).toFixed(3)}s`);
+    const delayStr = `-${(marqueeDurationSeconds * normalizedProgress).toFixed(3)}s`;
+    setMarqueeDelay(delayStr);
+
+    if (trackRef.current) {
+      trackRef.current.style.transform = `translateX(-${(normalizedProgress * groupWidth).toFixed(2)}px)`;
+    }
   }
 
   function togglePinned(item: ProvenSkill, trigger: HTMLButtonElement) {
+    if (suppressNextClickRef.current) return;
+
     if (pinnedKey === item.key) {
       closePanel();
       return;
@@ -178,15 +218,12 @@ export function CompactStackMarquee({
     setPinnedKey(item.key);
     setIsClickPaused(true);
     setIgnoreMarqueeHoverPause(Boolean(marqueeViewportRef.current?.contains(trigger)));
-    centerMarqueeOn(item);
+    centerMarqueeOn(item, trigger);
 
-    if (clickPauseTimeoutRef.current) clearTimeout(clickPauseTimeoutRef.current);
-    clickPauseTimeoutRef.current = setTimeout(() => {
-      setPreviewKey(null);
-      setPinnedKey(null);
-      setIsClickPaused(false);
+    if (clickPauseTimeoutRef.current) {
+      clearTimeout(clickPauseTimeoutRef.current);
       clickPauseTimeoutRef.current = null;
-    }, 5000);
+    }
   }
 
   function closePanel(restoreFocus = false) {
@@ -194,20 +231,114 @@ export function CompactStackMarquee({
     setPreviewKey(null);
     setPinnedKey(null);
     setIsClickPaused(false);
-    setIgnoreMarqueeHoverPause(Boolean(lastTriggerRef.current && marqueeViewportRef.current?.contains(lastTriggerRef.current)));
+    setIgnoreMarqueeHoverPause(false);
+
+    if (trackRef.current) {
+      trackRef.current.style.transform = "";
+      trackRef.current.style.animation = "";
+      trackRef.current.style.animationPlayState = "";
+    }
 
     if (clickPauseTimeoutRef.current) {
       clearTimeout(clickPauseTimeoutRef.current);
       clickPauseTimeoutRef.current = null;
     }
 
-    if (restoreFocus && returnKey) {
-      requestAnimationFrame(() => {
-        suppressFocusPreview.current = true;
-        (lastTriggerRef.current ?? buttonRefs.current.get(returnKey))?.focus({ preventScroll: true });
-        suppressFocusPreview.current = false;
-      });
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      if (marqueeViewportRef.current?.contains(document.activeElement)) {
+        document.activeElement.blur();
+      }
     }
+
+    if (restoreFocus && returnKey) {
+      suppressFocusPreview.current = true;
+      (lastTriggerRef.current ?? buttonRefs.current.get(returnKey))?.focus({ preventScroll: true });
+      setTimeout(() => {
+        suppressFocusPreview.current = false;
+      }, 200);
+    }
+  }
+
+  function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+    const touch = e.touches[0];
+    const track = trackRef.current;
+    const viewport = marqueeViewportRef.current;
+    if (!touch || !track || !viewport) return;
+
+    const trackRect = track.getBoundingClientRect();
+    const viewportRect = viewport.getBoundingClientRect();
+    const currentOffset = trackRect.left - viewportRect.left;
+
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      offset: currentOffset,
+    };
+    isDraggingRef.current = false;
+  }
+
+  function handleTouchMove(e: React.TouchEvent<HTMLDivElement>) {
+    if (!touchStartRef.current || !trackRef.current || !marqueeViewportRef.current) return;
+
+    const touch = e.touches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+
+    if (!isDraggingRef.current && Math.abs(deltaX) > 6 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      isDraggingRef.current = true;
+    }
+
+    if (isDraggingRef.current) {
+      const track = trackRef.current;
+      const groupWidth = groupRef.current?.clientWidth || (track.clientWidth / 2);
+      if (!groupWidth) return;
+
+      let newOffset = touchStartRef.current.offset + deltaX;
+      let wrapped = newOffset % groupWidth;
+      if (wrapped > 0) wrapped -= groupWidth;
+
+      track.style.transform = `translateX(${wrapped.toFixed(2)}px)`;
+      track.style.animationPlayState = "paused";
+    }
+  }
+
+  function handleTouchEnd() {
+    if (!touchStartRef.current || !trackRef.current) return;
+
+    if (isDraggingRef.current) {
+      const track = trackRef.current;
+      const groupWidth = groupRef.current?.clientWidth || (track.clientWidth / 2);
+
+      if (groupWidth && marqueeViewportRef.current) {
+        const trackRect = track.getBoundingClientRect();
+        const viewportRect = marqueeViewportRef.current.getBoundingClientRect();
+        const currentOffset = trackRect.left - viewportRect.left;
+        let wrapped = currentOffset % groupWidth;
+        if (wrapped > 0) wrapped -= groupWidth;
+
+        const progress = -wrapped / groupWidth;
+        const normalizedProgress = progress - Math.floor(progress);
+
+        setMarqueeDelay(`-${(marqueeDurationSeconds * normalizedProgress).toFixed(3)}s`);
+      }
+
+      if (!pinnedKey) {
+        track.style.transform = "";
+        track.style.animationPlayState = "";
+      } else {
+        track.style.animationPlayState = "paused";
+      }
+
+      suppressNextClickRef.current = true;
+      setTimeout(() => {
+        suppressNextClickRef.current = false;
+      }, 100);
+    }
+
+    touchStartRef.current = null;
+    isDraggingRef.current = false;
   }
 
   function renderItem(item: ProvenSkill, duplicate = false) {
@@ -245,7 +376,10 @@ export function CompactStackMarquee({
               if (!suppressFocusPreview.current) setPreviewKey(item.key);
             }
           }}
-          onClick={(event) => togglePinned(item, event.currentTarget)}
+          onClick={(event) => {
+            if (suppressNextClickRef.current) return;
+            togglePinned(item, event.currentTarget);
+          }}
           onKeyDown={(event) => !duplicate && handleItemKeyDown(event, item.index)}
         >
           <span className="stack-marquee-logo">
@@ -293,13 +427,17 @@ export function CompactStackMarquee({
             className="stack-marquee-viewport"
             data-paused={isClickPaused ? "true" : "false"}
             data-ignore-hover-pause={ignoreMarqueeHoverPause ? "true" : "false"}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
             onPointerEnter={() => {
               if (!isClickPaused) setIgnoreMarqueeHoverPause(false);
             }}
             style={{ "--stack-marquee-duration": duration, "--stack-marquee-delay": marqueeDelay } as CSSProperties}
           >
-            <div className="stack-marquee-track">
-              <ul className="stack-marquee-group" aria-label="Technologies with project proof">
+            <div ref={trackRef} className="stack-marquee-track">
+              <ul ref={groupRef} className="stack-marquee-group" aria-label="Technologies with project proof">
                 {provenSkills.map((item) => renderItem(item))}
               </ul>
               <ul className="stack-marquee-group stack-marquee-copy" aria-hidden="true">
@@ -360,17 +498,18 @@ export function CompactStackMarquee({
 
           <div id="stack-proof-disclosure" className={`stack-proof-disclosure ${activeItem ? "is-open" : ""}`}>
             <div className="stack-proof-disclosure-clip">
-              {activeItem ? (
+              {activeItem && currentProof ? (
               <article
                 className="stack-proof-card"
                 role="region"
                 aria-label={`${activeItem.skill.name} project proof`}
               >
                 <div className="stack-proof-media">
-                  {activeItem.image?.url || activeItem.image?.src ? (
+                  {currentImage?.url || currentImage?.src ? (
                     <Image
-                      src={activeItem.image.url ?? activeItem.image.src ?? ""}
-                      alt={activeItem.image.alt || `${activeItem.proof.title} proof`}
+                      key={currentImage.url ?? currentImage.src}
+                      src={currentImage.url ?? currentImage.src ?? ""}
+                      alt={currentImage.alt || `${currentProof.title} proof`}
                       fill
                       sizes="(min-width: 768px) 34vw, 100vw"
                       className="object-contain p-5"
@@ -380,31 +519,56 @@ export function CompactStackMarquee({
                       <span className="stack-marquee-logo stack-proof-fallback-logo">
                         <TechLogo name={activeItem.skill.name} iconName={activeItem.skill.iconName} />
                       </span>
-                      <p>{activeItem.proof.title}</p>
+                      <p>{currentProof.title}</p>
                     </div>
                   )}
                 </div>
 
                 <div className="stack-proof-copy">
-                  <button type="button" className="stack-proof-close" onClick={() => closePanel(true)} aria-label="Close stack proof">
+                  <button type="button" className="stack-proof-close" onClick={() => closePanel(false)} aria-label="Close stack proof">
                     <X size={18} aria-hidden="true" />
                   </button>
-                  <p className="stack-proof-kicker">{activeItem.skill.category} / {activeItem.skill.name}</p>
-                  <h3>{activeItem.proof.title}</h3>
-                  {activeItem.proof.project ? (
+                  <div className="flex flex-wrap items-center gap-2 pr-12">
+                    <p className="stack-proof-kicker">{activeItem.skill.category} / {activeItem.skill.name}</p>
+                    {activeItem.proofs.length > 1 ? (
+                      <div className="stack-proof-carousel-nav" aria-label="Cycle project proofs">
+                        <span className="stack-proof-carousel-counter">
+                          Proof {activeProofIndex + 1} of {activeItem.proofs.length}
+                        </span>
+                        <button
+                          type="button"
+                          className="stack-proof-carousel-btn"
+                          onClick={() => setActiveProofIndex((prev) => (prev - 1 + activeItem.proofs.length) % activeItem.proofs.length)}
+                          aria-label="Previous proof"
+                        >
+                          <ChevronLeft size={13} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="stack-proof-carousel-btn"
+                          onClick={() => setActiveProofIndex((prev) => (prev + 1) % activeItem.proofs.length)}
+                          aria-label="Next proof"
+                        >
+                          <ChevronRight size={13} aria-hidden="true" />
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                  <h3>{currentProof.title}</h3>
+                  {currentProof.project ? (
                     <p className="stack-proof-context">
-                      {activeItem.proof.project.title}
-                      {activeItem.proof.project.role || activeItem.proof.project.type ? ` / ${activeItem.proof.project.role ?? activeItem.proof.project.type}` : ""}
+                      {currentProof.project.title}
+                      {currentProof.project.role || currentProof.project.type ? ` / ${currentProof.project.role ?? currentProof.project.type}` : ""}
                     </p>
                   ) : null}
-                  <p className="stack-proof-description">{activeItem.proof.description}</p>
-                  {activeItem.proof.highlights?.length ? (
+                  <p className="stack-proof-description">{currentProof.description}</p>
+                  {currentProof.highlights?.length ? (
                     <ul className="stack-proof-highlights" aria-label="Proof highlights">
-                      {activeItem.proof.highlights.slice(0, 3).map((highlight) => <li key={highlight}>{highlight}</li>)}
+                      {currentProof.highlights.slice(0, 3).map((highlight) => <li key={highlight}>{highlight}</li>)}
                     </ul>
                   ) : null}
-                  {activeItem.proof.project?.slug ? (
-                    <Link href={`/works/${activeItem.proof.project.slug}`} className="site-link stack-proof-link">
+                  {currentProof.project?.slug ? (
+                    <Link href={`/works/${currentProof.project.slug}`} className="site-link stack-proof-link">
                       View project details
                       <ArrowUpRight size={16} aria-hidden="true" />
                     </Link>

@@ -479,7 +479,7 @@ a {
   z-index: 1;
   content: "";
   pointer-events: none;
-  background: url("/images/yumesh-office-coding-dot-art.svg") center 52% / cover no-repeat;
+  background: url("/images/yumesh-office-coding-dot-art.avif") center 52% / cover no-repeat;
   filter: blur(14px) saturate(0.8) brightness(0.9);
   opacity: 0.32;
   mix-blend-mode: screen;
@@ -501,30 +501,14 @@ a {
     radial-gradient(ellipse 36% 56% at 100% 10%, rgb(11 11 12 / 0.92) 0%, rgb(11 11 12 / 0.58) 38%, transparent 78%);
 }
 
-.about-portrait-hover-grid {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  pointer-events: none;
-  background-image: radial-gradient(circle, rgb(155 181 238 / 0.72) 0 0.8px, transparent 1px);
-  background-size: 6px 6px;
-  opacity: 0;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 22%, #000 100%), linear-gradient(to right, transparent 0%, #000 18%, #000 82%, transparent 100%), radial-gradient(ellipse 78% 74% at 53% 46%, #000 42%, rgb(0 0 0 / 0.9) 64%, transparent 100%);
-  -webkit-mask-composite: source-in, source-in;
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 22%, #000 100%), linear-gradient(to right, transparent 0%, #000 18%, #000 82%, transparent 100%), radial-gradient(ellipse 78% 74% at 53% 46%, #000 42%, rgb(0 0 0 / 0.9) 64%, transparent 100%);
-  mask-composite: intersect, intersect;
-}
-
-.about-portrait-stage:hover .about-office-image {
+.about-portrait-stage:hover .about-office-image,
+.about-portrait-stage.is-active .about-office-image {
   opacity: 0.12;
 }
 
-.about-portrait-stage:hover .about-office-original-image {
+.about-portrait-stage:hover .about-office-original-image,
+.about-portrait-stage.is-active .about-office-original-image {
   opacity: 0.96;
-}
-
-.about-portrait-stage:hover .about-portrait-hover-grid {
-  animation: about-pixel-pulse 1600ms ease both;
 }
 
 .about-portrait-scrim {
@@ -732,24 +716,6 @@ a {
   }
 }
 
-@keyframes about-pixel-pulse {
-  0% {
-    opacity: 0;
-  }
-
-  18% {
-    opacity: 0.5;
-  }
-
-  74% {
-    opacity: 0.2;
-  }
-
-  100% {
-    opacity: 0;
-  }
-}
-
 @keyframes about-section-enter {
   from {
     opacity: 0.3;
@@ -773,17 +739,18 @@ a {
   .about-manifesto-detail,
   .about-proof-shelf-detail,
   .about-office-image,
-  .about-office-original-image,
-  .about-portrait-hover-grid {
+  .about-office-original-image {
     animation: none;
     transition: none;
   }
 
-  .about-portrait-stage:hover .about-office-image {
+  .about-portrait-stage:hover .about-office-image,
+  .about-portrait-stage.is-active .about-office-image {
     opacity: 0.12;
   }
 
-  .about-portrait-stage:hover .about-office-original-image {
+  .about-portrait-stage:hover .about-office-original-image,
+  .about-portrait-stage.is-active .about-office-original-image {
     opacity: 0.96;
   }
 }
@@ -1054,6 +1021,9 @@ a {
     max-width: 54rem;
     overflow: hidden;
     mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
+    touch-action: pan-y pinch-zoom;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .compact-stack-mosaic {
@@ -1068,7 +1038,10 @@ a {
     will-change: transform;
   }
 
-  .stack-marquee-viewport[data-paused="true"] .stack-marquee-track,
+  .stack-marquee-viewport[data-paused="true"] .stack-marquee-track {
+    animation: none !important;
+  }
+
   .stack-marquee-viewport[data-ignore-hover-pause="false"]:hover .stack-marquee-track,
   .stack-marquee-viewport[data-ignore-hover-pause="false"]:focus-within .stack-marquee-track {
     animation-play-state: paused;
@@ -1273,12 +1246,50 @@ a {
 
   .stack-proof-kicker {
     flex-shrink: 0;
-    padding-right: 3rem;
     color: #84a4e7;
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
+  }
+
+  .stack-proof-carousel-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.04);
+  }
+
+  .stack-proof-carousel-counter {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: rgb(255 255 255 / 0.75);
+    padding: 0 0.2rem;
+    user-select: none;
+  }
+
+  .stack-proof-carousel-btn {
+    display: inline-grid;
+    width: 1.35rem;
+    height: 1.35rem;
+    place-items: center;
+    border-radius: 9999px;
+    border: 1px solid rgb(255 255 255 / 0.15);
+    background: rgb(255 255 255 / 0.06);
+    color: rgb(255 255 255 / 0.8);
+    transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  }
+
+  .stack-proof-carousel-btn:hover,
+  .stack-proof-carousel-btn:focus-visible {
+    background: rgb(132 164 231 / 0.2);
+    border-color: rgb(132 164 231 / 0.6);
+    color: #fff;
   }
 
   .stack-proof-copy h3 {
@@ -1514,7 +1525,7 @@ a {
     position: absolute;
     left: -30rem;
     top: calc(50% - 2.4rem);
-    z-index: 0;
+    z-index: 2;
     width: 28.8rem;
     height: 28.8rem;
     translate: 0 -50%;
@@ -1523,7 +1534,7 @@ a {
   .stack-dial-visual {
     position: absolute;
     inset: 0;
-    clip-path: inset(0 0 0 50%);
+    clip-path: inset(0 -0.5rem 0 50%);
   }
 
   .stack-dial-labels {
@@ -1664,10 +1675,6 @@ a {
     }
   }
 
-  .hero-portrait-stage {
-    overflow: clip;
-  }
-
   .hero-portrait-ring {
     translate: -50% 0;
     scale: 1;
@@ -1684,7 +1691,8 @@ a {
       bottom 350ms ease;
   }
 
-  .hero-portrait-stage:hover .hero-portrait-ring {
+  .hero-portrait-stage:hover .hero-portrait-ring,
+  .hero-portrait-stage.is-active .hero-portrait-ring {
     translate: -50% 0;
     scale: 1.08;
     border-color: rgba(255, 255, 255, 0.76);
@@ -1708,7 +1716,7 @@ a {
   }
 
   .hero-portrait-symbol-left {
-    left: max(-6rem, calc(50% - 21rem));
+    left: 0;
     top: clamp(2.75rem, 9vw, 5.5rem);
   }
 
@@ -1719,6 +1727,10 @@ a {
   }
 
   @media (min-width: 1024px) {
+    .hero-portrait-symbol-left {
+      left: max(-6rem, calc(50% - 21rem));
+    }
+
     .hero-portrait-symbol-right {
       right: auto;
       left: calc(50% + 15rem);
@@ -1726,7 +1738,8 @@ a {
     }
   }
 
-  .hero-portrait-stage:hover .hero-portrait-symbol {
+  .hero-portrait-stage:hover .hero-portrait-symbol,
+  .hero-portrait-stage.is-active .hero-portrait-symbol {
     color: rgba(255, 255, 255, 0.58);
     animation: none;
     transform: translateX(0);
@@ -1763,7 +1776,8 @@ a {
     );
   }
 
-  .hero-portrait-stage:hover .hero-portrait-image {
+  .hero-portrait-stage:hover .hero-portrait-image,
+  .hero-portrait-stage.is-active .hero-portrait-image {
     filter: grayscale(0) saturate(1) drop-shadow(0 30px 84px rgba(255, 255, 255, 0.46));
   }
 

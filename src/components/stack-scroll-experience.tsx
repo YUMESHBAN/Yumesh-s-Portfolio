@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -46,6 +46,8 @@ export function StackScrollExperience({
   const leftRailRef = useRef<HTMLDivElement>(null);
   const requestedProofIndexRef = useRef<number | null>(null);
   const [activeProofIndex, setActiveProofIndex] = useState(0);
+  const [pendingProofIndex, setPendingProofIndex] = useState<number | null>(null);
+  const [subProofIndexes, setSubProofIndexes] = useState<Record<string, number>>({});
   const [isZoomed, setIsZoomed] = useState(false);
   const isDial = variant === "dial";
 
@@ -102,6 +104,28 @@ export function StackScrollExperience({
     setActiveProofIndex(index);
   }
 
+  const scrollTo = useCallback((id: string) => {
+    const target = document.getElementById(id);
+
+    if (!target) return;
+
+    const headerOffset = 216;
+    const top = window.scrollY + target.getBoundingClientRect().top - headerOffset;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReducedMotion) {
+      const previousScrollBehavior = document.documentElement.style.scrollBehavior;
+      document.documentElement.style.scrollBehavior = "auto";
+      window.scrollTo({ top, behavior: "auto" });
+      requestAnimationFrame(() => {
+        document.documentElement.style.scrollBehavior = previousScrollBehavior;
+      });
+      return;
+    }
+
+    window.scrollTo({ top, behavior: "smooth" });
+  }, []);
+
   useLayoutEffect(() => {
     const root = rootRef.current;
     const leftRail = leftRailRef.current;
@@ -112,6 +136,26 @@ export function StackScrollExperience({
 
     const context = gsap.context(() => {
       const media = gsap.matchMedia();
+
+      media.add("(prefers-reduced-motion: no-preference)", () => {
+        const sections = gsap.utils.toArray<HTMLElement>("[data-stack-proof]", root);
+        const triggers = sections.map((section, index) =>
+          ScrollTrigger.create({
+            trigger: section,
+            start: "top 60%",
+            end: "bottom 40%",
+            onToggle: (self) => {
+              if (self.isActive) {
+                activateProof(index);
+              }
+            },
+          }),
+        );
+
+        return () => {
+          triggers.forEach((trigger) => trigger.kill());
+        };
+      });
 
       media.add("(min-width: 1280px) and (prefers-reduced-motion: no-preference)", () => {
         const sections = gsap.utils.toArray<HTMLElement>("[data-stack-proof]", root);
@@ -125,15 +169,6 @@ export function StackScrollExperience({
           pinSpacing: false,
           invalidateOnRefresh: true,
         });
-        const triggers = sections.map((section, index) =>
-          ScrollTrigger.create({
-            trigger: section,
-            start: "top center",
-            end: "bottom center",
-            onEnter: () => activateProof(index),
-            onEnterBack: () => activateProof(index),
-          }),
-        );
 
         const entrance = isDial
           ? gsap.fromTo(
@@ -175,7 +210,6 @@ export function StackScrollExperience({
           entrance?.kill();
           proofTransitions.forEach((animation) => animation.kill());
           pin.kill();
-          triggers.forEach((trigger) => trigger.kill());
         };
       });
 
@@ -185,24 +219,40 @@ export function StackScrollExperience({
     return () => context.revert();
   }, [isDial, proofs.length]);
 
-  function scrollTo(id: string) {
-    const target = document.getElementById(id);
+  useLayoutEffect(() => {
+    if (pendingProofIndex === null) {
+      return;
+    }
 
-    if (!target) return;
+    const requestedProof = proofs[pendingProofIndex];
 
-    const headerOffset = 96;
-    window.scrollTo({
-      top: window.scrollY + target.getBoundingClientRect().top - headerOffset,
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    if (requestedProof) {
+      scrollTo(requestedProof.id);
+    }
+
+    requestAnimationFrame(() => {
+      setPendingProofIndex((current) => (current === pendingProofIndex ? null : current));
     });
-  }
+  }, [pendingProofIndex, proofs, scrollTo]);
 
   function showProof(proof: Proof) {
     const proofIndex = Math.max(0, proofs.indexOf(proof));
 
     requestedProofIndexRef.current = proofIndex;
+    setPendingProofIndex(proofIndex);
     setActiveProofIndex(proofIndex);
-    scrollTo(proof.id);
+  }
+
+  function selectCategory(category: CategoryData) {
+    const target = proofs.find((proof) => proof.category.title === category.title);
+
+    if (target) {
+      const proofIndex = Math.max(0, proofs.indexOf(target));
+      requestedProofIndexRef.current = proofIndex;
+      setActiveProofIndex(proofIndex);
+    }
+
+    scrollTo("stack-category-header");
   }
 
   if (!categoryData.length || !proofs.length || !activeCategory) {
@@ -211,179 +261,226 @@ export function StackScrollExperience({
 
   return (
     <section ref={rootRef} className={`site-section ${isDial ? "overflow-x-clip xl:py-0" : ""}`} aria-labelledby="stack-scroll-title" data-stack-dial-section={isDial ? "" : undefined}>
-      <div className={isDial ? "site-container xl:grid xl:grid-cols-[minmax(0,0.58fr)_minmax(0,1.42fr)] xl:gap-8" : "site-container lg:grid lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.28fr)] lg:gap-12"}>
-        <div ref={leftRailRef} className={`relative min-w-0 self-start pb-10 ${isDial ? "xl:min-h-[calc(100vh-6rem)] xl:pl-12 xl:pt-3" : "lg:pb-0 lg:pt-1"}`}>
-          {isDial ? (
-            <div data-stack-dial-shell className={`stack-dial-shell hidden transition-opacity duration-300 ease-out xl:block ${isZoomed ? "pointer-events-none !opacity-0" : "!opacity-100"}`} aria-hidden={isZoomed}>
-              <div className="stack-dial-visual" aria-hidden="true">
-                <div className="stack-dial-indicator" style={{ "--stack-dial-sweep": dialSweep, "--stack-dial-angle": dialAngle } as CSSProperties}>
-                  <span className="stack-dial-active-arc" />
-                  <span className="stack-dial-active-dot" />
-                </div>
-                <div className="stack-dial-wheel">
-                  <span className="stack-dial-ring stack-dial-ring-outer" />
-                  <span className="stack-dial-ring stack-dial-ring-inner" />
-                  <span className="stack-dial-ring stack-dial-ring-ticks" />
-                </div>
-              </div>
-              <div className="stack-dial-labels">
-                {categoryData.map((category, index) => {
-                  const target = proofs.find((proof) => proof.category.title === category.title);
-                  const selected = index === activeCategoryIndex;
-                  const angle = -52 + index * dialStep;
-
-                  return (
-                    <button
-                      key={category.title}
-                      type="button"
-                      onClick={() => target && showProof(target)}
-                      className={`stack-dial-item ${selected ? "is-active" : ""}`}
-                      style={{ "--stack-dial-angle": `${angle}deg` } as CSSProperties}
-                      aria-current={selected ? "true" : undefined}
-                      aria-label={`Show ${category.title} stack`}
-                    >
-                      <span>{category.title}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
-          <div className={isDial ? "xl:relative xl:-left-6 xl:max-w-[22rem]" : ""}>
-            <p className="site-eyebrow">Current stack</p>
-            <div className={`mt-6 flex flex-wrap gap-2 ${isDial ? "xl:hidden" : ""}`} aria-label="Stack categories">
-            {categoryData.map((category, index) => {
-              const target = proofs.find((proof) => proof.category.title === category.title);
+      <div className="site-container">
+        {/* Persistent Sticky Category Pill Nav Bar across entire section - positioned at top-[108px] for generous spacing below header */}
+        <div className={`sticky top-[108px] z-30 mb-6 rounded-xl border border-white/12 bg-[#090a0f]/92 p-3 backdrop-blur-xl shadow-[0_12px_28px_rgba(0,0,0,0.45)] ${isDial ? "xl:hidden" : ""}`} aria-label="Stack categories">
+          <div className="flex flex-wrap items-center gap-2">
+            {categoryData.map((category) => {
               const selected = normalise(category.title) === normalise(activeCategory.title);
 
               return (
                 <button
                   key={category.title}
                   type="button"
-                  onClick={() => target && showProof(target)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${selected ? "border-blue-300/50 bg-blue-300/10 text-blue-100" : "border-white/10 text-white/45 hover:border-white/30 hover:text-white/80"}`}
+                  onClick={() => selectCategory(category)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                    selected
+                      ? "border-blue-400/60 bg-blue-500/20 text-blue-100 shadow-[0_0_12px_rgba(96,165,250,0.3)]"
+                      : "border-white/10 text-white/50 hover:border-white/30 hover:text-white/90"
+                  }`}
                 >
-                  {String(index + 1).padStart(2, "0")} {category.title}
+                  {String(categoryData.indexOf(category) + 1).padStart(2, "0")} {category.title}
                 </button>
               );
             })}
-            </div>
-            <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">{activeCategory.label ?? "Current capability"}</p>
-            <h2 id="stack-scroll-title" className={`max-w-md text-5xl font-semibold leading-[0.88] tracking-[-0.07em] text-white sm:text-6xl ${isDial ? "mt-6 xl:text-[3.75rem]" : "mt-3 lg:text-7xl"}`}>
-              {activeCategory.title.toLocaleUpperCase()}
-            </h2>
-            <p className="site-muted mt-6 max-w-sm leading-7">{activeCategory.description}</p>
-
-            <div className={`${isDial ? "mt-7 xl:max-w-[19rem]" : "mt-9"} border-y border-white/10`}>
-              {activeCategory.skills.map((skill) => {
-                const target = proofs.find((proof) => sameSkill(skill, proof.showcase.skill));
-                const selected = activeSkill ? sameSkill(skill, activeSkill) : false;
-
-                return (
-                  <button
-                    key={`${skill.category}-${skill.name}`}
-                    type="button"
-                    disabled={!target}
-                    onClick={() => target && showProof(target)}
-                    className={`group -mx-2 flex w-[calc(100%+1rem)] items-center justify-between gap-4 rounded-lg border-b border-white/10 px-2 ${isDial ? "py-2.5" : "py-3"} text-left last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400/70 disabled:cursor-not-allowed disabled:opacity-35 ${selected ? "bg-blue-300/[0.06] text-blue-100" : "text-white/60 hover:bg-white/[0.035] hover:text-white"}`}
-                    aria-label={target ? `View ${skill.name} proof` : `${skill.name} has no proof yet`}
-                  >
-                    <span className="flex min-w-0 items-center gap-3">
-                      <TechLogo name={skill.name} iconName={skill.iconName} />
-                      <span className="truncate text-sm font-semibold tracking-[-0.02em]">{skill.name}</span>
-                    </span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      <ArrowUpRight className={`size-4 transition-transform duration-300 motion-reduce:transition-none ${selected ? "text-blue-300" : "text-white/30 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-blue-300"}`} aria-hidden="true" />
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {!isDial ? (
-              <Link href="/about" className="site-link mt-7 inline-flex items-center gap-2 text-sm font-semibold">
-                Explore the full skill map
-                <ArrowUpRight size={16} aria-hidden="true" />
-              </Link>
-            ) : null}
           </div>
         </div>
 
-        <div className={`min-w-0 space-y-12 lg:space-y-0 ${isDial ? "xl:w-full xl:pl-5" : ""}`}>
-          {proofs.map((proof, index) => {
-            const { showcase } = proof;
-            const image: ImageWithMeta | undefined = showcase.image ?? showcase.project?.featuredImage ?? proof.category.image;
-            const isActive = index === activeProofIndex;
-
-            return (
-              <article
-                key={proof.id}
-                id={proof.id}
-                data-stack-proof
-                className={`scroll-mt-24 relative flex min-h-[calc(100svh-6rem)] ${isDial ? "items-start xl:min-h-[37rem] xl:border-b xl:border-white/10 xl:pb-0 xl:pt-[27px]" : "items-center border-t border-white/10 py-10 first:border-t-0 lg:py-16"} ${isDial ? (isActive ? "opacity-100 transition-opacity duration-200" : "pointer-events-none opacity-0 transition-opacity duration-200") : isActive ? "opacity-100" : "opacity-55"}`}
-              >
-                <div data-stack-proof-inner className="w-full transition-[opacity,transform] duration-500 motion-reduce:transition-none">
-                  <div className={`flex items-center justify-between gap-4 text-xs font-semibold uppercase tracking-[0.15em] text-blue-200/75 ${isDial ? "xl:hidden" : ""}`}>
-                    <span>{proof.category.label ?? proof.category.title} / {proof.skill.name}</span>
-                    <span className="text-white/35">{String(index + 1).padStart(2, "0")}</span>
+        <div className={isDial ? "xl:grid xl:grid-cols-[minmax(0,0.58fr)_minmax(0,1.42fr)] xl:gap-8" : "lg:grid lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.28fr)] lg:gap-12"}>
+          <div ref={leftRailRef} className={`relative min-w-0 self-start pb-10 ${isDial ? "xl:min-h-[calc(100vh-6rem)] xl:pl-12 xl:pt-3" : "lg:pb-0 lg:pt-1"}`}>
+            {isDial ? (
+              <div data-stack-dial-shell className={`stack-dial-shell hidden transition-opacity duration-300 ease-out xl:block ${isZoomed ? "pointer-events-none !opacity-0" : "!opacity-100"}`} aria-hidden={isZoomed}>
+                <div className="stack-dial-visual" aria-hidden="true">
+                  <div className="stack-dial-indicator" style={{ "--stack-dial-sweep": dialSweep, "--stack-dial-angle": dialAngle } as CSSProperties}>
+                    <span className="stack-dial-active-arc" />
+                    <span className="stack-dial-active-dot" />
                   </div>
-                  {isDial ? (
-                    <div className="bg-[#08090d]">
-                      <div className="xl:grid xl:min-h-[31rem] xl:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]">
-                        <div className="border-b border-white/10 xl:flex xl:flex-col xl:border-b-0 xl:border-r">
-                          <div className="relative min-h-60 bg-black/25 p-4 sm:min-h-72 sm:p-5 xl:min-h-0 xl:flex-1">
-                            {showcase.demoVideoUrl ? (
-                              <video className="h-full w-full object-contain" controls preload="metadata" src={showcase.demoVideoUrl} />
-                            ) : image?.url || image?.src ? (
-                              <Image src={image.url ?? image.src ?? ""} alt={image.alt || `${showcase.title} proof`} fill sizes="(min-width: 1280px) 26vw, 100vw" className="object-contain p-4 sm:p-5" onLoad={() => ScrollTrigger.refresh()} />
-                            ) : (
-                              <div className="flex h-full flex-col justify-between p-5">
-                                <span className="font-mono text-xs uppercase tracking-[0.16em] text-blue-200/70">{proof.skill.name} proof</span>
-                                <p className="max-w-sm text-2xl font-semibold tracking-[-0.05em] text-white">{showcase.title}</p>
-                              </div>
-                            )}
-                          </div>
-                          {showcase.highlights?.length ? <ul aria-label="What I delivered" className="space-y-3 border-t border-white/10 px-6 py-7 text-sm leading-6 text-white/65 sm:px-8">{showcase.highlights.slice(0, 3).map((highlight) => <li key={highlight} className="flex gap-3"><span className="text-blue-300">•</span>{highlight}</li>)}</ul> : null}
-                        </div>
-                        <div className="flex min-w-0 flex-col p-6 sm:p-8 xl:p-7">
-                          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-300">{proof.skill.name} / What I built</p>
-                          <h3 className="mt-3 text-3xl font-semibold leading-[0.98] tracking-[-0.05em] text-white">{showcase.title}</h3>
-                          {showcase.project ? <div className="mt-6"><p className="text-[0.625rem] font-bold uppercase tracking-[0.14em] text-white/35">Project context</p><p className="mt-2 text-sm font-semibold text-white">{showcase.project.title}</p><p className="mt-1 text-xs text-white/45">{showcase.project.role ?? showcase.project.type}</p></div> : null}
-                          <p className="mt-8 text-sm leading-7 text-white/60">{showcase.description}</p>
-                          {showcase.project ? <Link href={`/works/${showcase.project.slug}`} className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-blue-300 transition hover:text-blue-200">View project details<ArrowUpRight size={16} aria-hidden="true" /></Link> : null}
-                        </div>
-                      </div>
-                      <div className="border-t border-white/10 px-6 py-5 sm:px-8">
-                        {showcase.project?.techStack?.length ? <div className="flex flex-wrap gap-2">{showcase.project.techStack.slice(0, 5).map((item) => <span key={item} className="site-chip px-3 py-1.5 text-xs">{item}</span>)}</div> : null}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-5 overflow-hidden rounded-lg border border-white/10 bg-[#08090d]">
-                      <div className="relative min-h-72 border-b border-white/10 bg-black/25 sm:min-h-96">
-                        {showcase.demoVideoUrl ? (
-                          <video className="h-full min-h-72 w-full object-contain sm:min-h-96" controls preload="metadata" src={showcase.demoVideoUrl} />
-                        ) : image?.url || image?.src ? (
-                          <Image src={image.url ?? image.src ?? ""} alt={image.alt || `${showcase.title} proof`} fill sizes="(min-width: 1024px) 52vw, 100vw" className="object-contain p-5" onLoad={() => ScrollTrigger.refresh()} />
-                        ) : (
-                          <div className="flex h-full min-h-72 flex-col justify-between p-7 sm:min-h-96 sm:p-9">
-                            <span className="font-mono text-xs uppercase tracking-[0.16em] text-blue-200/70">{proof.skill.name}</span>
-                            <p className="max-w-lg text-3xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">{showcase.title}</p>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-6 sm:p-8">
-                        <p className="text-sm font-medium text-blue-200/70">{showcase.project?.role ?? showcase.project?.type ?? proof.skill.name}</p>
-                        <h3 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">{showcase.title}</h3>
-                        <p className="mt-4 max-w-2xl text-sm leading-7 text-white/60">{showcase.description}</p>
-                        {showcase.highlights?.length ? <div className="mt-6 flex flex-wrap gap-2">{showcase.highlights.map((highlight) => <span key={highlight} className="site-chip">{highlight}</span>)}</div> : null}
-                        {showcase.project ? <Link href={`/works/${showcase.project.slug}`} className="site-link mt-7 inline-flex items-center gap-2 text-sm font-semibold">View {showcase.project.title}<ArrowUpRight size={16} aria-hidden="true" /></Link> : null}
-                      </div>
-                    </div>
-                  )}
+                  <div className="stack-dial-wheel">
+                    <span className="stack-dial-ring stack-dial-ring-outer" />
+                    <span className="stack-dial-ring stack-dial-ring-inner" />
+                    <span className="stack-dial-ring stack-dial-ring-ticks" />
+                  </div>
                 </div>
-              </article>
-            );
-          })}
+                <div className="stack-dial-labels">
+                  {categoryData.map((category, index) => {
+                    const selected = index === activeCategoryIndex;
+                    const angle = -52 + index * dialStep;
+
+                    return (
+                      <button
+                        key={category.title}
+                        type="button"
+                        onClick={() => selectCategory(category)}
+                        className={`stack-dial-item ${selected ? "is-active" : ""}`}
+                        style={{ "--stack-dial-angle": `${angle}deg` } as CSSProperties}
+                        aria-current={selected ? "true" : undefined}
+                        aria-label={`Show ${category.title} stack`}
+                      >
+                        <span>{category.title}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+            <div id="stack-category-header" className={`scroll-mt-56 ${isDial ? "xl:relative xl:-left-6 xl:max-w-[22rem]" : ""}`}>
+              <p className="site-eyebrow">Current stack</p>
+              <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">{activeCategory.label ?? "Current capability"}</p>
+              <h2 id="stack-scroll-title" className={`max-w-md text-5xl font-semibold leading-[0.88] tracking-[-0.07em] text-white sm:text-6xl ${isDial ? "mt-6 xl:text-[3.75rem]" : "mt-3 lg:text-7xl"}`}>
+                {activeCategory.title.toLocaleUpperCase()}
+              </h2>
+              <p className="site-muted mt-6 max-w-sm leading-7">{activeCategory.description}</p>
+
+              <div className={`${isDial ? "mt-7 xl:max-w-[19rem]" : "mt-9"} border-y border-white/10`}>
+                {activeCategory.skills.map((skill) => {
+                  const target = proofs.find((proof) => sameSkill(skill, proof.showcase.skill));
+                  const selected = activeSkill ? sameSkill(skill, activeSkill) : false;
+
+                  return (
+                    <button
+                      key={`${skill.category}-${skill.name}`}
+                      type="button"
+                      disabled={!target}
+                      onClick={() => target && showProof(target)}
+                      className={`group -mx-2 flex w-[calc(100%+1rem)] items-center justify-between gap-4 rounded-lg border-b border-white/10 px-2 ${isDial ? "py-2.5" : "py-3"} text-left last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400/70 disabled:cursor-not-allowed disabled:opacity-35 ${selected ? "bg-blue-300/[0.06] text-blue-100" : "text-white/60 hover:bg-white/[0.035] hover:text-white"}`}
+                      aria-label={target ? `View ${skill.name} proof` : `${skill.name} has no proof yet`}
+                    >
+                      <span className="flex min-w-0 items-center gap-3">
+                        <TechLogo name={skill.name} iconName={skill.iconName} />
+                        <span className="truncate text-sm font-semibold tracking-[-0.02em]">{skill.name}</span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-2">
+                        <ArrowUpRight className={`size-4 transition-transform duration-300 motion-reduce:transition-none ${selected ? "text-blue-300" : "text-white/30 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-blue-300"}`} aria-hidden="true" />
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {!isDial ? (
+                <Link href="/about" className="site-link mt-7 inline-flex items-center gap-2 text-sm font-semibold">
+                  Explore the full skill map
+                  <ArrowUpRight size={16} aria-hidden="true" />
+                </Link>
+              ) : null}
+            </div>
+          </div>
+
+          <div className={`min-w-0 space-y-12 lg:space-y-0 ${isDial ? "xl:w-full xl:pl-5" : ""}`}>
+            {proofs.map((proof, index) => {
+              const skillProofs = showcases.filter((s) => sameSkill(proof.skill, s.skill));
+              const subIndex = subProofIndexes[proof.id] ?? 0;
+              const showcase = skillProofs[subIndex] ?? proof.showcase;
+              const image: ImageWithMeta | undefined = showcase.image ?? showcase.project?.featuredImage ?? proof.category.image;
+              const isActive = index === activeProofIndex;
+
+              return (
+                <article
+                  key={proof.id}
+                  id={proof.id}
+                  data-stack-proof
+                  className={`scroll-mt-56 relative flex ${
+                    isDial
+                      ? "min-h-0 items-start border-t border-white/10 py-6 first:border-t-0 sm:py-10 xl:min-h-[37rem] xl:border-b xl:border-t-0 xl:pb-0 xl:pt-[27px]"
+                      : "items-center border-t border-white/10 py-10 first:border-t-0 lg:py-16"
+                  } ${
+                    isDial
+                      ? isActive
+                        ? "opacity-100 transition-opacity duration-200"
+                        : "opacity-85 transition-opacity duration-200 xl:pointer-events-none xl:opacity-0"
+                      : isActive
+                        ? "opacity-100"
+                        : "opacity-55"
+                  }`}
+                >
+                  <div data-stack-proof-inner className="w-full transition-[opacity,transform] duration-500 motion-reduce:transition-none">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.15em] text-blue-200/75">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span>{proof.category.label ?? proof.category.title} / {proof.skill.name}</span>
+                        {skillProofs.length > 1 ? (
+                          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[11px] font-medium tracking-normal text-white/80">
+                            <span>Proof {subIndex + 1} of {skillProofs.length}</span>
+                            <div className="flex items-center border-l border-white/10 pl-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setSubProofIndexes((prev) => ({ ...prev, [proof.id]: (subIndex - 1 + skillProofs.length) % skillProofs.length }))}
+                                className="rounded p-0.5 transition hover:bg-white/10 hover:text-white"
+                                aria-label="Previous proof"
+                              >
+                                <ChevronLeft size={13} aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSubProofIndexes((prev) => ({ ...prev, [proof.id]: (subIndex + 1) % skillProofs.length }))}
+                                className="rounded p-0.5 transition hover:bg-white/10 hover:text-white"
+                                aria-label="Next proof"
+                              >
+                                <ChevronRight size={13} aria-hidden="true" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                      <span className={`text-white/35 ${isDial ? "xl:hidden" : ""}`}>{String(index + 1).padStart(2, "0")}</span>
+                    </div>
+                    {isDial ? (
+                      <div className="rounded-xl border border-white/10 bg-[#08090d] xl:rounded-none xl:border-0">
+                        <div className="xl:grid xl:min-h-[31rem] xl:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]">
+                          <div className="border-b border-white/10 xl:flex xl:flex-col xl:border-b-0 xl:border-r">
+                            <div className="relative min-h-60 bg-black/25 p-4 sm:min-h-72 sm:p-5 xl:min-h-0 xl:flex-1">
+                              {showcase.demoVideoUrl ? (
+                                <video className="h-full w-full object-contain" controls preload="metadata" src={showcase.demoVideoUrl} />
+                              ) : image?.url || image?.src ? (
+                                <Image src={image.url ?? image.src ?? ""} alt={image.alt || `${showcase.title} proof`} fill sizes="(min-width: 1280px) 26vw, 100vw" className="object-contain p-4 sm:p-5" onLoad={() => ScrollTrigger.refresh()} />
+                              ) : (
+                                <div className="flex h-full flex-col justify-between p-5">
+                                  <span className="font-mono text-xs uppercase tracking-[0.16em] text-blue-200/70">{proof.skill.name} proof</span>
+                                  <p className="max-w-sm text-2xl font-semibold tracking-[-0.05em] text-white">{showcase.title}</p>
+                                </div>
+                              )}
+                            </div>
+                            {showcase.highlights?.length ? <ul aria-label="What I delivered" className="space-y-3 border-t border-white/10 px-6 py-7 text-sm leading-6 text-white/65 sm:px-8">{showcase.highlights.slice(0, 3).map((highlight) => <li key={highlight} className="flex gap-3"><span className="text-blue-300">•</span>{highlight}</li>)}</ul> : null}
+                          </div>
+                          <div className="flex min-w-0 flex-col p-6 sm:p-8 xl:p-7">
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-300">{proof.skill.name} / What I built</p>
+                            <h3 className="mt-3 text-3xl font-semibold leading-[0.98] tracking-[-0.05em] text-white">{showcase.title}</h3>
+                            {showcase.project ? <div className="mt-6"><p className="text-[0.625rem] font-bold uppercase tracking-[0.14em] text-white/35">Project context</p><p className="mt-2 text-sm font-semibold text-white">{showcase.project.title}</p><p className="mt-1 text-xs text-white/45">{showcase.project.role ?? showcase.project.type}</p></div> : null}
+                            <p className="mt-8 text-sm leading-7 text-white/60">{showcase.description}</p>
+                            {showcase.project ? <Link href={`/works/${showcase.project.slug}`} className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-blue-300 transition hover:text-blue-200">View project details<ArrowUpRight size={16} aria-hidden="true" /></Link> : null}
+                          </div>
+                        </div>
+                        <div className="border-t border-white/10 px-6 py-5 sm:px-8">
+                          {showcase.project?.techStack?.length ? <div className="flex flex-wrap gap-2">{showcase.project.techStack.slice(0, 5).map((item) => <span key={item} className="site-chip px-3 py-1.5 text-xs">{item}</span>)}</div> : null}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-5 overflow-hidden rounded-lg border border-white/10 bg-[#08090d]">
+                        <div className="relative min-h-72 border-b border-white/10 bg-black/25 sm:min-h-96">
+                          {showcase.demoVideoUrl ? (
+                            <video className="h-full min-h-72 w-full object-contain sm:min-h-96" controls preload="metadata" src={showcase.demoVideoUrl} />
+                          ) : image?.url || image?.src ? (
+                            <Image src={image.url ?? image.src ?? ""} alt={image.alt || `${showcase.title} proof`} fill sizes="(min-width: 1024px) 52vw, 100vw" className="object-contain p-5" onLoad={() => ScrollTrigger.refresh()} />
+                          ) : (
+                            <div className="flex h-full min-h-72 flex-col justify-between p-7 sm:min-h-96 sm:p-9">
+                              <span className="font-mono text-xs uppercase tracking-[0.16em] text-blue-200/70">{proof.skill.name}</span>
+                              <p className="max-w-lg text-3xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">{showcase.title}</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-6 sm:p-8">
+                          <p className="text-sm font-medium text-blue-200/70">{showcase.project?.role ?? showcase.project?.type ?? proof.skill.name}</p>
+                          <h3 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">{showcase.title}</h3>
+                          <p className="mt-4 max-w-2xl text-sm leading-7 text-white/60">{showcase.description}</p>
+                          {showcase.highlights?.length ? <div className="mt-6 flex flex-wrap gap-2">{showcase.highlights.map((highlight) => <span key={highlight} className="site-chip">{highlight}</span>)}</div> : null}
+                          {showcase.project ? <Link href={`/works/${showcase.project.slug}`} className="site-link mt-7 inline-flex items-center gap-2 text-sm font-semibold">View {showcase.project.title}<ArrowUpRight size={16} aria-hidden="true" /></Link> : null}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
