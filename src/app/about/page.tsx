@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, CircleDot, Clapperboard, Download, MapPin, PanelsTopLeft } from "lucide-react";
 
+import { AboutHeroPortrait } from "@/components/about-hero-portrait";
 import { AboutJourney } from "@/components/about-journey";
 import { CompactStackMarquee } from "@/components/compact-stack-marquee";
 import { JsonLd } from "@/components/json-ld";
@@ -54,10 +55,10 @@ export default async function AboutPage() {
       <JsonLd data={profilePageJsonLd(profile, settings)} />
       <JsonLd data={breadcrumbJsonLd([{ name: "Home", href: "/" }, { name: "Who is Yumesh Ban?", href: "/about" }], settings)} />
 
-      <section className="about-hero relative z-10 isolate pt-22 sm:pt-24">
+      <section className="about-hero relative z-10 isolate pt-28 sm:pt-32 lg:pt-36">
         <div className="about-hero-grid pointer-events-none absolute inset-0 -z-22" aria-hidden="true" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-64 bg-[linear-gradient(to_top,#0b0b0c_0%,rgba(11,11,12,0.72)_36%,transparent_100%)]" aria-hidden="true" />
-        <div className="site-container grid min-h-[calc(100svh-7rem)] items-center gap-8 lg:grid-cols-[minmax(0,1.04fr)_minmax(25rem,0.96fr)] lg:gap-6">
+        <div className="site-container grid items-center gap-8 lg:min-h-[calc(100svh-7rem)] lg:grid-cols-[minmax(0,1.04fr)_minmax(25rem,0.96fr)] lg:gap-6">
           <div className="about-hero-copy relative z-20 max-w-3xl py-8 lg:py-8">
             <p className="site-eyebrow">{"// The person behind the work"}</p>
             <h1 className="mt-5 max-w-4xl text-balance text-[3.1rem] font-semibold leading-[0.96] tracking-[-0.055em] text-white sm:text-7xl lg:text-[5.1rem]">
@@ -103,22 +104,7 @@ export default async function AboutPage() {
             ) : null}
           </div>
 
-          <div className="about-portrait-stage relative mx-auto flex min-h-[30rem] w-full max-w-[35rem] items-end justify-center self-end overflow-hidden lg:min-h-[42rem] lg:max-w-none">
-            <div className="pointer-events-none absolute left-0 top-16 z-20 font-mono text-[10px] uppercase tracking-[0.2em] text-blue-200/45" aria-hidden="true">ABOUT / 01</div>
-            <Image src="/images/yumesh-office-coding-dot-art.svg" alt="Yumesh Ban coding at an office desk, viewed from behind" fill priority unoptimized sizes="(min-width: 1024px) 44vw, 92vw" className="about-office-image object-cover object-[center_52%]" />
-            <Image src="/images/yumesh-office-coding.png" alt="" fill loading="eager" sizes="(min-width: 1024px) 44vw, 92vw" className="about-office-original-image object-cover object-[center_52%]" aria-hidden="true" />
-            <div className="about-portrait-hover-grid" aria-hidden="true" />
-            <div className="about-portrait-scrim pointer-events-none absolute inset-x-0 bottom-0 z-10 h-44" aria-hidden="true" />
-            <div className="about-portrait-caption absolute inset-x-0 bottom-0 z-20 px-5 py-4 sm:px-6 sm:py-5">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="h-7 w-px shrink-0 bg-blue-300/70 shadow-[0_0_14px_rgba(147,197,253,0.45)]" aria-hidden="true" />
-                  <p className="font-mono text-[10px] uppercase leading-5 tracking-[0.16em] text-white/58">The person behind the products</p>
-                </div>
-                {availability ? <span className="inline-flex shrink-0 items-center gap-2 text-xs font-medium text-blue-200"><span className="h-1.5 w-1.5 rounded-full bg-blue-300 shadow-[0_0_12px_rgba(147,197,253,0.8)]" aria-hidden="true" />{availability}</span> : null}
-              </div>
-            </div>
-          </div>
+          <AboutHeroPortrait availability={availability} />
         </div>
       </section>
 
