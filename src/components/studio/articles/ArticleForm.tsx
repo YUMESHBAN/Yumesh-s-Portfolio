@@ -7,6 +7,7 @@ import { useClient } from "sanity";
 
 import RichContentEditor from "../shared/RichContentEditor";
 import TagEditor from "../shared/TagEditor";
+import { CalendarDateInput } from "../shared/DateRangePicker";
 import {
   cleanOptionalFields,
   normalizeRichContent,
@@ -410,12 +411,12 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
 
             <label className="studio-field">
               <span className="studio-form-label">Published Date</span>
-              <input type="date" value={formData.publishedAt} onChange={(event) => updateField("publishedAt", event.target.value)} className="studio-form-input" />
+              <CalendarDateInput label="published date" value={formData.publishedAt} onChange={(publishedAt) => updateField("publishedAt", publishedAt)} />
             </label>
 
             <label className="studio-field">
               <span className="studio-form-label">Updated Date</span>
-              <input type="date" value={formData.updatedAt} onChange={(event) => updateField("updatedAt", event.target.value)} className="studio-form-input" />
+              <CalendarDateInput label="updated date" value={formData.updatedAt} onChange={(updatedAt) => updateField("updatedAt", updatedAt)} />
             </label>
 
             <label className="studio-field studio-field-wide">

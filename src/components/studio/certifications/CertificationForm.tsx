@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormE
 import { useClient } from "sanity";
 
 import { cleanOptionalFields, getErrorMessage } from "../shared/studio-utils";
+import { CalendarDateInput, MonthPicker } from "../shared/DateRangePicker";
 
 const certificationStatuses = ["published", "draft", "hidden"] as const;
 
@@ -239,7 +240,8 @@ export default function CertificationForm({ certification, onComplete }: Certifi
       <form onSubmit={handleSubmit} className="studio-form-stack">
         <section className="studio-form-section">
           <h3 className="studio-form-section-title">Credential Details</h3>
-          <div className="studio-form-grid">
+          <div className="studio-certification-form-layout">
+            <div className="studio-form-grid">
             <div className="studio-field">
               <span className="studio-form-label">Status</span>
               <div className="studio-status-control" role="group" aria-label="Certification status">
@@ -257,19 +259,16 @@ export default function CertificationForm({ certification, onComplete }: Certifi
               <input value={formData.issuer} onChange={(event) => updateField("issuer", event.target.value)} className="studio-form-input" />
             </label>
 
-            <label className="studio-field">
-              <span className="studio-form-label">Display Date</span>
-              <input value={formData.date} onChange={(event) => updateField("date", event.target.value)} className="studio-form-input" placeholder="2025 or Nov 2025" />
-            </label>
+            <MonthPicker label="Display Date" value={formData.date} onChange={(date) => updateField("date", date)} />
 
             <label className="studio-field">
               <span className="studio-form-label">Issue Date</span>
-              <input type="date" value={formData.issueDate} onChange={(event) => updateField("issueDate", event.target.value)} className="studio-form-input" />
+              <CalendarDateInput label="issue date" value={formData.issueDate} onChange={(issueDate) => updateField("issueDate", issueDate)} />
             </label>
 
             <label className="studio-field">
               <span className="studio-form-label">Expiry Date</span>
-              <input type="date" value={formData.expiryDate} onChange={(event) => updateField("expiryDate", event.target.value)} className="studio-form-input" />
+              <CalendarDateInput label="expiry date" value={formData.expiryDate} onChange={(expiryDate) => updateField("expiryDate", expiryDate)} />
             </label>
 
             <label className="studio-field">
@@ -282,11 +281,17 @@ export default function CertificationForm({ certification, onComplete }: Certifi
               <input value={formData.credentialUrl} onChange={(event) => updateField("credentialUrl", event.target.value)} className="studio-form-input" placeholder="https://.../certificate.pdf" />
             </label>
 
-            <div className="studio-field studio-field-wide">
+            <label className="studio-field studio-field-wide">
+              <span className="studio-form-label">Description</span>
+              <textarea value={formData.description} onChange={(event) => updateField("description", event.target.value)} className="studio-form-textarea" rows={4} />
+            </label>
+            </div>
+
+            <div className="studio-field studio-certification-media-field">
               <span className="studio-form-label">Credential PDF or image</span>
               <span className="studio-help-text">Use a PDF, JPG, PNG, or another image file. A pasted URL takes priority when both are set.</span>
               {formData.credentialFileName ? (
-                <div className="studio-asset-card studio-asset-card-wide mt-2">
+                <div className="studio-asset-card mt-2">
                   {formData.credentialFileUrl && /\.(avif|gif|jpe?g|png|webp)$/i.test(formData.credentialFileName) ? <img src={formData.credentialFileUrl} alt="Credential preview" className="h-full w-full object-cover" /> : <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center"><FileText size={34} className="text-moss" /><strong className="text-sm text-ink">{formData.credentialFileName}</strong></div>}
                   <div className="studio-asset-card-label">{formData.credentialFileName}</div>
                   <div className="studio-asset-card-actions">
@@ -295,15 +300,10 @@ export default function CertificationForm({ certification, onComplete }: Certifi
                   </div>
                 </div>
               ) : (
-                <label className="studio-asset-upload-tile studio-asset-upload-tile-wide mt-2"><ImagePlus size={20} /><strong>Add credential file</strong><span>PDF, JPG, PNG, or another image</span><input type="file" accept="application/pdf,image/*" onChange={uploadCredential} /></label>
+                <label className="studio-asset-upload-tile mt-2"><ImagePlus size={20} /><strong>Add credential file</strong><span>PDF, JPG, PNG, or another image</span><input type="file" accept="application/pdf,image/*" onChange={uploadCredential} /></label>
               )}
               {uploading ? <span className="studio-help-text">Uploading credential…</span> : null}
             </div>
-
-            <label className="studio-field studio-field-wide">
-              <span className="studio-form-label">Description</span>
-              <textarea value={formData.description} onChange={(event) => updateField("description", event.target.value)} className="studio-form-textarea" rows={4} />
-            </label>
           </div>
         </section>
 

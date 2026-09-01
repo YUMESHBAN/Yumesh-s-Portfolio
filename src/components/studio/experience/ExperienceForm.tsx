@@ -6,6 +6,7 @@ import { useClient } from "sanity";
 
 import { cleanOptionalFields, getErrorMessage } from "../shared/studio-utils";
 import EditableStringList from "../shared/EditableStringList";
+import { CalendarDateInput, DateRangePicker } from "../shared/DateRangePicker";
 
 const experienceStatuses = ["published", "draft", "hidden"] as const;
 
@@ -255,23 +256,16 @@ export default function ExperienceForm({ experience, onComplete }: ExperienceFor
           <div className="studio-form-grid">
             <label className="studio-field">
               <span className="studio-form-label">Start Date</span>
-              <input type="date" value={formData.startDate} onChange={(event) => updateField("startDate", event.target.value)} className="studio-form-input" />
+              <CalendarDateInput label="start date" value={formData.startDate} onChange={(startDate) => updateField("startDate", startDate)} />
             </label>
 
             <label className="studio-field">
               <span className="studio-form-label">End Date</span>
-              <input type="date" value={formData.endDate} onChange={(event) => updateField("endDate", event.target.value)} className="studio-form-input" disabled={formData.current} />
+              <CalendarDateInput label="end date" value={formData.endDate} disabled={formData.current} onChange={(endDate) => updateField("endDate", endDate)} />
             </label>
 
-            <label className="studio-field">
-              <span className="studio-form-label">Display Date Range</span>
-              <input value={formData.dateRange} onChange={(event) => updateField("dateRange", event.target.value)} className="studio-form-input" />
-            </label>
+            <DateRangePicker label="Display Date Range" value={formData.dateRange} present={formData.current} onChange={(dateRange) => updateField("dateRange", dateRange)} onPresentChange={(current) => updateField("current", current)} />
 
-            <label className="studio-checkbox-field">
-              <input type="checkbox" checked={formData.current} onChange={(event) => updateField("current", event.target.checked)} />
-              <span>This is my current role</span>
-            </label>
           </div>
         </section>
 

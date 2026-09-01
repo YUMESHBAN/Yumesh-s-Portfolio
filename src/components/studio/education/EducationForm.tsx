@@ -5,6 +5,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useClient } from "sanity";
 
 import { cleanOptionalFields, joinLines, splitLines } from "../shared/studio-utils";
+import { DateRangePicker } from "../shared/DateRangePicker";
 import EditableStringList from "../shared/EditableStringList";
 
 const educationLevels = ["Primary", "Secondary", "+2", "Bachelor", "Master", "PhD", "Diploma", "Other"] as const;
@@ -295,15 +296,7 @@ export default function EducationForm({ education, onComplete }: EducationFormPr
             </label>
 
 
-            <label className="studio-field">
-              <span className="studio-form-label">Date Range</span>
-              <input
-                value={formData.dateRange}
-                onChange={(event) => updateField("dateRange", event.target.value)}
-                className="studio-form-input"
-                placeholder="May 2022 - Apr 2026"
-              />
-            </label>
+            <DateRangePicker label="Date Range" value={formData.dateRange} onChange={(dateRange) => updateField("dateRange", dateRange)} />
 
             <label className="studio-field">
               <span className="studio-form-label">Location</span>

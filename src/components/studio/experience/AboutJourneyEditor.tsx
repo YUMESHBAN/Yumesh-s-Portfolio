@@ -8,6 +8,7 @@ import { aboutJourney } from "@/content/about-journey";
 import type { AboutJourney, AboutJourneyChapter } from "@/types/content";
 
 import { getErrorMessage } from "../shared/studio-utils";
+import { DateRangePicker } from "../shared/DateRangePicker";
 
 type JourneyChapterForm = AboutJourneyChapter & {
   _key: string;
@@ -195,10 +196,7 @@ export default function AboutJourneyEditor() {
             <span className="studio-form-label">Eyebrow *</span>
             <input required value={formData.eyebrow} onChange={(event) => updateSection("eyebrow", event.target.value)} className="studio-form-input" />
           </label>
-          <label className="studio-field">
-            <span className="studio-form-label">Timeline Range *</span>
-            <input required value={formData.rangeLabel} onChange={(event) => updateSection("rangeLabel", event.target.value)} className="studio-form-input" />
-          </label>
+          <DateRangePicker required label="Timeline Range" value={formData.rangeLabel} onChange={(rangeLabel) => updateSection("rangeLabel", rangeLabel)} />
           <label className="studio-field studio-field-wide">
             <span className="studio-form-label">Heading *</span>
             <input required value={formData.title} onChange={(event) => updateSection("title", event.target.value)} className="studio-form-input" />
@@ -253,10 +251,7 @@ export default function AboutJourneyEditor() {
                   <span className="studio-form-label">Year / Era *</span>
                   <input required value={chapter.era} onChange={(event) => updateChapter(index, "era", event.target.value)} className="studio-form-input" />
                 </label>
-                <label className="studio-field">
-                  <span className="studio-form-label">Date Range *</span>
-                  <input required value={chapter.dateRange} onChange={(event) => updateChapter(index, "dateRange", event.target.value)} className="studio-form-input" />
-                </label>
+                <DateRangePicker required label="Date Range" value={chapter.dateRange} onChange={(dateRange) => updateChapter(index, "dateRange", dateRange)} />
                 <label className="studio-field studio-field-wide">
                   <span className="studio-form-label">Chapter Title *</span>
                   <input required value={chapter.title} onChange={(event) => updateChapter(index, "title", event.target.value)} className="studio-form-input" />

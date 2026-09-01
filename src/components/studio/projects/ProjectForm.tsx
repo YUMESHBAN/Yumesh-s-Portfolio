@@ -7,6 +7,7 @@ import { useClient } from "sanity";
 
 import RichContentEditor from "../shared/RichContentEditor";
 import EditableStringList from "../shared/EditableStringList";
+import { DateRangePicker, YearPicker } from "../shared/DateRangePicker";
 import {
   cleanOptionalFields,
   getErrorMessage,
@@ -710,15 +711,9 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
               <input value={formData.association} onChange={(event) => updateField("association", event.target.value)} className="studio-form-input" />
             </label>
 
-            <label className="studio-field">
-              <span className="studio-form-label">Date Range</span>
-              <input value={formData.dateRange} onChange={(event) => updateField("dateRange", event.target.value)} className="studio-form-input" />
-            </label>
+            <DateRangePicker label="Date Range" value={formData.dateRange} onChange={(dateRange) => updateField("dateRange", dateRange)} />
 
-            <label className="studio-field">
-              <span className="studio-form-label">Project Year</span>
-              <input value={formData.projectYear} onChange={(event) => updateField("projectYear", event.target.value)} className="studio-form-input" />
-            </label>
+            <YearPicker label="Project Year" value={formData.projectYear} onChange={(projectYear) => updateField("projectYear", projectYear)} />
 
             <label className="studio-field">
               <span className="studio-form-label">Duration</span>

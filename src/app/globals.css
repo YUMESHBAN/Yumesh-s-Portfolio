@@ -2294,12 +2294,84 @@ a {
     @apply grid grid-cols-1 gap-4 md:grid-cols-2;
   }
 
+  .studio-date-range-picker {
+    @apply mt-1 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end;
+  }
+
+  .studio-date-range-picker label:not(.studio-checkbox-field) {
+    @apply flex flex-col gap-1.5;
+  }
+
+  .studio-date-range-picker label > span {
+    @apply text-xs font-bold text-ink/60;
+  }
+
+  .studio-calendar-input {
+    @apply relative;
+  }
+
+  .studio-calendar-value {
+    @apply flex w-full items-center justify-between rounded-lg border border-black/10 bg-white px-3 py-2.5 text-left text-sm font-semibold text-ink outline-none transition hover:border-moss/45 focus:border-moss focus:ring-2 focus:ring-moss/20 disabled:cursor-not-allowed disabled:bg-paper disabled:text-ink/35;
+  }
+
+  .studio-calendar-popover {
+    @apply absolute left-0 top-[calc(100%+0.5rem)] z-50 w-72 rounded-lg border border-black/10 bg-white p-3 shadow-xl;
+  }
+
+  .studio-calendar-heading {
+    @apply mb-3 flex items-center justify-between font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink/60;
+  }
+
+  .studio-calendar-heading button {
+    @apply text-moss transition hover:text-ink;
+  }
+
+  .studio-calendar-selects {
+    @apply mb-3 grid grid-cols-2 gap-2;
+  }
+
+  .studio-calendar-selects select {
+    @apply min-w-0 rounded-md border border-black/10 bg-paper px-2 py-2 text-xs font-bold text-ink outline-none focus:border-moss;
+  }
+
+  .studio-month-grid,
+  .studio-day-grid {
+    @apply grid grid-cols-3 gap-1;
+  }
+
+  .studio-month-grid button,
+  .studio-day-grid button {
+    @apply rounded-md px-2 py-2 text-xs font-bold text-ink/65 transition hover:bg-moss/10 hover:text-moss;
+  }
+
+  .studio-month-grid button.is-selected,
+  .studio-day-grid button.is-selected {
+    @apply bg-moss text-white hover:bg-moss hover:text-white;
+  }
+
+  .studio-day-grid {
+    @apply grid-cols-7;
+  }
+
+  .studio-day-grid > span {
+    @apply grid h-8 place-items-center text-[10px] font-bold text-ink/45;
+  }
+
   .studio-proof-form-layout {
+    @apply grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start;
+  }
+
+  .studio-certification-form-layout {
     @apply grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start;
   }
 
   .studio-proof-media-field .studio-asset-card,
   .studio-proof-media-field .studio-asset-upload-tile {
+    @apply w-full max-w-none;
+  }
+
+  .studio-certification-media-field .studio-asset-card,
+  .studio-certification-media-field .studio-asset-upload-tile {
     @apply w-full max-w-none;
   }
 
