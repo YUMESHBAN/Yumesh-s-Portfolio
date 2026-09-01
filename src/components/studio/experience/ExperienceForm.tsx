@@ -4,7 +4,8 @@ import { Save, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useClient } from "sanity";
 
-import { cleanOptionalFields, getErrorMessage, joinLines, splitLines } from "../shared/studio-utils";
+import { cleanOptionalFields, getErrorMessage } from "../shared/studio-utils";
+import EditableStringList from "../shared/EditableStringList";
 
 const experienceStatuses = ["published", "draft", "hidden"] as const;
 
@@ -58,12 +59,10 @@ type ExperienceFormState = {
   dateRange: string;
   current: boolean;
   summary: string;
-  responsibilities: string;
-  achievements: string;
+  responsibilities: string[];
+  achievements: string[];
   featuredOnHomepage: boolean;
-  homepageOrder: number;
   relatedSkillIds: string[];
-  skills: string;
 };
 
 type ExperienceFormProps = {
@@ -97,12 +96,10 @@ function experienceToFormState(experience?: ExperienceDocument | null): Experien
     dateRange: experience?.dateRange ?? "",
     current: experience?.current ?? false,
     summary: experience?.summary ?? "",
-    responsibilities: joinLines(experience?.responsibilities),
-    achievements: joinLines(experience?.achievements),
+    responsibilities: experience?.responsibilities?.length ? experience.responsibilities : [""],
+    achievements: experience?.achievements?.length ? experience.achievements : [""],
     featuredOnHomepage: experience?.featuredOnHomepage ?? false,
-    homepageOrder: experience?.homepageOrder ?? 99,
     relatedSkillIds: experience?.relatedSkills?.map((skill) => skill._ref).filter((id): id is string => Boolean(id)) ?? [],
-    skills: joinLines(experience?.skills),
   };
 }
 
@@ -168,12 +165,11 @@ export default function ExperienceForm({ experience, onComplete }: ExperienceFor
       dateRange: formData.dateRange.trim(),
       current: formData.current,
       summary: formData.summary.trim(),
-      responsibilities: splitLines(formData.responsibilities),
-      achievements: splitLines(formData.achievements),
+      responsibilities: formData.responsibilities.map((item) => item.trim()).filter(Boolean),
+      achievements: formData.achievements.map((item) => item.trim()).filter(Boolean),
       featuredOnHomepage: formData.featuredOnHomepage,
-      homepageOrder: formData.homepageOrder,
+      homepageOrder: experience?.homepageOrder ?? 99,
       relatedSkills: refsFromIds(formData.relatedSkillIds),
-      skills: splitLines(formData.skills),
     };
 
     const unsetFields = ["employmentType", "location", "workMode", "companyUrl", "startDate", "endDate", "dateRange", "summary"].filter(
@@ -215,16 +211,12 @@ export default function ExperienceForm({ experience, onComplete }: ExperienceFor
         <section className="studio-form-section">
           <h3 className="studio-form-section-title">Role Details</h3>
           <div className="studio-form-grid">
-            <label className="studio-field">
+            <div className="studio-field">
               <span className="studio-form-label">Status</span>
-              <select value={formData.status} onChange={(event) => updateField("status", event.target.value as ExperienceStatus)} className="studio-form-select">
-                {experienceStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div className="studio-segmented-control" aria-label="Experience status">
+                {experienceStatuses.map((status) => <button key={status} type="button" className={formData.status === status ? "is-active" : ""} onClick={() => updateField("status", status)}>{status}</button>)}
+              </div>
+            </div>
 
             <label className="studio-field">
               <span className="studio-form-label">Company *</span>
@@ -291,20 +283,8 @@ export default function ExperienceForm({ experience, onComplete }: ExperienceFor
               <textarea value={formData.summary} onChange={(event) => updateField("summary", event.target.value)} className="studio-form-textarea" rows={4} />
             </label>
 
-            <label className="studio-field">
-              <span className="studio-form-label">Responsibilities</span>
-              <textarea value={formData.responsibilities} onChange={(event) => updateField("responsibilities", event.target.value)} className="studio-form-textarea" rows={6} />
-            </label>
-
-            <label className="studio-field">
-              <span className="studio-form-label">Achievements</span>
-              <textarea value={formData.achievements} onChange={(event) => updateField("achievements", event.target.value)} className="studio-form-textarea" rows={6} />
-            </label>
-
-            <label className="studio-field">
-              <span className="studio-form-label">Legacy Skill Text</span>
-              <textarea value={formData.skills} onChange={(event) => updateField("skills", event.target.value)} className="studio-form-textarea" rows={6} />
-            </label>
+            <EditableStringList label="Responsibilities" values={formData.responsibilities} onChange={(values) => updateField("responsibilities", values)} placeholder="Describe one responsibility" />
+            <EditableStringList label="Achievements" values={formData.achievements} onChange={(values) => updateField("achievements", values)} placeholder="Describe one achievement" />
           </div>
         </section>
 
@@ -316,10 +296,7 @@ export default function ExperienceForm({ experience, onComplete }: ExperienceFor
               <span>Show this role in Experience &amp; outcomes</span>
             </label>
 
-            <label className="studio-field">
-              <span className="studio-form-label">Homepage order</span>
-              <input type="number" min="1" value={formData.homepageOrder} onChange={(event) => updateField("homepageOrder", Number(event.target.value) || 99)} className="studio-form-input" disabled={!formData.featuredOnHomepage} />
-            </label>
+            <p className="studio-help-text">Arrange featured roles from the Experience overview after saving.</p>
           </div>
         </section>
 

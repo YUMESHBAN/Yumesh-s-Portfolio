@@ -25,6 +25,7 @@ import {
   personProfileQuery,
   projectBySlugQuery,
   projectsQuery,
+  projectRelatedContentQuery,
   siteSettingsQuery,
   skillShowcasesQuery,
   skillsQuery,
@@ -50,6 +51,27 @@ import type {
   RichImageBlock,
 } from "@/types/content";
 import { sortByOrder } from "@/lib/utils";
+
+export type ProjectRelatedContent = {
+  proofs: Array<{
+    _id: string;
+    title: string;
+    description: string;
+    highlights?: string[];
+    skill?: { name?: string; category?: string };
+    image?: import("@/types/content").ImageWithMeta;
+    demoVideoUrl?: string;
+  }>;
+  articles: Array<{
+    _id: string;
+    title: string;
+    slug: string;
+    category?: string;
+    excerpt?: string;
+    publishedAt?: string;
+    coverImage?: import("@/types/content").ImageWithMeta;
+  }>;
+};
 
 function valueToText(value: unknown): string | null {
   if (typeof value === "string") {
@@ -334,6 +356,15 @@ export async function getProjectBySlug(slug: string) {
   });
 
   return normalizeProject(project);
+}
+
+export async function getProjectRelatedContent(projectId?: string): Promise<ProjectRelatedContent> {
+  if (!projectId) return { proofs: [], articles: [] };
+  return sanityFetch<ProjectRelatedContent>({
+    query: projectRelatedContentQuery,
+    params: { projectId },
+    fallback: { proofs: [], articles: [] },
+  });
 }
 
 export async function getExperiences() {

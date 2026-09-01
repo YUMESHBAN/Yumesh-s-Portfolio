@@ -1,24 +1,23 @@
 "use client";
 
 import Image from "next/image";
-import { ImagePlus, Save, Trash2, Upload, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { ArrowLeft, ArrowRight, ImagePlus, Save, Trash2, Upload, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import { useClient } from "sanity";
 
 import RichContentEditor from "../shared/RichContentEditor";
+import TagEditor from "../shared/TagEditor";
 import {
   cleanOptionalFields,
-  joinLines,
   normalizeRichContent,
-  portableBlocksToText,
   slugify,
-  splitLines,
   textToPortableBlocks,
   type RichContentBlock,
   type SlugValue,
 } from "../shared/studio-utils";
 
 const articleStatuses = ["published", "draft", "hidden"] as const;
+const formSteps = ["Basics", "Writing", "Media & relations", "Review & publish"] as const;
 
 type ArticleStatus = (typeof articleStatuses)[number];
 
@@ -65,6 +64,7 @@ export type ArticleDocument = {
   coverImage?: ImageWithMetaDocument;
   relatedProjects?: ContentReference[];
   relatedArticles?: ContentReference[];
+  showOnRelatedProject?: boolean;
 };
 
 type ArticleFormState = {
@@ -75,7 +75,7 @@ type ArticleFormState = {
   excerpt: string;
   publishedAt: string;
   updatedAt: string;
-  tags: string;
+  tags: string[];
   body: RichContentBlock[];
   seoTitle: string;
   seoDescription: string;
@@ -87,6 +87,7 @@ type ArticleFormState = {
   coverImage?: ImageWithMetaDocument;
   relatedProjectIds: string[];
   relatedArticleIds: string[];
+  showOnRelatedProject: boolean;
 };
 
 type ArticleFormProps = {
@@ -136,6 +137,35 @@ function contentForSave(blocks: RichContentBlock[], altFallback: string) {
   });
 }
 
+function ArticlePreviewContent({ blocks }: { blocks: RichContentBlock[] }) {
+  function inline(children: Extract<RichContentBlock, { _type: "block" }>["children"]): ReactNode {
+    return children.map((child) => {
+      let content: ReactNode = child.text;
+      if (child.marks.includes("strong")) content = <strong>{content}</strong>;
+      if (child.marks.includes("em")) content = <em>{content}</em>;
+      if (child.marks.includes("code")) content = <code>{content}</code>;
+      return <span key={child._key}>{content}</span>;
+    });
+  }
+
+  return <div className="studio-preview-rich-content">{blocks.map((block, index) => {
+    const key = block._key ?? `${block._type}-${index}`;
+    if (block._type === "imageWithMeta") {
+      const layout = block.layout ?? "inline";
+      return block.src ? <figure key={key} className={`studio-preview-article-image is-${layout}`}><Image src={block.src} alt={block.alt || "Article image"} width={1200} height={800} className="h-auto w-full rounded-md" />{block.caption ? <figcaption>{block.caption}</figcaption> : null}</figure> : null;
+    }
+    if (block._type === "calloutBlock") return block.body || block.title ? <aside key={key} className="studio-preview-article-callout rounded-md border-l-2 border-moss bg-moss/5 p-4">{block.tone ? <span>{block.tone}</span> : null}<strong>{block.title}</strong><p>{block.body}</p></aside> : null;
+    if (block._type === "codeBlock") return block.code ? <pre key={key}><code>{block.code}</code></pre> : null;
+    if (block._type === "keyTakeawayBlock") return block.body ? <aside key={key} className="rounded-md border-y border-moss/30 py-4"><strong>{block.label || "Key takeaway"}</strong><p>{block.body}</p></aside> : null;
+    const content = inline(block.children);
+    if (block.style === "h2") return <h2 key={key}>{content}</h2>;
+    if (block.style === "h3") return <h3 key={key}>{content}</h3>;
+    if (block.style === "blockquote") return <blockquote key={key}>{content}</blockquote>;
+    if (block.listItem) return <p key={key} className="studio-preview-list-item">• {content}</p>;
+    return <p key={key}>{content}</p>;
+  })}</div>;
+}
+
 function articleToFormState(article?: ArticleDocument | null): ArticleFormState {
   return {
     status: article ? article.status ?? "published" : "draft",
@@ -145,7 +175,7 @@ function articleToFormState(article?: ArticleDocument | null): ArticleFormState 
     excerpt: article?.excerpt ?? "",
     publishedAt: article?.publishedAt ?? today(),
     updatedAt: article?.updatedAt ?? "",
-    tags: joinLines(article?.tags),
+    tags: article?.tags ?? [],
     body: normalizeArticleBody(article?.body),
     seoTitle: article?.seoTitle ?? "",
     seoDescription: article?.seoDescription ?? "",
@@ -157,6 +187,7 @@ function articleToFormState(article?: ArticleDocument | null): ArticleFormState 
     coverImage: article?.coverImage,
     relatedProjectIds: article?.relatedProjects?.map((project) => project._ref).filter((id): id is string => Boolean(id)) ?? [],
     relatedArticleIds: article?.relatedArticles?.map((relatedArticle) => relatedArticle._ref).filter((id): id is string => Boolean(id)) ?? [],
+    showOnRelatedProject: article?.showOnRelatedProject ?? true,
   };
 }
 
@@ -168,6 +199,7 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [activeStep, setActiveStep] = useState(0);
 
   const isEditing = Boolean(article?._id);
   const selectedProjectIds = useMemo(() => new Set(formData.relatedProjectIds), [formData.relatedProjectIds]);
@@ -284,7 +316,7 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
       excerpt: formData.excerpt.trim(),
       publishedAt: formData.publishedAt,
       updatedAt: formData.updatedAt,
-      tags: splitLines(formData.tags),
+      tags: formData.tags.map((tag) => tag.trim()).filter(Boolean),
       body: contentForSave(formData.body, title),
       seoTitle: formData.seoTitle.trim(),
       seoDescription: formData.seoDescription.trim(),
@@ -296,6 +328,7 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
       coverImage: imageForSave(formData.coverImage, title),
       relatedProjects: formData.relatedProjectIds.length ? refsFromIds(formData.relatedProjectIds) : undefined,
       relatedArticles: formData.relatedArticleIds.length ? refsFromIds(formData.relatedArticleIds) : undefined,
+      showOnRelatedProject: formData.showOnRelatedProject,
     };
 
     const unsetFields = [
@@ -345,28 +378,29 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="studio-form-stack">
+        <div className="studio-stepper studio-article-stepper" aria-label="Article form steps">
+          {formSteps.map((step, index) => (
+            <button key={step} type="button" onClick={() => setActiveStep(index)} className={`studio-stepper-item ${activeStep === index ? "is-active" : ""} ${activeStep > index ? "is-complete" : ""}`} aria-current={activeStep === index ? "step" : undefined}>
+              <span>{index + 1}</span>
+              {step}
+            </button>
+          ))}
+        </div>
+
+        {activeStep === 0 ? <>
         <section className="studio-form-section">
           <h3 className="studio-form-section-title">Article Basics</h3>
           <div className="studio-form-grid">
             <label className="studio-field">
               <span className="studio-form-label">Status</span>
-              <select value={formData.status} onChange={(event) => updateField("status", event.target.value as ArticleStatus)} className="studio-form-select">
-                {articleStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
+              <div className="studio-status-control" role="group" aria-label="Article status">
+                {articleStatuses.map((status) => <button key={status} type="button" onClick={() => updateField("status", status)} className={formData.status === status ? "is-active" : ""}>{status}</button>)}
+              </div>
             </label>
 
             <label className="studio-field studio-field-wide">
               <span className="studio-form-label">Title *</span>
               <input required value={formData.title} onChange={(event) => updateTitle(event.target.value)} className="studio-form-input" placeholder="Who is Yumesh Ban?" />
-            </label>
-
-            <label className="studio-field">
-              <span className="studio-form-label">Slug *</span>
-              <input required value={formData.slug} onChange={(event) => updateField("slug", slugify(event.target.value))} className="studio-form-input studio-form-input-bg" />
             </label>
 
             <label className="studio-field">
@@ -389,18 +423,32 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
               <textarea value={formData.excerpt} onChange={(event) => updateField("excerpt", event.target.value)} className="studio-form-textarea" rows={3} />
             </label>
 
-            <label className="studio-field studio-field-wide">
+            <div className="studio-field">
               <span className="studio-form-label">Tags</span>
-              <input value={formData.tags} onChange={(event) => updateField("tags", event.target.value)} className="studio-form-input" placeholder="Yumesh Ban, Next.js, Portfolio" />
-            </label>
+              <TagEditor tags={formData.tags} onChange={(tags) => updateField("tags", tags)} />
+            </div>
           </div>
         </section>
+        </> : null}
 
+        {activeStep === 1 ? <>
         <section className="studio-form-section">
           <RichContentEditor label="Article Content" value={formData.body} onChange={(value) => updateField("body", value)} allowImages allowTakeaways />
-          {!formData.body.length && portableBlocksToText(formData.body) ? null : null}
         </section>
 
+        <section className="studio-form-section studio-content-preview">
+          <h3 className="studio-form-section-title">Article preview</h3>
+          <article className="studio-website-preview">
+            <p className="studio-eyebrow">{formData.category || "Article"}</p>
+            <h2>{formData.title || "Your article title"}</h2>
+            <p>{formData.excerpt || "Your article summary will appear here."}</p>
+            {formData.tags.length ? <div className="studio-preview-tags">{formData.tags.filter(Boolean).map((tag) => <span key={tag}>{tag}</span>)}</div> : null}
+            {formData.body.length ? <ArticlePreviewContent blocks={formData.body} /> : <p className="studio-help-text">Start writing to see your article content here.</p>}
+          </article>
+        </section>
+        </> : null}
+
+        {activeStep === 2 ? <>
         <section className="studio-form-section">
           <div className="studio-form-section-header">
             <h3 className="studio-form-section-title">Cover image</h3>
@@ -422,8 +470,8 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
                   Remove
                 </button>
               </div>
-              <details className="studio-asset-details" open>
-                <summary>Edit image details</summary>
+              <details className="studio-asset-details">
+                <summary>Alt text and large-view caption</summary>
                 <label>
                   <span>Alt text</span>
                   <input value={formData.coverImage.alt ?? ""} onChange={(event) => updateCoverImage("alt", event.target.value)} className="studio-form-input" />
@@ -462,6 +510,10 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
                 })}
                 {!projects.length ? <span className="studio-help-text">No projects available yet.</span> : null}
               </div>
+              <label className="studio-checkbox-field mt-4">
+                <input type="checkbox" checked={formData.showOnRelatedProject} onChange={(event) => updateField("showOnRelatedProject", event.target.checked)} />
+                <span>Show this article on its related project pages</span>
+              </label>
             </fieldset>
 
             <fieldset className="studio-field studio-field-wide">
@@ -481,7 +533,9 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
             </fieldset>
           </div>
         </section>
+        </> : null}
 
+        {activeStep === 3 ? <>
         <section className="studio-form-section">
           <h3 className="studio-form-section-title">Homepage feature</h3>
           <div className="studio-form-grid">
@@ -490,10 +544,6 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
               <span>Show this article in Notes from building</span>
             </label>
 
-            <label className="studio-field">
-              <span className="studio-form-label">Homepage order</span>
-              <input type="number" min="1" value={formData.homepageOrder} onChange={(event) => updateField("homepageOrder", Number(event.target.value) || 99)} className="studio-form-input" disabled={!formData.featuredOnHomepage} />
-            </label>
           </div>
         </section>
 
@@ -505,10 +555,6 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
               <span>Use as the lead story in the article archive</span>
             </label>
 
-            <label className="studio-field">
-              <span className="studio-form-label">Archive order</span>
-              <input type="number" min="1" value={formData.archiveOrder} onChange={(event) => updateField("archiveOrder", Number(event.target.value) || 99)} className="studio-form-input" />
-            </label>
           </div>
         </section>
 
@@ -529,6 +575,7 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
             </label>
           </div>
         </section>
+        </> : null}
 
         {error ? <p className="studio-error">{error}</p> : null}
 
@@ -536,10 +583,8 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
           <button type="button" onClick={onComplete} className="studio-btn-cancel">
             Cancel
           </button>
-          <button type="submit" disabled={saving || uploading} className="studio-btn-primary">
-            <Save size={16} />
-            {saving ? "Saving..." : "Save Article"}
-          </button>
+          {activeStep > 0 ? <button type="button" onClick={() => setActiveStep((step) => step - 1)} className="studio-btn-secondary"><ArrowLeft size={16} />Back</button> : null}
+          {activeStep < formSteps.length - 1 ? <button type="button" onClick={() => setActiveStep((step) => step + 1)} className="studio-btn-primary">Next<ArrowRight size={16} /></button> : <button type="submit" disabled={saving || uploading} className="studio-btn-primary"><Save size={16} />{saving ? "Saving..." : "Save Article"}</button>}
         </div>
       </form>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, ExternalLink, EyeOff, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Award, ExternalLink, EyeOff, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useClient } from "sanity";
 
@@ -103,6 +103,29 @@ export default function CertificationDashboard() {
     }
   }
 
+  function canMove(certification: CertificationDocument, direction: -1 | 1) {
+    const index = certifications.findIndex((item) => item._id === certification._id);
+    return index + direction >= 0 && index + direction < certifications.length;
+  }
+
+  async function moveCertification(certification: CertificationDocument, direction: -1 | 1) {
+    const index = certifications.findIndex((item) => item._id === certification._id);
+    const targetIndex = index + direction;
+    if (!certification._id || targetIndex < 0 || targetIndex >= certifications.length) return;
+
+    const nextOrder = [...certifications];
+    const [movedCertification] = nextOrder.splice(index, 1);
+    nextOrder.splice(targetIndex, 0, movedCertification);
+
+    try {
+      const transaction = nextOrder.reduce((current, item, itemIndex) => item._id ? current.patch(item._id, { set: { order: itemIndex + 1 } }) : current, client.transaction());
+      await transaction.commit();
+      fetchCertifications();
+    } catch (moveError) {
+      setError(getErrorMessage(moveError));
+    }
+  }
+
   function handleFormComplete() {
     setView("list");
     setEditingCertification(null);
@@ -181,12 +204,10 @@ export default function CertificationDashboard() {
                     <Award size={12} />
                     {certification.issuer ?? "Issuer"}
                   </span>
-                  {certification.status === "hidden" ? (
-                    <span className="studio-badge studio-badge-neutral">
-                      <EyeOff size={12} />
-                      Hidden
-                    </span>
-                  ) : null}
+                  <span className={`studio-badge ${(certification.status ?? "published") === "published" ? "studio-badge-success" : "studio-badge-neutral"}`}>
+                    {certification.status === "hidden" ? <EyeOff size={12} /> : null}
+                    {certification.status ?? "published"}
+                  </span>
                 </div>
 
                 <h2 className="studio-card-title">{certification.title}</h2>
@@ -194,18 +215,23 @@ export default function CertificationDashboard() {
                 <p className="studio-card-description">{certification.description || "No description added yet."}</p>
 
                 <div className="studio-card-footer">
-                  <span>Order {certification.order ?? 99}</span>
                   {certification.credentialUrl || certification.credentialFile?.asset?.url ? (
                     <a href={certification.credentialUrl || certification.credentialFile?.asset?.url} target="_blank" rel="noreferrer" className="studio-inline-link">
                       <ExternalLink size={14} />
                       Credential
                     </a>
                   ) : (
-                    <span>{certification.status ?? "published"}</span>
+                    <span>No credential attached</span>
                   )}
                 </div>
 
                 <div className="studio-actions">
+                  <button type="button" onClick={() => moveCertification(certification, -1)} disabled={!canMove(certification, -1)} className="studio-icon-button" aria-label="Move certification earlier">
+                    <ArrowUp size={16} />
+                  </button>
+                  <button type="button" onClick={() => moveCertification(certification, 1)} disabled={!canMove(certification, 1)} className="studio-icon-button" aria-label="Move certification later">
+                    <ArrowDown size={16} />
+                  </button>
                   <button type="button" onClick={() => handleEdit(certification)} className="studio-btn-edit">
                     <Pencil size={16} />
                     Edit

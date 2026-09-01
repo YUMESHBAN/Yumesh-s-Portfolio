@@ -714,7 +714,6 @@ export const schemaTypes = [
     fields: [
       statusField,
       defineField({ name: "name", type: "string", validation: (Rule) => Rule.required() }),
-      defineField({ name: "description", type: "text", rows: 3 }),
       defineField({ name: "iconName", title: "Icon name", type: "string" }),
       defineField({ name: "aliases", type: "array", of: [{ type: "string" }] }),
       defineField({
@@ -795,6 +794,7 @@ export const schemaTypes = [
         validation: (Rule) => Rule.required(),
       }),
       defineField({ name: "project", title: "Related project", type: "reference", to: [{ type: "project" }] }),
+      defineField({ name: "showOnRelatedProject", title: "Show on related project page", type: "boolean", initialValue: true }),
       defineField({ name: "image", title: "Showcase image", type: "imageWithMeta" }),
       defineField({ name: "demoVideo", title: "Showcase video", type: "file", options: { accept: "video/mp4,video/webm" } }),
       defineField({ name: "highlights", title: "Highlights", type: "array", of: [{ type: "string" }] }),
@@ -875,6 +875,7 @@ export const schemaTypes = [
       defineField({ name: "archiveOrder", title: "Archive order", type: "number", initialValue: 99 }),
       defineField({ name: "coverImage", title: "Cover image", type: "imageWithMeta" }),
       defineField({ name: "tags", type: "array", of: [{ type: "string" }] }),
+      defineField({ name: "showOnRelatedProject", title: "Show on related project pages", type: "boolean", initialValue: true }),
       defineField({ name: "body", type: "richContent" }),
       defineField({
         name: "relatedProjects",

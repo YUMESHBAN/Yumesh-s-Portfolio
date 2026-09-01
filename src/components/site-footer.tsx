@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 
+import { SocialLinkIcon } from "@/components/social-link-icon";
 import type { PersonProfile, SiteSettings } from "@/types/content";
 
 const navigation = [
@@ -64,6 +65,7 @@ export function SiteFooter({
               <div className="mt-4 grid gap-2 text-sm">
                 {profile.socialLinks.map((link) => (
                   <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="site-link inline-flex w-fit items-center gap-1.5">
+                    <SocialLinkIcon label={link.label} href={link.href} size={14} />
                     {link.label}
                     <ArrowUpRight size={13} aria-hidden="true" />
                   </a>

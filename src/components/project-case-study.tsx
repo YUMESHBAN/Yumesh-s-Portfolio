@@ -5,13 +5,18 @@ import type { ReactNode } from "react";
 
 import { urlForImage } from "@/sanity/image";
 import { ProjectPdfViewer } from "@/components/project-pdf-viewer";
-import type { Project, RichContentBlock, RichTextBlock } from "@/types/content";
+import { ProjectImageGallery } from "@/components/project-image-gallery";
+import type { ImageWithMeta, Project, RichContentBlock, RichTextBlock } from "@/types/content";
 
 type CaseStudyProps = {
   project: Project;
   index: number;
   total: number;
   nextProject?: Project;
+  relatedContent?: {
+    proofs: Array<{ _id: string; title: string; description: string; highlights?: string[]; skill?: { name?: string; category?: string }; image?: ImageWithMeta; demoVideoUrl?: string }>;
+    articles: Array<{ _id: string; title: string; slug: string; category?: string; excerpt?: string; publishedAt?: string; coverImage?: ImageWithMeta }>;
+  };
 };
 
 function projectNumber(index: number) {
@@ -168,7 +173,7 @@ function ListBlock({ label, items }: { label: string; items?: string[] }) {
   );
 }
 
-export function ProjectCaseStudy({ project, index, total, nextProject }: CaseStudyProps) {
+export function ProjectCaseStudy({ project, index, total, nextProject, relatedContent }: CaseStudyProps) {
   const number = projectNumber(index);
   const proof = projectProof(project);
   const image = project.featuredImage?.url || project.featuredImage?.src ? project.featuredImage : project.gallery?.find((item) => item.url || item.src);
@@ -179,12 +184,14 @@ export function ProjectCaseStudy({ project, index, total, nextProject }: CaseStu
   const hasProcess = hasRichContent(project.process) || hasRichContent(project.solution);
   const hasResults = Boolean(project.metrics?.length || project.impact?.length || hasRichContent(project.results));
   const hasBuildNotes = Boolean(project.techStack.length || project.features.length || project.demoVideoUrl || project.projectPdfUrl || project.links?.length || gallery.length);
+  const hasRelatedContent = Boolean(relatedContent?.proofs.length || relatedContent?.articles.length);
   let sectionIndex = 1;
   const contextNumber = hasContext ? String(sectionIndex++).padStart(2, "0") : undefined;
   const contributionNumber = hasContribution ? String(sectionIndex++).padStart(2, "0") : undefined;
   const processNumber = hasProcess ? String(sectionIndex++).padStart(2, "0") : undefined;
   const resultsNumber = hasResults ? String(sectionIndex++).padStart(2, "0") : undefined;
   const buildNotesNumber = hasBuildNotes ? String(sectionIndex++).padStart(2, "0") : undefined;
+  const relatedContentNumber = hasRelatedContent ? String(sectionIndex++).padStart(2, "0") : undefined;
   const metadata: Array<[string, string]> = [
     ["Role", project.role],
     ["Association", project.association],
@@ -242,7 +249,29 @@ export function ProjectCaseStudy({ project, index, total, nextProject }: CaseStu
 
           {hasResults && resultsNumber ? <StorySection number={resultsNumber} eyebrow="The result" title="Proof over promises."><div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.48fr)] lg:gap-16"><div>{project.metrics?.length ? <div className="border-y border-white/10">{project.metrics.map((metric) => <div key={`${metric.label}-${metric.value}`} className="flex items-start justify-between gap-8 border-b border-white/10 py-5 last:border-b-0"><div><p className="text-3xl font-semibold tracking-[-0.05em] text-blue-100 sm:text-4xl">{metric.value}</p><p className="mt-2 text-sm font-medium text-white/78">{metric.label}</p>{metric.note ? <p className="mt-1 text-xs leading-5 text-white/48">{metric.note}</p> : null}</div><Sparkles className="mt-1 shrink-0 text-blue-300/70" size={17} aria-hidden="true" /></div>)}</div> : null}{hasRichContent(project.results) ? <div className="mt-8"><RichContent blocks={project.results} /></div> : null}</div><div className="border-t border-white/10 pt-7 lg:border-l lg:border-t-0 lg:pl-9 lg:pt-0"><ListBlock label="Impact" items={project.impact} /></div></div></StorySection> : null}
 
-          {hasBuildNotes && buildNotesNumber ? <StorySection number={buildNotesNumber} eyebrow="Build notes" title="The tools and details that carried it through."><div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.52fr)] lg:gap-14"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Technology</p><div className="mt-4 flex flex-wrap gap-2">{project.techStack.map((tech) => <span key={tech} className="site-chip">{tech}</span>)}</div>{project.features.length ? <div className="mt-10"><ListBlock label="Selected product details" items={project.features} /></div> : null}</div><div className="border-t border-white/10 pt-7 lg:border-l lg:border-t-0 lg:pl-9 lg:pt-0"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Explore further</p><div className="mt-4 grid gap-3">{project.demoVideoUrl ? <a href={project.demoVideoUrl} target="_blank" rel="noreferrer" className="site-link inline-flex min-h-11 items-center gap-2 text-sm font-medium">Watch demo <Play size={16} aria-hidden="true" /></a> : null}{project.links?.map((link) => <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="site-link inline-flex min-h-11 items-center gap-2 text-sm font-medium">{link.label}<ArrowUpRight size={16} aria-hidden="true" /></a>)}</div></div></div>{project.projectPdfUrl ? <ProjectPdfViewer src={project.projectPdfUrl} projectTitle={project.title} /> : null}{gallery.length ? <div className="mt-12 grid gap-5 border-t border-white/10 pt-8 sm:grid-cols-2">{gallery.map((item) => { const src = item.url ?? item.src; return src ? <figure key={src} className="overflow-hidden border border-white/10 bg-black/20"><div className="relative aspect-[16/10]"><Image src={src} alt={item.alt || `${project.title} gallery screenshot`} fill sizes="(min-width: 640px) 50vw, 100vw" className="object-cover" /></div>{item.caption ? <figcaption className="border-t border-white/10 px-4 py-3 text-xs leading-5 text-white/52">{item.caption}</figcaption> : null}</figure> : null; })}</div> : null}</StorySection> : null}
+          {hasBuildNotes && buildNotesNumber ? <StorySection number={buildNotesNumber} eyebrow="Build notes" title="The tools and details that carried it through."><div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.52fr)] lg:gap-14"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Technology</p><div className="mt-4 flex flex-wrap gap-2">{project.techStack.map((tech) => <span key={tech} className="site-chip">{tech}</span>)}</div>{project.features.length ? <div className="mt-10"><ListBlock label="Selected product details" items={project.features} /></div> : null}</div><div className="border-t border-white/10 pt-7 lg:border-l lg:border-t-0 lg:pl-9 lg:pt-0"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Explore further</p><div className="mt-4 grid gap-3">{project.demoVideoUrl ? <a href={project.demoVideoUrl} target="_blank" rel="noreferrer" className="site-link inline-flex min-h-11 items-center gap-2 text-sm font-medium">Watch demo <Play size={16} aria-hidden="true" /></a> : null}{project.links?.map((link) => <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="site-link inline-flex min-h-11 items-center gap-2 text-sm font-medium">{link.label}<ArrowUpRight size={16} aria-hidden="true" /></a>)}</div></div></div>{project.projectPdfUrl ? <ProjectPdfViewer src={project.projectPdfUrl} projectTitle={project.title} /> : null}{gallery.length ? <ProjectImageGallery images={gallery} projectTitle={project.title} /> : null}</StorySection> : null}
+
+          {hasRelatedContent && relatedContentNumber ? (
+            <StorySection number={relatedContentNumber} eyebrow="Connected work" title="Proof and writing from this project.">
+              <div className="grid gap-10">
+                {relatedContent?.proofs.length ? <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Project proof</p>
+                  <div className="mt-4 grid gap-6">
+                    {relatedContent.proofs.map((proof) => <article key={proof._id} className="overflow-hidden border border-white/10 bg-white/[0.03]">
+                      {proof.image?.src || proof.image?.url ? <Image src={proof.image.src ?? proof.image.url ?? ""} alt={proof.image.alt || proof.title} width={1200} height={675} className="aspect-video w-full object-cover" /> : null}
+                      <div className="p-5 sm:p-7"><p className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue-200/70">{[proof.skill?.category, proof.skill?.name].filter(Boolean).join(" / ") || "Project proof"}</p><h3 className="mt-2 text-2xl font-semibold text-white">{proof.title}</h3><p className="mt-3 max-w-3xl text-sm leading-6 text-white/62">{proof.description}</p>{proof.highlights?.length ? <div className="mt-5 flex flex-wrap gap-2">{proof.highlights.map((item) => <span key={item} className="site-chip">{item}</span>)}</div> : null}</div>
+                    </article>)}
+                  </div>
+                </div> : null}
+                {relatedContent?.articles.length ? <div className="border-t border-white/10 pt-8">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Related writing</p>
+                  <div className="mt-4 grid gap-4">
+                    {relatedContent.articles.map((article) => <Link key={article._id} href={`/articles/${article.slug}`} className="group block border border-white/10 bg-white/[0.03] p-5 transition hover:border-blue-300/45 sm:p-6"><p className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue-200/70">{article.category || "Article"}</p><h3 className="mt-2 text-xl font-semibold text-white group-hover:text-blue-200">{article.title}</h3>{article.excerpt ? <p className="mt-3 max-w-3xl text-sm leading-6 text-white/62">{article.excerpt}</p> : null}<span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-blue-300">Read article <ArrowUpRight size={15} /></span></Link>)}
+                  </div>
+                </div> : null}
+              </div>
+            </StorySection>
+          ) : null}
         </div>
 
         <section className="works-section-reveal pb-16 pt-4 sm:pb-20 lg:pb-28">

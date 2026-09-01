@@ -26,7 +26,7 @@ export type CalloutBlock = {
   _type: "calloutBlock";
   title?: string;
   body?: string;
-  tone?: "Note" | "Tip" | "Warning" | "Result";
+  tone?: "Note" | "Tip" | "Warning" | "Result" | "Finding" | "Conclusion";
 };
 
 export type KeyTakeawayBlock = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpenText, BriefcaseBusiness, EyeOff, MapPin, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpenText, BriefcaseBusiness, EyeOff, MapPin, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useClient } from "sanity";
 
@@ -39,7 +39,6 @@ export default function ExperienceDashboard() {
   const [view, setView] = useState<"list" | "form" | "journey">("list");
   const [editingExperience, setEditingExperience] = useState<ExperienceDocument | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showCurrentOnly, setShowCurrentOnly] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [error, setError] = useState("");
 
@@ -78,12 +77,11 @@ export default function ExperienceDashboard() {
         .join(" ")
         .toLowerCase();
       const matchesSearch = !search || searchable.includes(search);
-      const matchesCurrent = !showCurrentOnly || experience.current;
       const matchesStatus = filterStatus === "all" || (experience.status ?? "published") === filterStatus;
 
-      return matchesSearch && matchesCurrent && matchesStatus;
+      return matchesSearch && matchesStatus;
     });
-  }, [experiences, filterStatus, searchTerm, showCurrentOnly]);
+  }, [experiences, filterStatus, searchTerm]);
 
   function handleAddNew() {
     setEditingExperience(null);
@@ -93,6 +91,20 @@ export default function ExperienceDashboard() {
   function handleEdit(experience: ExperienceDocument) {
     setEditingExperience(experience);
     setView("form");
+  }
+
+  async function moveHomepageExperience(experience: ExperienceDocument, direction: -1 | 1) {
+    const ordered = experiences.filter((item) => item.featuredOnHomepage).sort((a, b) => (a.homepageOrder ?? 99) - (b.homepageOrder ?? 99));
+    const index = ordered.findIndex((item) => item._id === experience._id);
+    const neighbor = ordered[index + direction];
+    if (!experience._id || !neighbor?._id) return;
+
+    try {
+      await client.transaction().patch(experience._id, { set: { homepageOrder: neighbor.homepageOrder ?? index + direction + 1 } }).patch(neighbor._id, { set: { homepageOrder: experience.homepageOrder ?? index + 1 } }).commit();
+      fetchExperiences();
+    } catch (moveError) {
+      setError(getErrorMessage(moveError));
+    }
   }
 
   async function handleDelete(experience: ExperienceDocument) {
@@ -134,7 +146,7 @@ export default function ExperienceDashboard() {
           <div>
             <p className="studio-eyebrow">About Page Narrative</p>
             <h1 className="studio-header-title">About Journey</h1>
-            <p className="studio-header-subtitle">Edit the section introduction and the four chapters shown on the About page.</p>
+            <p className="studio-header-subtitle">Edit the section introduction and journey chapters shown on the About page.</p>
           </div>
           <div className="studio-header-actions">
             <button type="button" onClick={() => setView("list")} className="studio-btn-secondary">
@@ -157,39 +169,28 @@ export default function ExperienceDashboard() {
           <p className="studio-header-subtitle">Homepage entries are listed first in their website display order, followed by the remaining roles.</p>
         </div>
 
-        <div className="studio-header-actions">
-          <div className="studio-filters">
-            <div className="studio-search-wrapper">
-              <Search className="studio-search-icon" size={16} />
-              <input
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                className="studio-search-input"
-                placeholder="Search experience..."
-              />
-            </div>
+      </div>
 
-            <button
-              type="button"
-              onClick={() => setShowCurrentOnly((current) => !current)}
-              className={`studio-filter-btn ${showCurrentOnly ? "studio-filter-btn-active" : "studio-filter-btn-inactive"}`}
-            >
-              <BriefcaseBusiness size={15} />
-              Current
-            </button>
-
-            <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className="studio-select">
-              <option value="all">All Statuses</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-              <option value="hidden">Hidden</option>
-            </select>
-          </div>
-          <button type="button" onClick={() => setView("journey")} className="studio-btn-secondary">
-            <BookOpenText size={16} />
-            About journey
-          </button>
+      <div className="studio-experience-controls">
+        <div className="studio-search-wrapper studio-experience-search-wrapper">
+          <Search className="studio-search-icon" size={16} />
+          <input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className="studio-search-input"
+            placeholder="Search by company, role, or skill..."
+          />
         </div>
+        <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className="studio-select studio-experience-status-select" aria-label="Filter experiences by status">
+          <option value="all">All statuses</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+          <option value="hidden">Hidden</option>
+        </select>
+        <button type="button" onClick={() => setView("journey")} className="studio-btn-secondary">
+          <BookOpenText size={16} />
+          About journey
+        </button>
       </div>
 
       <div className="studio-stats-grid">
@@ -226,7 +227,7 @@ export default function ExperienceDashboard() {
                 <div className="studio-card-topline">
                   <span className="studio-badge studio-badge-info">{experience.employmentType ?? "Role"}</span>
                   {experience.current ? <span className="studio-badge studio-badge-success">Current</span> : null}
-                  {experience.featuredOnHomepage ? <span className="studio-badge studio-badge-info">Homepage #{experience.homepageOrder ?? 99}</span> : null}
+                  {experience.featuredOnHomepage ? <span className="studio-badge studio-badge-info">Featured on homepage</span> : null}
                   {experience.status === "hidden" ? (
                     <span className="studio-badge studio-badge-neutral">
                       <EyeOff size={12} />
@@ -256,6 +257,12 @@ export default function ExperienceDashboard() {
                 ) : null}
 
                 <div className="studio-actions">
+                  {experience.featuredOnHomepage ? (
+                    <>
+                      <button type="button" onClick={() => moveHomepageExperience(experience, -1)} className="studio-icon-button" aria-label="Move homepage feature earlier" disabled={experiences.filter((item) => item.featuredOnHomepage).sort((a, b) => (a.homepageOrder ?? 99) - (b.homepageOrder ?? 99)).findIndex((item) => item._id === experience._id) === 0}><ArrowUp size={16} /></button>
+                      <button type="button" onClick={() => moveHomepageExperience(experience, 1)} className="studio-icon-button" aria-label="Move homepage feature later" disabled={experiences.filter((item) => item.featuredOnHomepage).sort((a, b) => (a.homepageOrder ?? 99) - (b.homepageOrder ?? 99)).findIndex((item) => item._id === experience._id) === experiences.filter((item) => item.featuredOnHomepage).length - 1}><ArrowDown size={16} /></button>
+                    </>
+                  ) : null}
                   <button type="button" onClick={() => handleEdit(experience)} className="studio-btn-edit">
                     <Pencil size={16} />
                     Edit

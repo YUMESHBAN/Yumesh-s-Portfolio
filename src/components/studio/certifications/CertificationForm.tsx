@@ -1,6 +1,7 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
-import { Save, X } from "lucide-react";
+import { FileText, ImagePlus, Save, Trash2, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useClient } from "sanity";
 
@@ -67,6 +68,7 @@ type CertificationFormState = {
     };
   };
   credentialFileName: string;
+  credentialFileUrl: string;
   relatedSkillIds: string[];
   order: number;
 };
@@ -103,6 +105,7 @@ function certificationToFormState(certification?: CertificationDocument | null):
       ? { _type: "file", asset: { _type: "reference", _ref: certification.credentialFile.asset._ref } }
       : undefined,
     credentialFileName: certification?.credentialFile?.asset?.originalFilename ?? "",
+    credentialFileUrl: certification?.credentialFile?.asset?.url ?? "",
     relatedSkillIds: certification?.relatedSkills?.map((skill) => skill._ref).filter((id): id is string => Boolean(id)) ?? [],
     order: certification?.order ?? 99,
   };
@@ -160,6 +163,7 @@ export default function CertificationForm({ certification, onComplete }: Certifi
         ...previous,
         credentialFile: { _type: "file", asset: { _type: "reference", _ref: asset._id } },
         credentialFileName: asset.originalFilename ?? file.name,
+        credentialFileUrl: asset.url ?? "",
       }));
     } catch (uploadError) {
       setError(getErrorMessage(uploadError));
@@ -236,16 +240,12 @@ export default function CertificationForm({ certification, onComplete }: Certifi
         <section className="studio-form-section">
           <h3 className="studio-form-section-title">Credential Details</h3>
           <div className="studio-form-grid">
-            <label className="studio-field">
+            <div className="studio-field">
               <span className="studio-form-label">Status</span>
-              <select value={formData.status} onChange={(event) => updateField("status", event.target.value as CertificationStatus)} className="studio-form-select">
-                {certificationStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div className="studio-status-control" role="group" aria-label="Certification status">
+                {certificationStatuses.map((status) => <button key={status} type="button" onClick={() => updateField("status", status)} className={formData.status === status ? "is-active" : ""}>{status}</button>)}
+              </div>
+            </div>
 
             <label className="studio-field">
               <span className="studio-form-label">Title *</span>
@@ -282,25 +282,23 @@ export default function CertificationForm({ certification, onComplete }: Certifi
               <input value={formData.credentialUrl} onChange={(event) => updateField("credentialUrl", event.target.value)} className="studio-form-input" placeholder="https://.../certificate.pdf" />
             </label>
 
-            <label className="studio-field studio-field-wide">
-              <span className="studio-form-label">Upload credential PDF or image</span>
-              <span className="studio-help-text">Use a PDF, JPG, PNG, or other image file. A pasted URL takes priority when both are set.</span>
-              <input type="file" accept="application/pdf,image/*" onChange={uploadCredential} className="studio-form-input" />
-              {uploading ? <span className="studio-help-text">Uploading credential…</span> : null}
+            <div className="studio-field studio-field-wide">
+              <span className="studio-form-label">Credential PDF or image</span>
+              <span className="studio-help-text">Use a PDF, JPG, PNG, or another image file. A pasted URL takes priority when both are set.</span>
               {formData.credentialFileName ? (
-                <div className="mt-3 flex items-center gap-3">
-                  <span className="studio-help-text">Uploaded: {formData.credentialFileName}</span>
-                  <button type="button" onClick={() => setFormData((previous) => ({ ...previous, credentialFile: undefined, credentialFileName: "" }))} className="studio-btn-cancel">
-                    Remove file
-                  </button>
+                <div className="studio-asset-card studio-asset-card-wide mt-2">
+                  {formData.credentialFileUrl && /\.(avif|gif|jpe?g|png|webp)$/i.test(formData.credentialFileName) ? <img src={formData.credentialFileUrl} alt="Credential preview" className="h-full w-full object-cover" /> : <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center"><FileText size={34} className="text-moss" /><strong className="text-sm text-ink">{formData.credentialFileName}</strong></div>}
+                  <div className="studio-asset-card-label">{formData.credentialFileName}</div>
+                  <div className="studio-asset-card-actions">
+                    <label className="studio-asset-action"><Upload size={15} />Replace<input type="file" accept="application/pdf,image/*" onChange={uploadCredential} /></label>
+                    <button type="button" className="studio-asset-action is-danger" onClick={() => setFormData((previous) => ({ ...previous, credentialFile: undefined, credentialFileName: "", credentialFileUrl: "" }))}><Trash2 size={15} />Delete</button>
+                  </div>
                 </div>
-              ) : null}
-            </label>
-
-            <label className="studio-field">
-              <span className="studio-form-label">Display Order</span>
-              <input type="number" value={formData.order} onChange={(event) => updateField("order", Number(event.target.value))} className="studio-form-input" />
-            </label>
+              ) : (
+                <label className="studio-asset-upload-tile studio-asset-upload-tile-wide mt-2"><ImagePlus size={20} /><strong>Add credential file</strong><span>PDF, JPG, PNG, or another image</span><input type="file" accept="application/pdf,image/*" onChange={uploadCredential} /></label>
+              )}
+              {uploading ? <span className="studio-help-text">Uploading credential…</span> : null}
+            </div>
 
             <label className="studio-field studio-field-wide">
               <span className="studio-form-label">Description</span>
