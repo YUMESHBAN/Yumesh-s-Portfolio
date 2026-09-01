@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Save } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, Save, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useClient } from "sanity";
 
@@ -59,6 +59,21 @@ function toFormState(document?: AboutJourneyDocument | null): JourneyFormState {
   };
 }
 
+function newJourneyChapter(index: number): JourneyChapterForm {
+  return {
+    _key: `about-journey-${Date.now()}-${index + 1}`,
+    _type: "aboutJourneyChapter",
+    era: "",
+    title: "",
+    context: "",
+    dateRange: "",
+    location: "",
+    story: "",
+    lesson: "",
+    outcome: "",
+  };
+}
+
 export default function AboutJourneyEditor() {
   const client = useClient({ apiVersion: "2026-03-01" });
   const [formData, setFormData] = useState<JourneyFormState>(() => toFormState());
@@ -111,6 +126,20 @@ export default function AboutJourneyEditor() {
 
       return { ...previous, chapters };
     });
+  }
+
+  function addChapter() {
+    setFormData((previous) => ({
+      ...previous,
+      chapters: [...previous.chapters, newJourneyChapter(previous.chapters.length)],
+    }));
+  }
+
+  function removeChapter(index: number) {
+    setFormData((previous) => ({
+      ...previous,
+      chapters: previous.chapters.filter((_, chapterIndex) => chapterIndex !== index),
+    }));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -209,6 +238,15 @@ export default function AboutJourneyEditor() {
                   <ArrowDown size={15} />
                   Move down
                 </button>
+                <button
+                  type="button"
+                  onClick={() => removeChapter(index)}
+                  className="studio-btn-secondary border-red-200 text-red-600 hover:border-red-300 hover:text-red-700"
+                  aria-label={`Delete ${chapter.title || `chapter ${index + 1}`}`}
+                >
+                  <Trash2 size={15} />
+                  Delete
+                </button>
               </div>
               <div className="studio-form-grid">
                 <label className="studio-field">
@@ -246,6 +284,10 @@ export default function AboutJourneyEditor() {
               </div>
             </fieldset>
           ))}
+          <button type="button" onClick={addChapter} className="studio-btn-secondary w-fit">
+            <Plus size={16} />
+            Add chapter
+          </button>
         </div>
       </section>
 

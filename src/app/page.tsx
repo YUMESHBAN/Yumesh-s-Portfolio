@@ -255,7 +255,7 @@ export default async function HomePage() {
       <StackScrollExperience skills={skills} categories={stackCategories} showcases={skillShowcases} variant="dial" />
 
       {featuredArticles.length ? (
-        <section className="site-section border-t border-white/10">
+        <section className="site-section">
           <div className="site-container">
             <SectionHeading
               eyebrow="Notes from building"

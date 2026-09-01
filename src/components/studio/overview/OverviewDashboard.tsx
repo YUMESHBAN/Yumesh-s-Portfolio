@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Award, BriefcaseBusiness, FileText, FolderKanban, GraduationCap, Search, Settings, Tag, UserRound } from "lucide-react";
+import { ArrowRight, Award, BriefcaseBusiness, FileText, FolderKanban, GraduationCap, Search, Settings, Tag, UserRound, type LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useClient } from "sanity";
 
@@ -71,6 +71,24 @@ const quickLinks = [
   { href: "/studio/documents", label: "Documents", icon: Settings },
 ];
 
+type ContentCollection = {
+  href: string;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  value: (data: OverviewData | null) => number;
+  accent: string;
+};
+
+const contentCollections: ContentCollection[] = [
+  { href: "/studio/project", label: "Projects", description: "Case studies and portfolio work", icon: FolderKanban, value: (data) => data?.projectCount ?? 0, accent: "studio-stat-blue" },
+  { href: "/studio/article", label: "Articles", description: "Published writing and drafts", icon: FileText, value: (data) => data?.articleCount ?? 0, accent: "studio-stat-orange" },
+  { href: "/studio/experience", label: "Experience", description: "Roles and professional history", icon: BriefcaseBusiness, value: (data) => data?.experienceCount ?? 0, accent: "studio-stat-green" },
+  { href: "/studio/education", label: "Education", description: "Academic record and courses", icon: GraduationCap, value: (data) => data?.educationCount ?? 0, accent: "studio-stat-pink" },
+  { href: "/studio/skill", label: "Stack", description: "Skills shown across the site", icon: Tag, value: (data) => data?.skillCount ?? 0, accent: "studio-stat-blue" },
+  { href: "/studio/certification", label: "Certifications", description: "Credentials and validation", icon: Award, value: (data) => data?.certificationCount ?? 0, accent: "studio-stat-green" },
+];
+
 export default function OverviewDashboard() {
   const client = useClient({ apiVersion: "2026-03-01" });
   const [data, setData] = useState<OverviewData | null>(null);
@@ -116,7 +134,7 @@ export default function OverviewDashboard() {
         </div>
       </div>
 
-      <div className="studio-stats-grid">
+      <div className="studio-stats-grid studio-overview-stats-grid">
         <div className="studio-stat-card">
           <p className="studio-stat-label">Projects</p>
           <p className="studio-stat-value studio-stat-blue">{data?.projectCount ?? 0}</p>
@@ -130,8 +148,8 @@ export default function OverviewDashboard() {
           <p className="studio-stat-value studio-stat-orange">{data?.articleCount ?? 0}</p>
         </div>
         <div className="studio-stat-card">
-          <p className="studio-stat-label">Skills</p>
-          <p className="studio-stat-value studio-stat-pink">{data?.skillCount ?? 0}</p>
+          <p className="studio-stat-label">Experience</p>
+          <p className="studio-stat-value studio-stat-pink">{data?.experienceCount ?? 0}</p>
         </div>
       </div>
 
@@ -141,9 +159,35 @@ export default function OverviewDashboard() {
         <div className="studio-loading">Loading dashboard...</div>
       ) : (
         <div className="studio-overview-grid">
+          <section className="studio-panel studio-panel-wide">
+            <div className="studio-panel-header">
+              <div>
+                <h2>Content at a Glance</h2>
+                <p className="studio-panel-description">Every collection currently available on the portfolio.</p>
+              </div>
+            </div>
+            <div className="studio-content-overview-grid">
+              {contentCollections.map((collection) => {
+                const Icon = collection.icon;
+
+                return (
+                  <a key={collection.href} href={collection.href} className="studio-content-overview-card">
+                    <span className={`studio-content-overview-icon ${collection.accent}`}><Icon size={18} /></span>
+                    <div>
+                      <span>{collection.label}</span>
+                      <strong className={collection.accent}>{collection.value(data)}</strong>
+                      <small>{collection.description}</small>
+                    </div>
+                    <ArrowRight size={16} aria-hidden="true" />
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+
           <section className="studio-panel">
             <div className="studio-panel-header">
-              <h2>Quick Actions</h2>
+              <h2>Go to Editor</h2>
             </div>
             <div className="studio-quick-grid">
               {quickLinks.map((item) => {

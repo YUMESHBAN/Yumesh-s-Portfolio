@@ -5,6 +5,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useClient } from "sanity";
 
 import { cleanOptionalFields, joinLines, splitLines } from "../shared/studio-utils";
+import EditableStringList from "../shared/EditableStringList";
 
 const educationLevels = ["Primary", "Secondary", "+2", "Bachelor", "Master", "PhD", "Diploma", "Other"] as const;
 const educationStatuses = ["published", "draft", "hidden"] as const;
@@ -51,14 +52,13 @@ type EducationFormState = {
   location: string;
   summary: string;
   gradeSystem: string;
-  courses: string;
+  courses: string[];
   honors: string;
-  achievements: string;
+  achievements: string[];
   resultEntries: EducationResultDocument[];
   showResultStats: boolean;
   showResultEntries: boolean;
   showOnWebsite: boolean;
-  order: number;
 };
 
 type EducationFormProps = {
@@ -98,14 +98,13 @@ function educationToFormState(education?: EducationDocument | null): EducationFo
     location: education?.location ?? "",
     summary: education?.summary ?? "",
     gradeSystem: education?.gradeSystem ?? "",
-    courses: joinLines(education?.courses),
+    courses: education?.courses?.length ? education.courses : [""],
     honors: joinLines(education?.honors),
-    achievements: joinLines(education?.achievements),
+    achievements: education?.achievements?.length ? education.achievements : [""],
     resultEntries: education?.resultEntries?.length ? education.resultEntries.map(normalizeResultEntry) : [newResultEntry()],
     showResultStats: education?.showResultStats ?? true,
     showResultEntries: education?.showResultEntries ?? true,
     showOnWebsite: education?.showOnWebsite ?? true,
-    order: education?.order ?? 99,
   };
 }
 
@@ -206,14 +205,14 @@ export default function EducationForm({ education, onComplete }: EducationFormPr
       location: formData.location.trim(),
       summary: formData.summary.trim(),
       gradeSystem: formData.gradeSystem.trim(),
-      courses: splitLines(formData.courses),
+      courses: formData.courses.map((item) => item.trim()).filter(Boolean),
       honors: splitLines(formData.honors),
-      achievements: splitLines(formData.achievements),
+      achievements: formData.achievements.map((item) => item.trim()).filter(Boolean),
       resultEntries,
       showResultStats: formData.showResultStats,
       showResultEntries: formData.showResultEntries,
       showOnWebsite: formData.showOnWebsite,
-      order: Number.isFinite(Number(formData.order)) ? Number(formData.order) : 99,
+      order: education?.order ?? 99,
     };
 
     const unsetFields = ["dateRange", "location", "summary", "gradeSystem"].filter(
@@ -255,16 +254,12 @@ export default function EducationForm({ education, onComplete }: EducationFormPr
         <section className="studio-form-section">
           <h3 className="studio-form-section-title">Education Details</h3>
           <div className="studio-form-grid">
-            <label className="studio-field">
+            <div className="studio-field">
               <span className="studio-form-label">Status</span>
-              <select value={formData.status} onChange={(event) => updateField("status", event.target.value as EducationStatus)} className="studio-form-select">
-                {educationStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div className="studio-segmented-control" aria-label="Education status">
+                {educationStatuses.map((status) => <button key={status} type="button" className={formData.status === status ? "is-active" : ""} onClick={() => updateField("status", status)}>{status}</button>)}
+              </div>
+            </div>
 
             <label className="studio-field">
               <span className="studio-form-label">Institution *</span>
@@ -299,15 +294,6 @@ export default function EducationForm({ education, onComplete }: EducationFormPr
               </select>
             </label>
 
-            <label className="studio-field">
-              <span className="studio-form-label">Display Order</span>
-              <input
-                type="number"
-                value={formData.order}
-                onChange={(event) => updateField("order", Number(event.target.value))}
-                className="studio-form-input"
-              />
-            </label>
 
             <label className="studio-field">
               <span className="studio-form-label">Date Range</span>
@@ -350,16 +336,7 @@ export default function EducationForm({ education, onComplete }: EducationFormPr
               />
             </label>
 
-            <label className="studio-field">
-              <span className="studio-form-label">Relevant Courses</span>
-              <textarea
-                value={formData.courses}
-                onChange={(event) => updateField("courses", event.target.value)}
-                className="studio-form-textarea"
-                rows={4}
-                placeholder={"Data Structures\nDatabase Systems"}
-              />
-            </label>
+            <EditableStringList label="Relevant Courses" values={formData.courses} onChange={(values) => updateField("courses", values)} placeholder="Data Structures" />
 
             <label className="studio-field">
               <span className="studio-form-label">Honors</span>
@@ -372,16 +349,7 @@ export default function EducationForm({ education, onComplete }: EducationFormPr
               />
             </label>
 
-            <label className="studio-field studio-field-wide">
-              <span className="studio-form-label">Achievements</span>
-              <textarea
-                value={formData.achievements}
-                onChange={(event) => updateField("achievements", event.target.value)}
-                className="studio-form-textarea"
-                rows={4}
-                placeholder={"80%+ overall percentage\nRanked 1st in 4th and 6th semesters"}
-              />
-            </label>
+            <EditableStringList label="Achievements" values={formData.achievements} onChange={(values) => updateField("achievements", values)} placeholder="Ranked 1st in 4th semester" />
           </div>
         </section>
 

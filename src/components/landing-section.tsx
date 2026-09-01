@@ -18,6 +18,11 @@ export function LandingSection({ profile, settings }: { profile: PersonProfile; 
     const stageElement = portraitStageRef.current;
     if (!stageElement || !("IntersectionObserver" in window)) return;
 
+    // Preserve desktop mouse hover effects by only running scroll-reveal on non-fine pointer (touch) devices
+    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         setIsActive(entry.isIntersecting);
@@ -60,7 +65,13 @@ export function LandingSection({ profile, settings }: { profile: PersonProfile; 
                 Got a project?
                 <ArrowRight size={17} />
               </Link>
-              <a href={settings.cvUrl} className="site-button-secondary">
+              <a
+                href={settings.cvUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                download="Yumesh-Ban-CV.pdf"
+                className="site-button-secondary"
+              >
                 <Download size={17} />
                 My resume
               </a>

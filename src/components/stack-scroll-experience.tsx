@@ -31,6 +31,73 @@ function proofId(index: number) {
   return `stack-proof-${index + 1}`;
 }
 
+function ProofContent({
+  proof,
+  index,
+  showcase,
+  skillProofs,
+  subIndex,
+  isDial,
+  onChangeProof,
+}: {
+  proof: Proof;
+  index: number;
+  showcase: SkillShowcase;
+  skillProofs: SkillShowcase[];
+  subIndex: number;
+  isDial: boolean;
+  onChangeProof: (nextIndex: number) => void;
+}) {
+  const image: ImageWithMeta | undefined = showcase.image ?? showcase.project?.featuredImage ?? proof.category.image;
+
+  return (
+    <div data-stack-proof-inner className="w-full transition-[opacity,transform] duration-500 motion-reduce:transition-none">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.15em] text-blue-200/75">
+        <div className="flex flex-wrap items-center gap-3">
+          <span>{proof.category.label ?? proof.category.title} / {proof.skill.name}</span>
+          {skillProofs.length > 1 ? (
+            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[11px] font-medium tracking-normal text-white/80">
+              <span>Proof {subIndex + 1} of {skillProofs.length}</span>
+              <div className="flex items-center border-l border-white/10 pl-1.5">
+                <button type="button" onClick={() => onChangeProof((subIndex - 1 + skillProofs.length) % skillProofs.length)} className="rounded p-0.5 transition hover:bg-white/10 hover:text-white" aria-label="Previous proof"><ChevronLeft size={13} aria-hidden="true" /></button>
+                <button type="button" onClick={() => onChangeProof((subIndex + 1) % skillProofs.length)} className="rounded p-0.5 transition hover:bg-white/10 hover:text-white" aria-label="Next proof"><ChevronRight size={13} aria-hidden="true" /></button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+        <span className={`text-white/35 ${isDial ? "xl:hidden" : ""}`}>{String(index + 1).padStart(2, "0")}</span>
+      </div>
+      {isDial ? (
+        <div className="rounded-xl border border-white/10 bg-[#08090d] transition-[border-color,box-shadow] duration-300 xl:rounded-none xl:border-transparent xl:hover:border-blue-400/60 xl:hover:shadow-[0_0_24px_rgba(96,165,250,0.2)] motion-reduce:transition-none">
+          <div className="xl:grid xl:min-h-[31rem] xl:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]">
+            <div className="border-b border-white/10 xl:flex xl:flex-col xl:border-b-0 xl:border-r">
+              <div className="relative min-h-60 bg-black/25 p-4 sm:min-h-72 sm:p-5 xl:min-h-0 xl:flex-1">
+                {showcase.demoVideoUrl ? <video className="h-full w-full object-contain" controls preload="metadata" src={showcase.demoVideoUrl} /> : image?.url || image?.src ? <Image src={image.url ?? image.src ?? ""} alt={image.alt || `${showcase.title} proof`} fill sizes="(min-width: 1280px) 26vw, 100vw" className="object-contain p-4 sm:p-5" onLoad={() => ScrollTrigger.refresh()} /> : <div className="flex h-full flex-col justify-between p-5"><span className="font-mono text-xs uppercase tracking-[0.16em] text-blue-200/70">{proof.skill.name} proof</span><p className="max-w-sm text-2xl font-semibold tracking-[-0.05em] text-white">{showcase.title}</p></div>}
+              </div>
+              {showcase.highlights?.length ? <ul aria-label="What I delivered" className="space-y-3 border-t border-white/10 px-6 py-7 text-sm leading-6 text-white/65 sm:px-8">{showcase.highlights.slice(0, 3).map((highlight) => <li key={highlight} className="flex gap-3"><span className="text-blue-300">•</span>{highlight}</li>)}</ul> : null}
+            </div>
+            <div className="flex min-w-0 flex-col p-6 sm:p-8 xl:p-7">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-300">{proof.skill.name} / What I built</p>
+              <h3 className="mt-3 text-3xl font-semibold leading-[0.98] tracking-[-0.05em] text-white">{showcase.title}</h3>
+              {showcase.project ? <div className="mt-6"><p className="text-[0.625rem] font-bold uppercase tracking-[0.14em] text-white/35">Project context</p><p className="mt-2 text-sm font-semibold text-white">{showcase.project.title}</p><p className="mt-1 text-xs text-white/45">{showcase.project.role ?? showcase.project.type}</p></div> : null}
+              <p className="mt-8 text-sm leading-7 text-white/60">{showcase.description}</p>
+              {showcase.project ? <Link href={`/works/${showcase.project.slug}`} className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-blue-300 transition hover:text-blue-200">View project details<ArrowUpRight size={16} aria-hidden="true" /></Link> : null}
+            </div>
+          </div>
+          <div className="border-t border-white/10 px-6 py-5 sm:px-8">{showcase.project?.techStack?.length ? <div className="flex flex-wrap gap-2">{showcase.project.techStack.slice(0, 5).map((item) => <span key={item} className="site-chip px-3 py-1.5 text-xs">{item}</span>)}</div> : null}</div>
+        </div>
+      ) : (
+        <div className="mt-5 overflow-hidden rounded-lg border border-white/10 bg-[#08090d]">
+          <div className="relative min-h-72 border-b border-white/10 bg-black/25 sm:min-h-96">
+            {showcase.demoVideoUrl ? <video className="h-full min-h-72 w-full object-contain sm:min-h-96" controls preload="metadata" src={showcase.demoVideoUrl} /> : image?.url || image?.src ? <Image src={image.url ?? image.src ?? ""} alt={image.alt || `${showcase.title} proof`} fill sizes="(min-width: 1024px) 52vw, 100vw" className="object-contain p-5" onLoad={() => ScrollTrigger.refresh()} /> : <div className="flex h-full min-h-72 flex-col justify-between p-7 sm:min-h-96 sm:p-9"><span className="font-mono text-xs uppercase tracking-[0.16em] text-blue-200/70">{proof.skill.name}</span><p className="max-w-lg text-3xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">{showcase.title}</p></div>}
+          </div>
+          <div className="p-6 sm:p-8"><p className="text-sm font-medium text-blue-200/70">{showcase.project?.role ?? showcase.project?.type ?? proof.skill.name}</p><h3 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">{showcase.title}</h3><p className="mt-4 max-w-2xl text-sm leading-7 text-white/60">{showcase.description}</p>{showcase.highlights?.length ? <div className="mt-6 flex flex-wrap gap-2">{showcase.highlights.map((highlight) => <span key={highlight} className="site-chip">{highlight}</span>)}</div> : null}{showcase.project ? <Link href={`/works/${showcase.project.slug}`} className="site-link mt-7 inline-flex items-center gap-2 text-sm font-semibold">View {showcase.project.title}<ArrowUpRight size={16} aria-hidden="true" /></Link> : null}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function StackScrollExperience({
   skills,
   categories,
@@ -44,12 +111,20 @@ export function StackScrollExperience({
 }) {
   const rootRef = useRef<HTMLElement>(null);
   const leftRailRef = useRef<HTMLDivElement>(null);
+  const proofPanelRef = useRef<HTMLDivElement>(null);
   const requestedProofIndexRef = useRef<number | null>(null);
+  const activeProofIndexRef = useRef(0);
+  const proofWheelLockRef = useRef<number | null>(null);
   const [activeProofIndex, setActiveProofIndex] = useState(0);
+  const [proofTransition, setProofTransition] = useState<"next" | "previous" | null>(null);
   const [pendingProofIndex, setPendingProofIndex] = useState<number | null>(null);
   const [subProofIndexes, setSubProofIndexes] = useState<Record<string, number>>({});
   const [isZoomed, setIsZoomed] = useState(false);
   const isDial = variant === "dial";
+
+  useEffect(() => {
+    activeProofIndexRef.current = activeProofIndex;
+  }, [activeProofIndex]);
 
   useEffect(() => {
     const updateZoom = () => setIsZoomed(window.outerWidth / window.innerWidth > 1.06);
@@ -90,6 +165,9 @@ export function StackScrollExperience({
   const activeProof = proofs[activeProofIndex] ?? proofs[0];
   const activeCategory = activeProof?.category ?? categoryData[0];
   const activeSkill = activeProof?.skill;
+  const activeSkillProofs = activeProof ? showcases.filter((showcase) => sameSkill(activeProof.skill, showcase.skill)) : [];
+  const activeSubIndex = activeProof ? subProofIndexes[activeProof.id] ?? 0 : 0;
+  const activeShowcase = activeSkillProofs[activeSubIndex] ?? activeProof?.showcase;
   const activeCategoryIndex = Math.max(0, categoryData.findIndex((category) => category.title === activeCategory?.title));
   const dialStep = 120 / Math.max(1, categoryData.length - 1);
   const dialSweep = `${38 + activeCategoryIndex * dialStep}deg`;
@@ -104,12 +182,12 @@ export function StackScrollExperience({
     setActiveProofIndex(index);
   }
 
-  const scrollTo = useCallback((id: string) => {
+  const scrollTo = useCallback((id: string, behavior: ScrollBehavior = "smooth") => {
     const target = document.getElementById(id);
 
     if (!target) return;
 
-    const headerOffset = 216;
+    const headerOffset = 112;
     const top = window.scrollY + target.getBoundingClientRect().top - headerOffset;
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -123,7 +201,7 @@ export function StackScrollExperience({
       return;
     }
 
-    window.scrollTo({ top, behavior: "smooth" });
+    window.scrollTo({ top, behavior });
   }, []);
 
   useLayoutEffect(() => {
@@ -137,7 +215,7 @@ export function StackScrollExperience({
     const context = gsap.context(() => {
       const media = gsap.matchMedia();
 
-      media.add("(prefers-reduced-motion: no-preference)", () => {
+      media.add(isDial ? "(max-width: 1279px) and (prefers-reduced-motion: no-preference)" : "(prefers-reduced-motion: no-preference)", () => {
         const sections = gsap.utils.toArray<HTMLElement>("[data-stack-proof]", root);
         const triggers = sections.map((section, index) =>
           ScrollTrigger.create({
@@ -157,7 +235,7 @@ export function StackScrollExperience({
         };
       });
 
-      media.add("(min-width: 1280px) and (prefers-reduced-motion: no-preference)", () => {
+      if (!isDial) media.add("(min-width: 1280px) and (prefers-reduced-motion: no-preference)", () => {
         const sections = gsap.utils.toArray<HTMLElement>("[data-stack-proof]", root);
         const finalProof = sections[sections.length - 1] ?? root;
         const pin = ScrollTrigger.create({
@@ -235,8 +313,65 @@ export function StackScrollExperience({
     });
   }, [pendingProofIndex, proofs, scrollTo]);
 
+  useEffect(() => {
+    const panel = proofPanelRef.current;
+
+    if (!panel || !isDial) {
+      return;
+    }
+
+    const handleWheel = (event: WheelEvent) => {
+      if (window.innerWidth < 1280 || Math.abs(event.deltaY) < 2) {
+        return;
+      }
+
+      const bounds = panel.getBoundingClientRect();
+      const isOverPanel =
+        event.clientX >= bounds.left &&
+        event.clientX <= bounds.right &&
+        event.clientY >= bounds.top &&
+        event.clientY <= bounds.bottom;
+
+      if (!isOverPanel) {
+        return;
+      }
+
+      const nextIndex = activeProofIndexRef.current + (event.deltaY > 0 ? 1 : -1);
+
+      if (nextIndex < 0 || nextIndex >= proofs.length) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (proofWheelLockRef.current !== null) {
+        return;
+      }
+
+      setProofTransition(event.deltaY > 0 ? "next" : "previous");
+      setActiveProofIndex(nextIndex);
+      proofWheelLockRef.current = window.setTimeout(() => {
+        proofWheelLockRef.current = null;
+      }, 360);
+    };
+
+    window.addEventListener("wheel", handleWheel, { capture: true, passive: false });
+    return () => {
+      window.removeEventListener("wheel", handleWheel, { capture: true });
+      if (proofWheelLockRef.current !== null) {
+        window.clearTimeout(proofWheelLockRef.current);
+      }
+    };
+  }, [isDial, proofs.length]);
+
   function showProof(proof: Proof) {
     const proofIndex = Math.max(0, proofs.indexOf(proof));
+
+    if (isDial && window.innerWidth >= 1280) {
+      requestedProofIndexRef.current = null;
+      setActiveProofIndex(proofIndex);
+      return;
+    }
 
     requestedProofIndexRef.current = proofIndex;
     setPendingProofIndex(proofIndex);
@@ -248,8 +383,17 @@ export function StackScrollExperience({
 
     if (target) {
       const proofIndex = Math.max(0, proofs.indexOf(target));
+
+      if (isDial && window.innerWidth >= 1280) {
+        requestedProofIndexRef.current = null;
+        setActiveProofIndex(proofIndex);
+        return;
+      }
+
       requestedProofIndexRef.current = proofIndex;
+      setPendingProofIndex(proofIndex);
       setActiveProofIndex(proofIndex);
+      return;
     }
 
     scrollTo("stack-category-header");
@@ -287,7 +431,7 @@ export function StackScrollExperience({
         </div>
 
         <div className={isDial ? "xl:grid xl:grid-cols-[minmax(0,0.58fr)_minmax(0,1.42fr)] xl:gap-8" : "lg:grid lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.28fr)] lg:gap-12"}>
-          <div ref={leftRailRef} className={`relative min-w-0 self-start pb-10 ${isDial ? "xl:min-h-[calc(100vh-6rem)] xl:pl-12 xl:pt-3" : "lg:pb-0 lg:pt-1"}`}>
+          <div ref={leftRailRef} className={`relative min-w-0 self-start pb-10 ${isDial ? "xl:sticky xl:top-24 xl:min-h-[calc(100vh-6rem)] xl:pl-12 xl:pt-3" : "lg:pb-0 lg:pt-1"}`}>
             {isDial ? (
               <div data-stack-dial-shell className={`stack-dial-shell hidden transition-opacity duration-300 ease-out xl:block ${isZoomed ? "pointer-events-none !opacity-0" : "!opacity-100"}`} aria-hidden={isZoomed}>
                 <div className="stack-dial-visual" aria-hidden="true">
@@ -367,7 +511,24 @@ export function StackScrollExperience({
           </div>
 
           <div className={`min-w-0 space-y-12 lg:space-y-0 ${isDial ? "xl:w-full xl:pl-5" : ""}`}>
-            {proofs.map((proof, index) => {
+            {isDial && activeProof && activeShowcase ? (
+              <div ref={proofPanelRef} className="hidden xl:sticky xl:top-24 xl:z-10 xl:block">
+                <div key={activeProof.id} className={proofTransition === "previous" ? "stack-proof-swipe-up" : proofTransition === "next" ? "stack-proof-swipe-down" : undefined}>
+                  <ProofContent
+                    proof={activeProof}
+                    index={activeProofIndex}
+                    showcase={activeShowcase}
+                    skillProofs={activeSkillProofs}
+                    subIndex={activeSubIndex}
+                    isDial
+                    onChangeProof={(nextIndex) => setSubProofIndexes((current) => ({ ...current, [activeProof.id]: nextIndex }))}
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            <div className={isDial ? "xl:hidden" : ""}>
+              {proofs.map((proof, index) => {
               const skillProofs = showcases.filter((s) => sameSkill(proof.skill, s.skill));
               const subIndex = subProofIndexes[proof.id] ?? 0;
               const showcase = skillProofs[subIndex] ?? proof.showcase;
@@ -393,7 +554,7 @@ export function StackScrollExperience({
                         : "opacity-55"
                   }`}
                 >
-                  <div data-stack-proof-inner className="w-full transition-[opacity,transform] duration-500 motion-reduce:transition-none">
+                  <div data-stack-proof-inner className={`w-full transition-[opacity,transform] duration-500 motion-reduce:transition-none ${isDial ? "xl:hidden" : ""}`}>
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.15em] text-blue-200/75">
                       <div className="flex flex-wrap items-center gap-3">
                         <span>{proof.category.label ?? proof.category.title} / {proof.skill.name}</span>
@@ -479,7 +640,8 @@ export function StackScrollExperience({
                   </div>
                 </article>
               );
-            })}
+              })}
+            </div>
           </div>
         </div>
       </div>

@@ -19,7 +19,6 @@ export type SkillDocument = {
   _type?: "skill";
   status?: SkillStatus;
   name?: string;
-  description?: string;
   iconName?: string;
   aliases?: string[];
   category?: SkillCategory;
@@ -31,7 +30,6 @@ export type SkillDocument = {
 type SkillFormState = {
   status: SkillStatus;
   name: string;
-  description: string;
   iconName: string;
   aliases: string;
   category: SkillCategory;
@@ -50,7 +48,6 @@ function skillToFormState(skill?: SkillDocument | null): SkillFormState {
   return {
     status: skill?.status ?? "published",
     name: skill?.name ?? "",
-    description: skill?.description ?? "",
     iconName: skill?.iconName ?? "",
     aliases: joinLines(skill?.aliases),
     category: skill?.category ?? "Frontend",
@@ -97,7 +94,6 @@ export default function SkillForm({ skill, categorySuggestions, onComplete }: Sk
       _type: "skill" as const,
       status: formData.status,
       name,
-      description: formData.description.trim(),
       iconName: formData.iconName.trim(),
       aliases: splitLines(formData.aliases),
       category,
@@ -106,7 +102,7 @@ export default function SkillForm({ skill, categorySuggestions, onComplete }: Sk
       order: Number.isFinite(Number(formData.order)) ? Number(formData.order) : 99,
     };
 
-    const unsetFields = ["description", "iconName"].filter((field) => !String(payload[field as keyof typeof payload] ?? "").trim());
+    const unsetFields = ["iconName"].filter((field) => !String(payload[field as keyof typeof payload] ?? "").trim());
 
     try {
       if (skill?._id) {
@@ -224,11 +220,6 @@ export default function SkillForm({ skill, categorySuggestions, onComplete }: Sk
             <label className="studio-field">
               <span className="studio-form-label">Display Order</span>
               <input type="number" value={formData.order} onChange={(event) => updateField("order", Number(event.target.value))} className="studio-form-input" />
-            </label>
-
-            <label className="studio-field studio-field-wide">
-              <span className="studio-form-label">Description</span>
-              <textarea value={formData.description} onChange={(event) => updateField("description", event.target.value)} className="studio-form-textarea" rows={3} />
             </label>
 
             <label className="studio-field studio-field-wide">

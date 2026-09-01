@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, EyeOff, LayoutGrid, List, Pencil, Plus, Search, Star, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ExternalLink, EyeOff, LayoutGrid, List, Pencil, Plus, Search, Star, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useClient } from "sanity";
 
@@ -135,6 +135,25 @@ export default function ProjectDashboard() {
     setView("list");
     setEditingProject(null);
     fetchProjects();
+  }
+
+  async function moveFeaturedProject(project: ProjectDocument, direction: -1 | 1) {
+    if (!project._id) return;
+    const featured = projects.filter((item) => item.featured).sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+    const index = featured.findIndex((item) => item._id === project._id);
+    const nextIndex = index + direction;
+    if (index < 0 || nextIndex < 0 || nextIndex >= featured.length) return;
+
+    const reordered = [...featured];
+    [reordered[index], reordered[nextIndex]] = [reordered[nextIndex], reordered[index]];
+    try {
+      const transaction = client.transaction();
+      reordered.forEach((item, order) => transaction.patch(item._id!, (patch) => patch.set({ order: order + 1 })));
+      await transaction.commit();
+      await fetchProjects();
+    } catch (moveError) {
+      setError(getErrorMessage(moveError));
+    }
   }
 
   if (view === "form") {
@@ -296,6 +315,12 @@ export default function ProjectDashboard() {
                   >
                     <Trash2 size={16} />
                   </button>
+                  {project.featured ? (
+                    <div className="studio-row-actions" aria-label={`Order ${project.title}`}>
+                      <button type="button" onClick={() => moveFeaturedProject(project, -1)} className="studio-icon-button" aria-label={`Move ${project.title} up`}><ArrowUp size={16} /></button>
+                      <button type="button" onClick={() => moveFeaturedProject(project, 1)} className="studio-icon-button" aria-label={`Move ${project.title} down`}><ArrowDown size={16} /></button>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </article>
@@ -328,6 +353,7 @@ export default function ProjectDashboard() {
                       <button type="button" onClick={() => handleEdit(project)} className="studio-icon-button" aria-label={`Edit ${project.title}`}>
                         <Pencil size={16} />
                       </button>
+                      {project.featured ? <><button type="button" onClick={() => moveFeaturedProject(project, -1)} className="studio-icon-button" aria-label={`Move ${project.title} up`}><ArrowUp size={16} /></button><button type="button" onClick={() => moveFeaturedProject(project, 1)} className="studio-icon-button" aria-label={`Move ${project.title} down`}><ArrowDown size={16} /></button></> : null}
                       <button
                         type="button"
                         onClick={() => handleDelete(project)}

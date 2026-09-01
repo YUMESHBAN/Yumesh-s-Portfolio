@@ -9,6 +9,7 @@ import { createTextBlock, getErrorMessage, type CalloutBlock, type CodeBlock, ty
 
 type RichContentEditorProps = {
   label: string;
+  description?: string;
   value: RichContentBlock[];
   onChange: (value: RichContentBlock[]) => void;
   allowImages?: boolean;
@@ -72,9 +73,10 @@ function toggleMark(block: PortableTextBlock, start: number, end: number, mark: 
   return { ...block, children: spans };
 }
 
-export default function RichContentEditor({ label, value, onChange, allowImages = false, allowTakeaways = false }: RichContentEditorProps) {
+export default function RichContentEditor({ label, description, value, onChange, allowImages = false, allowTakeaways = false }: RichContentEditorProps) {
   const client = useClient({ apiVersion: "2026-03-01" });
   const textareas = useRef<Record<string, HTMLTextAreaElement | null>>({});
+  const selections = useRef<Record<string, { start: number; end: number }>>({});
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
@@ -178,13 +180,19 @@ export default function RichContentEditor({ label, value, onChange, allowImages 
   }
 
   function applyMark(index: number, block: PortableTextBlock, mark: string) {
-    const textarea = textareas.current[block._key ?? String(index)];
+    const key = block._key ?? String(index);
+    const textarea = textareas.current[key];
     if (!textarea) {
       return;
     }
 
-    updateBlock(index, toggleMark(block, textarea.selectionStart, textarea.selectionEnd, mark));
+    const selection = selections.current[key] ?? { start: textarea.selectionStart, end: textarea.selectionEnd };
+    updateBlock(index, toggleMark(block, selection.start, selection.end, mark));
     textarea.focus();
+  }
+
+  function captureSelection(key: string, textarea: HTMLTextAreaElement) {
+    selections.current[key] = { start: textarea.selectionStart, end: textarea.selectionEnd };
   }
 
   function blockControls(index: number, labelText: string, removeLabel: string) {
@@ -209,7 +217,7 @@ export default function RichContentEditor({ label, value, onChange, allowImages 
   return (
     <div className="studio-rich-editor">
       <div className="studio-form-section-header">
-        <h3 className="studio-form-section-title">{label}</h3>
+        <div><h3 className="studio-form-section-title">{label}</h3>{description ? <p className="studio-help-text mt-2">{description}</p> : null}</div>
         <div className="studio-rich-toolbar">
           <button type="button" onClick={() => addTextBlock("normal")} className="studio-btn-secondary">
             <Pilcrow size={15} />
@@ -278,6 +286,10 @@ export default function RichContentEditor({ label, value, onChange, allowImages 
                     }}
                     value={getBlockText(block)}
                     onChange={(event) => updateBlock(index, updateBlockText(block, event.target.value))}
+                    onSelect={(event) => captureSelection(block._key ?? String(index), event.currentTarget)}
+                    onMouseUp={(event) => captureSelection(block._key ?? String(index), event.currentTarget)}
+                    onKeyUp={(event) => captureSelection(block._key ?? String(index), event.currentTarget)}
+                    onBlur={(event) => captureSelection(block._key ?? String(index), event.currentTarget)}
                     className="studio-form-textarea"
                     rows={block.style === "normal" ? 3 : 2}
                     placeholder={block.style === "normal" ? "Write a paragraph..." : "Write a heading..."}
@@ -298,7 +310,7 @@ export default function RichContentEditor({ label, value, onChange, allowImages 
                         onChange={(event) => updateBlock(index, { ...block, tone: event.target.value as CalloutBlock["tone"] })}
                         className="studio-form-select"
                       >
-                        {["Note", "Tip", "Warning", "Result"].map((tone) => (
+                        {["Note", "Tip", "Warning", "Result", "Finding", "Conclusion"].map((tone) => (
                           <option key={tone} value={tone}>
                             {tone}
                           </option>
@@ -375,35 +387,19 @@ export default function RichContentEditor({ label, value, onChange, allowImages 
               return (
                 <div key={block._key ?? index} className="studio-rich-block">
                   {blockControls(index, "Image", "Remove image")}
-                  <div className="studio-form-grid">
-                    {block.src ? <Image src={block.src} alt={block.alt || "Article image preview"} width={960} height={640} className="max-h-72 rounded-md object-cover" /> : <p className="studio-help-text">Image uploaded without a preview URL.</p>}
-                    <label className="studio-field">
-                      <span className="studio-form-label">Layout</span>
-                      <select value={block.layout ?? "inline"} onChange={(event) => updateBlock(index, { ...block, layout: event.target.value as ImageWithMetaBlock["layout"] })} className="studio-form-select">
-                        <option value="inline">Inline</option>
-                        <option value="wide">Wide</option>
-                        <option value="sideLeft">Side left</option>
-                        <option value="sideRight">Side right</option>
-                      </select>
-                    </label>
-                    <label className="studio-field studio-field-wide">
-                      <span className="studio-form-label">Alt text</span>
-                      <input value={block.alt ?? ""} onChange={(event) => updateBlock(index, { ...block, alt: event.target.value })} className="studio-form-input" placeholder="Describe the image" />
-                    </label>
-                    <label className="studio-field studio-field-wide">
-                      <span className="studio-form-label">Caption</span>
-                      <input value={block.caption ?? ""} onChange={(event) => updateBlock(index, { ...block, caption: event.target.value })} className="studio-form-input" placeholder="Optional caption" />
-                    </label>
-                    <div className="studio-field studio-field-wide flex flex-wrap gap-2">
-                      <label className="studio-btn-secondary cursor-pointer">
-                        <Upload size={15} />
-                        Replace image
-                        <input type="file" accept="image/*" onChange={(event) => uploadImage(event, index)} className="sr-only" />
-                      </label>
-                      <button type="button" onClick={() => removeBlock(index)} className="studio-btn-delete">
-                        <Trash2 size={15} />
-                        Remove image
-                      </button>
+                  <div className="studio-rich-image-editor">
+                    <div className="studio-asset-card studio-rich-image-preview">
+                      {block.src ? <Image src={block.src} alt={block.alt || "Article image preview"} fill sizes="(min-width: 1024px) 35vw, 100vw" className="object-cover" /> : <ImagePlus size={20} />}
+                      <div className="studio-asset-card-label">Article image</div>
+                      <div className="studio-asset-card-actions">
+                        <label className="studio-asset-action"><Upload size={15} /> Replace<input type="file" accept="image/*" onChange={(event) => uploadImage(event, index)} /></label>
+                        <button type="button" className="studio-asset-action is-danger" onClick={() => removeBlock(index)}><Trash2 size={15} /> Delete</button>
+                      </div>
+                    </div>
+                    <div className="studio-rich-image-details">
+                      <label className="studio-field"><span className="studio-form-label">Layout</span><select value={block.layout ?? "inline"} onChange={(event) => updateBlock(index, { ...block, layout: event.target.value as ImageWithMetaBlock["layout"] })} className="studio-form-select"><option value="inline">Inline</option><option value="wide">Wide</option><option value="sideLeft">Side left</option><option value="sideRight">Side right</option></select></label>
+                      <label className="studio-field"><span className="studio-form-label">Alt text</span><input value={block.alt ?? ""} onChange={(event) => updateBlock(index, { ...block, alt: event.target.value })} className="studio-form-input" placeholder="Describe the image" /></label>
+                      <label className="studio-field"><span className="studio-form-label">Caption</span><input value={block.caption ?? ""} onChange={(event) => updateBlock(index, { ...block, caption: event.target.value })} className="studio-form-input" placeholder="Optional caption" /></label>
                     </div>
                   </div>
                 </div>

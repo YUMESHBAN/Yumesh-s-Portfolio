@@ -32,6 +32,7 @@ export const siteSettingsQuery = `*[_type == "siteSettings"][0]{
   "cvUrl": coalesce(cvFile.asset->url, "/Yumesh-Ban-CV.pdf")
 }`;
 const projectFields = `{
+  _id,
   status,
   title,
   "slug": slug.current,
@@ -72,6 +73,7 @@ const projectFields = `{
 export const projectsQuery = `*[_type == "project" && (!defined(status) || status == "published")] | order(order asc)${projectFields}`;
 export const featuredProjectsQuery = `*[_type == "project" && featured == true && (!defined(status) || status == "published")] | order(order asc)${projectFields}`;
 export const projectBySlugQuery = `*[_type == "project" && slug.current == $slug && (!defined(status) || status == "published")][0]{
+  _id,
   status,
   title,
   "slug": slug.current,
@@ -174,7 +176,6 @@ export const skillsQuery = `*[_type == "skill" && (!defined(status) || status ==
   _id,
   status,
   name,
-  description,
   iconName,
   aliases,
   category,
@@ -212,6 +213,7 @@ export const skillShowcasesQuery = `*[_type == "skillShowcase" && (!defined(stat
   "demoVideoUrl": demoVideo.asset->url,
   "demoVideoMimeType": demoVideo.asset->mimeType,
   highlights,
+  showOnRelatedProject,
   order
 }`;
 export const certificationsQuery = `*[_type == "certification" && (!defined(status) || status == "published")] | order(order asc, date desc){
@@ -241,6 +243,14 @@ export const articlesQuery = `*[_type == "article" && (!defined(status) || statu
   updatedAt,
   tags,
   body
+}`;
+export const projectRelatedContentQuery = `{
+  "proofs": *[_type == "skillShowcase" && project._ref == $projectId && (!defined(status) || status == "published") && showOnRelatedProject != false] | order(order asc, title asc){
+    _id, title, description, highlights, skill->{name, category}, image{image, alt, caption, "src": image.asset->url}, "demoVideoUrl": demoVideo.asset->url
+  },
+  "articles": *[_type == "article" && references($projectId) && (!defined(status) || status == "published") && showOnRelatedProject != false] | order(publishedAt desc){
+    _id, title, "slug": slug.current, category, excerpt, publishedAt, coverImage{image, alt, caption, "src": image.asset->url}
+  }
 }`;
 export const featuredHomepageArticlesQuery = `*[_type == "article" && (!defined(status) || status == "published") && featuredOnHomepage == true] | order(homepageOrder asc)[0...3]{
   status,

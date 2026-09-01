@@ -1,7 +1,7 @@
 "use client";
 
-import { ExternalLink, Save, UserRound } from "lucide-react";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { ExternalLink, FileText, Save, Upload, UserRound, X } from "lucide-react";
+import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useClient } from "sanity";
 
 import {
@@ -13,6 +13,8 @@ import {
   textToPortableBlocks,
   type PortableTextBlock,
 } from "../shared/studio-utils";
+import { SocialLinkIcon } from "@/components/social-link-icon";
+import TagEditor from "../shared/TagEditor";
 
 type SocialLink = {
   _key?: string;
@@ -48,7 +50,6 @@ type PersonProfileDocument = {
   degree?: string;
   overallPercentage?: string;
   finalSemesterPercentage?: string;
-  ctaLinks?: SocialLink[];
   socialLinks?: SocialLink[];
   aboutManifesto?: AboutManifestoItem[];
 };
@@ -59,6 +60,26 @@ type SiteSettingsDocument = {
   title?: string;
   description?: string;
   keywords?: string[];
+  cvFile?: {
+    _type?: "file";
+    asset?: {
+      _id?: string;
+      originalFilename?: string;
+      url?: string;
+    };
+  };
+};
+
+type SiteSettingsPayload = {
+  _type: "siteSettings";
+  siteUrl: string;
+  title: string;
+  description: string;
+  keywords: string[];
+  cvFile?: {
+    _type: "file";
+    asset: { _type: "reference"; _ref: string };
+  };
 };
 
 type DashboardData = {
@@ -83,14 +104,20 @@ type ProfileFormState = {
   degree: string;
   overallPercentage: string;
   finalSemesterPercentage: string;
-  ctaLinks: string;
   socialLinks: string;
   aboutManifesto: AboutManifestoItem[];
   siteUrl: string;
   siteTitle: string;
   siteDescription: string;
   keywords: string;
+  cvFileAssetId?: string;
+  cvFileName?: string;
+  cvUrl?: string;
 };
+
+const socialPlatforms = ["GitHub", "LinkedIn", "Twitter", "Instagram", "Facebook", "YouTube", "Dev.to", "Dribbble"] as const;
+type SocialPlatform = (typeof socialPlatforms)[number];
+const profileSteps = ["Identity", "Biography", "Manifesto", "Publishing & SEO"] as const;
 
 const dashboardQuery = `{
   "profile": *[_type == "personProfile"][0]{
@@ -108,7 +135,6 @@ const dashboardQuery = `{
     degree,
     overallPercentage,
     finalSemesterPercentage,
-    ctaLinks,
     socialLinks,
     aboutManifesto
   },
@@ -117,7 +143,15 @@ const dashboardQuery = `{
     siteUrl,
     title,
     description,
-    keywords
+    keywords,
+    cvFile{
+      _type,
+      asset->{
+        _id,
+        originalFilename,
+        url
+      }
+    }
   },
   "skillCount": count(*[_type == "skill"]),
   "projectCount": count(*[_type == "project"]),
@@ -151,6 +185,45 @@ function socialTextToLinks(value: string): SocialLink[] {
   return links;
 }
 
+function normalisePlatformLabel(label?: string, href?: string): SocialPlatform | undefined {
+  const value = `${label ?? ""} ${href ?? ""}`.toLowerCase();
+  if (value.includes("github")) return "GitHub";
+  if (value.includes("linkedin")) return "LinkedIn";
+  if (value.includes("twitter") || value.includes("x.com")) return "Twitter";
+  if (value.includes("instagram")) return "Instagram";
+  if (value.includes("facebook")) return "Facebook";
+  if (value.includes("youtube")) return "YouTube";
+  if (value.includes("dev.to")) return "Dev.to";
+  if (value.includes("dribbble")) return "Dribbble";
+  return undefined;
+}
+
+function socialUrlsFromText(value: string): Partial<Record<SocialPlatform, string>> {
+  return socialTextToLinks(value).reduce<Partial<Record<SocialPlatform, string>>>((urls, link) => {
+    const platform = normalisePlatformLabel(link.label, link.href);
+    if (platform) urls[platform] = link.href;
+    return urls;
+  }, {});
+}
+
+function updateSocialUrl(value: string, platform: SocialPlatform, href: string) {
+  const links = socialTextToLinks(value);
+  const retainedLinks = links.filter((link) => normalisePlatformLabel(link.label, link.href) !== platform);
+  const trimmedHref = href.trim();
+
+  if (trimmedHref) {
+    retainedLinks.push({
+      _key: `social-${platform.toLowerCase().replace(/[^a-z]/g, "")}`,
+      _type: "linkItem",
+      label: platform,
+      href: trimmedHref,
+      type: "Social",
+    });
+  }
+
+  return socialLinksToText(retainedLinks);
+}
+
 function dashboardToFormState(data?: DashboardData | null): ProfileFormState {
   const profile = data?.profile;
   const settings = data?.settings;
@@ -169,13 +242,15 @@ function dashboardToFormState(data?: DashboardData | null): ProfileFormState {
     degree: profile?.degree ?? "BSc.CSIT, Tribhuvan University",
     overallPercentage: profile?.overallPercentage ?? "80%+",
     finalSemesterPercentage: profile?.finalSemesterPercentage ?? "90.8%",
-    ctaLinks: socialLinksToText(profile?.ctaLinks),
     socialLinks: socialLinksToText(profile?.socialLinks),
     aboutManifesto: profile?.aboutManifesto ?? [],
     siteUrl: settings?.siteUrl ?? "",
     siteTitle: settings?.title ?? "Yumesh Ban - Full Stack Developer in Kathmandu, Nepal",
     siteDescription: settings?.description ?? "",
     keywords: joinLines(settings?.keywords),
+    cvFileAssetId: settings?.cvFile?.asset?._id,
+    cvFileName: settings?.cvFile?.asset?.originalFilename,
+    cvUrl: settings?.cvFile?.asset?.url,
   };
 }
 
@@ -185,8 +260,10 @@ export default function ProfileDashboard() {
   const [formData, setFormData] = useState<ProfileFormState>(() => dashboardToFormState(null));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingCv, setUploadingCv] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [activeStep, setActiveStep] = useState(0);
 
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
@@ -228,6 +305,47 @@ export default function ProfileDashboard() {
     window.location.assign(path);
   }
 
+  async function uploadCvFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setError("Please select a valid PDF file for your resume.");
+      return;
+    }
+
+    setError("");
+    setUploadingCv(true);
+
+    try {
+      const asset = await client.assets.upload("file", file, {
+        filename: file.name,
+        contentType: "application/pdf",
+      });
+
+      setFormData((previous) => ({
+        ...previous,
+        cvFileAssetId: asset._id,
+        cvFileName: asset.originalFilename ?? file.name,
+        cvUrl: asset.url,
+      }));
+      setSuccess("Resume PDF uploaded. Click 'Save Profile' below to publish.");
+    } catch (uploadError) {
+      setError(getErrorMessage(uploadError));
+    } finally {
+      setUploadingCv(false);
+    }
+  }
+
+  function removeCvFile() {
+    setFormData((previous) => ({
+      ...previous,
+      cvFileAssetId: undefined,
+      cvFileName: undefined,
+      cvUrl: undefined,
+    }));
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -263,7 +381,6 @@ export default function ProfileDashboard() {
       degree: formData.degree.trim(),
       overallPercentage: formData.overallPercentage.trim(),
       finalSemesterPercentage: formData.finalSemesterPercentage.trim(),
-      ctaLinks: socialTextToLinks(formData.ctaLinks),
       socialLinks: socialTextToLinks(formData.socialLinks),
       aboutManifesto: formData.aboutManifesto.map((item, index) => ({
         _key: item._key ?? `manifesto-${index + 1}`,
@@ -277,13 +394,23 @@ export default function ProfileDashboard() {
       })),
     };
 
-    const settingsPayload = {
+    const settingsPayload: SiteSettingsPayload = {
       _type: "siteSettings",
       siteUrl: formData.siteUrl.trim(),
       title: formData.siteTitle.trim(),
       description: formData.siteDescription.trim(),
       keywords: splitLines(formData.keywords),
     };
+
+    if (formData.cvFileAssetId) {
+      settingsPayload.cvFile = {
+        _type: "file",
+        asset: {
+          _type: "reference",
+          _ref: formData.cvFileAssetId,
+        },
+      };
+    }
 
     const profileUnset = [
       "heroEyebrow",
@@ -299,7 +426,10 @@ export default function ProfileDashboard() {
     ].filter(
       (field) => !String(profilePayload[field as keyof typeof profilePayload] ?? "").trim(),
     );
-    const settingsUnset = ["description"].filter((field) => !String(settingsPayload[field as keyof typeof settingsPayload] ?? "").trim());
+    const settingsUnset = ["description", "cvFile"].filter((field) => {
+      if (field === "cvFile") return !formData.cvFileAssetId;
+      return !String(settingsPayload[field as keyof typeof settingsPayload] ?? "").trim();
+    });
 
     try {
       await client.createIfNotExists({
@@ -386,7 +516,15 @@ export default function ProfileDashboard() {
             </div>
           </div>
 
-          <section className="studio-form-section">
+          <nav className="studio-stepper studio-profile-stepper" aria-label="Profile sections">
+            {profileSteps.map((step, index) => (
+              <button key={step} type="button" onClick={() => setActiveStep(index)} className={`studio-stepper-item ${activeStep === index ? "is-active" : ""} ${activeStep > index ? "is-complete" : ""}`}>
+                <span>{index + 1}</span>{step}
+              </button>
+            ))}
+          </nav>
+
+          {activeStep === 0 ? <section className="studio-form-section">
             <h3 className="studio-form-section-title">Identity</h3>
             <div className="studio-form-grid">
               <label className="studio-field">
@@ -471,9 +609,9 @@ export default function ProfileDashboard() {
                 />
               </label>
             </div>
-          </section>
+          </section> : null}
 
-          <section className="studio-form-section">
+          {activeStep === 1 ? <section className="studio-form-section">
             <h3 className="studio-form-section-title">Biography</h3>
             <label className="studio-field">
               <span className="studio-form-label">Short Bio</span>
@@ -493,9 +631,9 @@ export default function ProfileDashboard() {
                 rows={8}
               />
             </label>
-          </section>
+          </section> : null}
 
-          <section className="studio-form-section">
+          {activeStep === 2 ? <section className="studio-form-section">
             <h3 className="studio-form-section-title">About Page Manifesto</h3>
             <p className="studio-category-hint">
               These three principles appear in the “How I show up” section. The description is revealed on hover or keyboard focus.
@@ -573,43 +711,93 @@ export default function ProfileDashboard() {
                 </fieldset>
               ))}
             </div>
-          </section>
+          </section> : null}
 
-          <section className="studio-form-section">
+          {activeStep === 3 ? <section className="studio-form-section">
+            <h3 className="studio-form-section-title">Resume PDF (CV File)</h3>
+            <p className="studio-category-hint">
+              Upload your resume as a PDF file. Once uploaded and saved, all &quot;Resume&quot; and &quot;Download CV&quot; buttons across the website will serve this exact PDF.
+            </p>
+            <div className="studio-form-grid">
+              <div className="studio-field studio-field-wide">
+                <span className="studio-form-label">Resume PDF File</span>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <label className="studio-btn-secondary cursor-pointer inline-flex items-center gap-2">
+                    <Upload size={16} />
+                    {uploadingCv ? "Uploading PDF..." : "Upload Resume PDF"}
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={uploadCvFile}
+                      disabled={uploadingCv}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {formData.cvFileName || formData.cvUrl ? (
+                  <div className="flex items-center gap-2.5 rounded-lg border border-black/10 bg-paper px-3.5 py-2 text-sm text-ink">
+                      <FileText size={16} className="text-moss" />
+                      <span className="max-w-[260px] truncate font-medium">
+                        {formData.cvFileName || "Uploaded Resume.pdf"}
+                      </span>
+                      {formData.cvUrl ? (
+                        <a
+                          href={formData.cvUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-moss underline hover:text-ink"
+                        >
+                          Preview PDF
+                        </a>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={removeCvFile}
+                        className="ml-1 text-ink/50 transition hover:text-red-600"
+                        title="Remove resume file"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-ink/50">No uploaded PDF (currently falling back to static file).</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section> : null}
+
+          {activeStep === 3 ? <section className="studio-form-section">
             <h3 className="studio-form-section-title">Social and SEO</h3>
             <div className="studio-form-grid">
-              <label className="studio-field">
-                <span className="studio-form-label">Social Links</span>
-                <textarea
-                  value={formData.socialLinks}
-                  onChange={(event) => updateField("socialLinks", event.target.value)}
-                  className="studio-form-textarea"
-                  rows={5}
-                  placeholder={"GitHub | https://github.com/YUMESHBAN\nLinkedIn | https://www.linkedin.com/in/ban-yumesh"}
-                />
-              </label>
+              <div className="studio-field studio-field-wide">
+                <span className="studio-form-label">Social Profiles</span>
+                <p className="studio-category-hint">Add one URL per platform. The matching icon is used wherever this profile is shown on the website.</p>
+                <div className="studio-social-links-grid">
+                  {socialPlatforms.map((platform) => {
+                    const urls = socialUrlsFromText(formData.socialLinks);
 
-              <label className="studio-field">
-                <span className="studio-form-label">CTA Links</span>
-                <textarea
-                  value={formData.ctaLinks}
-                  onChange={(event) => updateField("ctaLinks", event.target.value)}
-                  className="studio-form-textarea"
-                  rows={5}
-                  placeholder={"View Works | /works\nContact | /contact"}
-                />
-              </label>
+                    return (
+                      <label key={platform} className="studio-social-link-field">
+                        <span><SocialLinkIcon label={platform} size={16} />{platform}</span>
+                        <input
+                          type="url"
+                          value={urls[platform] ?? ""}
+                          onChange={(event) => updateField("socialLinks", updateSocialUrl(formData.socialLinks, platform, event.target.value))}
+                          className="studio-form-input"
+                          placeholder={`https://${platform === "Twitter" ? "x.com" : platform === "Dev.to" ? "dev.to" : `${platform.toLowerCase()}.com`}/...`}
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
 
-              <label className="studio-field">
+              <div className="studio-field">
                 <span className="studio-form-label">Keywords</span>
-                <textarea
-                  value={formData.keywords}
-                  onChange={(event) => updateField("keywords", event.target.value)}
-                  className="studio-form-textarea"
-                  rows={5}
-                  placeholder={"Yumesh Ban\nFull Stack Developer\nKathmandu Nepal"}
-                />
-              </label>
+                <p className="studio-category-hint">Add focused search terms visitors may use to find your work.</p>
+                <TagEditor tags={splitLines(formData.keywords)} onChange={(keywords) => updateField("keywords", keywords.join("\n"))} />
+              </div>
 
               <label className="studio-field">
                 <span className="studio-form-label">Site URL *</span>
@@ -642,12 +830,14 @@ export default function ProfileDashboard() {
                 />
               </label>
             </div>
-          </section>
+          </section> : null}
 
           {error ? <p className="studio-error">{error}</p> : null}
           {success ? <p className="studio-success">{success}</p> : null}
 
           <div className="studio-form-actions">
+            <button type="button" onClick={() => setActiveStep((step) => Math.max(0, step - 1))} disabled={activeStep === 0} className="studio-btn-cancel">Previous</button>
+            {activeStep < profileSteps.length - 1 ? <button type="button" onClick={() => setActiveStep((step) => Math.min(profileSteps.length - 1, step + 1))} className="studio-btn-secondary">Next section</button> : null}
             <button type="submit" disabled={saving} className="studio-btn-primary">
               <Save size={16} />
               {saving ? "Saving..." : "Save Profile"}

@@ -15,6 +15,11 @@ export function AboutHeroPortrait({ availability }: AboutHeroPortraitProps) {
     const stageElement = stageRef.current;
     if (!stageElement || !("IntersectionObserver" in window)) return;
 
+    // Preserve desktop mouse hover effects by only running scroll-reveal on non-fine pointer (touch) devices
+    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         setIsActive(entry.isIntersecting);
@@ -32,7 +37,7 @@ export function AboutHeroPortrait({ availability }: AboutHeroPortraitProps) {
   return (
     <div
       ref={stageRef}
-      className={`about-portrait-stage group relative mx-auto flex min-h-[30rem] w-full max-w-[35rem] items-end justify-center self-end overflow-hidden lg:min-h-[42rem] lg:max-w-none ${
+      className={`about-portrait-stage group relative mx-auto flex h-full min-h-[22rem] w-full max-w-[35rem] items-end justify-center self-stretch overflow-hidden lg:min-h-0 lg:max-w-none ${
         isActive ? "is-active" : ""
       }`}
     >

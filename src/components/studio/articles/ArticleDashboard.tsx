@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, EyeOff, FileText, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarDays, EyeOff, FileText, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useClient } from "sanity";
 
@@ -38,6 +38,7 @@ const articleQuery = `*[_type == "article"] | order(featuredOnArchive desc, arch
     "src": image.asset->url
   },
   relatedProjects,
+  showOnRelatedProject,
   relatedArticles
 }`;
 
@@ -120,6 +121,25 @@ export default function ArticleDashboard() {
     setView("list");
     setEditingArticle(null);
     fetchArticles();
+  }
+
+  async function moveFeaturedArticle(article: ArticleDocument, featureField: "featuredOnHomepage" | "featuredOnArchive", orderField: "homepageOrder" | "archiveOrder", direction: -1 | 1) {
+    if (!article._id) return;
+    const featured = articles.filter((item) => item[featureField]).sort((a, b) => (a[orderField] ?? 99) - (b[orderField] ?? 99));
+    const index = featured.findIndex((item) => item._id === article._id);
+    const nextIndex = index + direction;
+    if (index < 0 || nextIndex < 0 || nextIndex >= featured.length) return;
+
+    const reordered = [...featured];
+    [reordered[index], reordered[nextIndex]] = [reordered[nextIndex], reordered[index]];
+    try {
+      const transaction = client.transaction();
+      reordered.forEach((item, order) => transaction.patch(item._id!, (patch) => patch.set({ [orderField]: order + 1 })));
+      await transaction.commit();
+      await fetchArticles();
+    } catch (moveError) {
+      setError(getErrorMessage(moveError));
+    }
   }
 
   if (view === "form") {
@@ -247,6 +267,18 @@ export default function ArticleDashboard() {
                   >
                     <Trash2 size={16} />
                   </button>
+                  {article.featuredOnHomepage ? (
+                    <div className="studio-row-actions" aria-label={`Homepage order for ${article.title}`}>
+                      <button type="button" onClick={() => moveFeaturedArticle(article, "featuredOnHomepage", "homepageOrder", -1)} className="studio-icon-button" aria-label={`Move ${article.title} up on homepage`}><ArrowUp size={16} /></button>
+                      <button type="button" onClick={() => moveFeaturedArticle(article, "featuredOnHomepage", "homepageOrder", 1)} className="studio-icon-button" aria-label={`Move ${article.title} down on homepage`}><ArrowDown size={16} /></button>
+                    </div>
+                  ) : null}
+                  {article.featuredOnArchive ? (
+                    <div className="studio-row-actions" aria-label={`Archive order for ${article.title}`}>
+                      <button type="button" onClick={() => moveFeaturedArticle(article, "featuredOnArchive", "archiveOrder", -1)} className="studio-icon-button" aria-label={`Move ${article.title} up in archive`}><ArrowUp size={16} /></button>
+                      <button type="button" onClick={() => moveFeaturedArticle(article, "featuredOnArchive", "archiveOrder", 1)} className="studio-icon-button" aria-label={`Move ${article.title} down in archive`}><ArrowDown size={16} /></button>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </article>

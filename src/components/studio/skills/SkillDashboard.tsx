@@ -13,7 +13,6 @@ const skillQuery = `*[_type == "skill"] | order(order asc, name asc) {
   _type,
   status,
   name,
-  description,
   iconName,
   aliases,
   category,
@@ -60,7 +59,7 @@ export default function SkillDashboard() {
     const search = searchTerm.trim().toLowerCase();
 
     return skills.filter((skill) => {
-      const searchable = [skill.name, skill.description, skill.iconName, skill.category, skill.level, skill.aliases?.join(" ")]
+      const searchable = [skill.name, skill.iconName, skill.category, skill.level, skill.aliases?.join(" ")]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
@@ -198,7 +197,6 @@ export default function SkillDashboard() {
 
                 <h2 className="studio-card-title">{skill.name}</h2>
                 <p className="studio-card-meta">{[skill.level, skill.iconName].filter(Boolean).join(" / ") || "No level added"}</p>
-                <p className="studio-card-description">{skill.description || "No description added yet."}</p>
 
                 {skill.aliases?.length ? (
                   <div className="studio-tag-list">

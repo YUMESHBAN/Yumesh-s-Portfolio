@@ -141,6 +141,7 @@ export type SiteSettings = {
 };
 
 export type Project = {
+  _id?: string;
   status?: ContentStatus;
   title: string;
   slug: string;
@@ -234,7 +235,6 @@ export type Skill = {
   _id?: string;
   status?: ContentStatus;
   name: string;
-  description?: string;
   iconName?: string;
   aliases?: string[];
   category: string;
@@ -272,6 +272,7 @@ export type SkillShowcase = {
   title: string;
   description: string;
   project?: ShowcaseProject;
+  showOnRelatedProject?: boolean;
   image?: ImageWithMeta;
   demoVideoUrl?: string;
   demoVideoMimeType?: string;
@@ -308,6 +309,7 @@ export type Article = {
   tags: string[];
   coverImage?: ImageWithMeta;
   relatedProjects?: ArticleRelatedProject[];
+  showOnRelatedProject?: boolean;
   relatedArticles?: ArticleRelatedArticle[];
   body: RichContentBlock[];
 };

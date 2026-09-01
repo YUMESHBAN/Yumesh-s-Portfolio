@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, FileText, ImagePlus, Plus, Save, Trash2, Upload, Video, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { ArrowLeft, ArrowRight, FileText, ImagePlus, MoveLeft, MoveRight, Plus, Save, Trash2, Upload, Video, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import { useClient } from "sanity";
 
 import RichContentEditor from "../shared/RichContentEditor";
+import EditableStringList from "../shared/EditableStringList";
 import {
   cleanOptionalFields,
   getErrorMessage,
@@ -30,6 +31,14 @@ type MetricDocument = {
   label?: string;
   value?: string;
   note?: string;
+};
+
+type ProjectLinkDocument = {
+  _key?: string;
+  _type?: "linkItem";
+  label?: string;
+  href?: string;
+  type?: string;
 };
 
 type SkillOption = {
@@ -94,6 +103,7 @@ export type ProjectDocument = {
   impact?: string[];
   repoUrl?: string;
   liveUrl?: string;
+  links?: ProjectLinkDocument[];
   demoVideo?: FileDocument;
   demoVideoUrl?: string;
   projectPdf?: FileDocument;
@@ -129,11 +139,12 @@ type ProjectFormState = {
   results: RichContentBlock[];
   metrics: MetricDocument[];
   relatedSkillIds: string[];
-  techStack: string;
-  features: string;
-  impact: string;
+  techStack: string[];
+  features: string[];
+  impact: string[];
   repoUrl: string;
   liveUrl: string;
+  links: ProjectLinkDocument[];
   demoVideo?: FileDocument;
   demoVideoUrl: string;
   projectPdf?: FileDocument;
@@ -165,6 +176,10 @@ function newMetric(): MetricDocument {
     value: "",
     note: "",
   };
+}
+
+function newProjectLink(): ProjectLinkDocument {
+  return { _key: keyFromText("link"), _type: "linkItem", label: "", href: "", type: "Other" };
 }
 
 function keyFromId(id: string) {
@@ -201,11 +216,12 @@ function projectToFormState(project?: ProjectDocument | null): ProjectFormState 
     results: project?.results ?? [],
     metrics: project?.metrics?.length ? project.metrics : [newMetric()],
     relatedSkillIds: project?.relatedSkills?.map((skill) => skill._ref).filter((id): id is string => Boolean(id)) ?? [],
-    techStack: joinLines(project?.techStack),
-    features: joinLines(project?.features),
-    impact: joinLines(project?.impact),
+    techStack: project?.techStack ?? [],
+    features: project?.features ?? [],
+    impact: project?.impact ?? [],
     repoUrl: project?.repoUrl ?? "",
     liveUrl: project?.liveUrl ?? "",
+    links: project?.links ?? [],
     demoVideo: project?.demoVideo,
     demoVideoUrl: project?.demoVideoUrl ?? "",
     projectPdf: project?.projectPdf,
@@ -233,6 +249,28 @@ function usableMetrics(metrics: MetricDocument[]) {
     .filter((metric) => metric.label && metric.value);
 }
 
+function PreviewRichContent({ blocks }: { blocks: RichContentBlock[] }) {
+  function inline(children: Extract<RichContentBlock, { _type: "block" }>['children']): ReactNode {
+    return children.map((child) => {
+      let content: ReactNode = child.text;
+      if (child.marks.includes("strong")) content = <strong>{content}</strong>;
+      if (child.marks.includes("em")) content = <em>{content}</em>;
+      if (child.marks.includes("code")) content = <code>{content}</code>;
+      return <span key={child._key}>{content}</span>;
+    });
+  }
+
+  return <div className="studio-preview-rich-content">{blocks.map((block) => {
+    if (block._type !== "block") return null;
+    const content = inline(block.children);
+    if (block.style === "h2") return <h2 key={block._key}>{content}</h2>;
+    if (block.style === "h3") return <h3 key={block._key}>{content}</h3>;
+    if (block.style === "blockquote") return <blockquote key={block._key}>{content}</blockquote>;
+    if (block.listItem) return <p key={block._key} className="studio-preview-list-item">• {content}</p>;
+    return <p key={block._key}>{content}</p>;
+  })}</div>;
+}
+
 function imageForSave(image?: ImageWithMetaDocument) {
   if (!image?.image) {
     return undefined;
@@ -255,6 +293,16 @@ function fileForSave(file?: FileDocument) {
   return savedFile;
 }
 
+function uniqueTechStack(...groups: string[][]) {
+  const seen = new Set<string>();
+  return groups.flat().map((item) => item.trim()).filter((item) => {
+    const key = item.toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
   const client = useClient({ apiVersion: "2026-03-01" });
   const [formData, setFormData] = useState<ProjectFormState>(() => projectToFormState(project));
@@ -267,6 +315,14 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
 
   const isEditing = Boolean(project?._id);
   const selectedSkillSet = useMemo(() => new Set(formData.relatedSkillIds), [formData.relatedSkillIds]);
+  const selectedTechnicalSkillNames = useMemo(
+    () => skills.filter((skill) => selectedSkillSet.has(skill._id) && skill.category !== "Soft Skills").map((skill) => skill.name ?? "").filter(Boolean),
+    [selectedSkillSet, skills],
+  );
+  const projectOnlyTechStack = useMemo(() => {
+    const selectedNames = new Set(selectedTechnicalSkillNames.map((skill) => skill.toLowerCase()));
+    return formData.techStack.filter((item) => !selectedNames.has(item.trim().toLowerCase()));
+  }, [formData.techStack, selectedTechnicalSkillNames]);
 
   const fetchSkills = useCallback(async () => {
     try {
@@ -319,6 +375,18 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
       const nextMetrics = previous.metrics.filter((_, metricIndex) => metricIndex !== index);
       return { ...previous, metrics: nextMetrics.length ? nextMetrics : [newMetric()] };
     });
+  }
+
+  function updateProjectLink(index: number, field: "label" | "href", value: string) {
+    setFormData((previous) => ({ ...previous, links: previous.links.map((link, linkIndex) => linkIndex === index ? { ...link, [field]: value } : link) }));
+  }
+
+  function addProjectLink() {
+    setFormData((previous) => ({ ...previous, links: [...previous.links, newProjectLink()] }));
+  }
+
+  function removeProjectLink(index: number) {
+    setFormData((previous) => ({ ...previous, links: previous.links.filter((_, linkIndex) => linkIndex !== index) }));
   }
 
   async function uploadImage(file: File, altFallback: string) {
@@ -453,6 +521,19 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
     setFormData((previous) => ({ ...previous, gallery: previous.gallery.filter((_, imageIndex) => imageIndex !== index) }));
   }
 
+  function moveGalleryImage(index: number, direction: -1 | 1) {
+    setFormData((previous) => {
+      const destination = index + direction;
+      if (destination < 0 || destination >= previous.gallery.length) {
+        return previous;
+      }
+
+      const gallery = [...previous.gallery];
+      [gallery[index], gallery[destination]] = [gallery[destination], gallery[index]];
+      return { ...previous, gallery };
+    });
+  }
+
   function confirmRemoval() {
     if (!pendingRemoval) {
       return;
@@ -511,11 +592,12 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
       results: normalizeRichContent(formData.results),
       metrics: usableMetrics(formData.metrics),
       relatedSkills: refsFromIds(formData.relatedSkillIds),
-      techStack: splitLines(formData.techStack),
-      features: splitLines(formData.features),
-      impact: splitLines(formData.impact),
+      techStack: uniqueTechStack(selectedTechnicalSkillNames, formData.techStack),
+      features: formData.features.map((item) => item.trim()).filter(Boolean),
+      impact: formData.impact.map((item) => item.trim()).filter(Boolean),
       repoUrl: formData.repoUrl.trim(),
       liveUrl: formData.liveUrl.trim(),
+      links: formData.links.map((link) => ({ _key: link._key ?? keyFromText("link"), _type: "linkItem" as const, label: link.label?.trim() ?? "", href: link.href?.trim() ?? "", type: "Other" })).filter((link) => link.label && link.href),
       logo: imageForSave(formData.logo),
       featuredImage: imageForSave(formData.featuredImage),
       demoVideo: fileForSave(formData.demoVideo),
@@ -539,6 +621,7 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
       "audience",
       "repoUrl",
       "liveUrl",
+      "links",
       "seoTitle",
       "seoDescription",
       "canonicalPath",
@@ -601,23 +684,14 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
           <div className="studio-form-grid">
             <label className="studio-field">
               <span className="studio-form-label">Status</span>
-              <select value={formData.status} onChange={(event) => updateField("status", event.target.value as ProjectStatus)} className="studio-form-select">
-                {projectStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
+              <div className="studio-status-control" role="group" aria-label="Project status">
+                {projectStatuses.map((status) => <button key={status} type="button" onClick={() => updateField("status", status)} className={formData.status === status ? "is-active" : ""}>{status}</button>)}
+              </div>
             </label>
 
             <label className="studio-field studio-field-wide">
               <span className="studio-form-label">Project Title *</span>
               <input required value={formData.title} onChange={(event) => updateTitle(event.target.value)} className="studio-form-input" placeholder="Merry Crochets" />
-            </label>
-
-            <label className="studio-field">
-              <span className="studio-form-label">Slug *</span>
-              <input required value={formData.slug} onChange={(event) => updateField("slug", slugify(event.target.value))} className="studio-form-input studio-form-input-bg" />
             </label>
 
             <label className="studio-field">
@@ -681,24 +755,38 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
           <div className="studio-form-grid">
             <label className="studio-field">
               <span className="studio-form-label">Goals</span>
+              <span className="studio-help-text">What this project needed to achieve for users or the business.</span>
               <textarea value={formData.goals} onChange={(event) => updateField("goals", event.target.value)} className="studio-form-textarea" rows={5} placeholder={"Increase conversions\nImprove content editing"} />
             </label>
             <label className="studio-field">
               <span className="studio-form-label">Responsibilities</span>
+              <span className="studio-help-text">The work you personally owned or delivered.</span>
               <textarea value={formData.responsibilities} onChange={(event) => updateField("responsibilities", event.target.value)} className="studio-form-textarea" rows={5} placeholder={"Frontend implementation\nCMS modeling"} />
             </label>
           </div>
 
           <div className="studio-form-stack">
-            <RichContentEditor label="Problem" value={formData.problem} onChange={(value) => updateField("problem", value)} />
-            <RichContentEditor label="Process" value={formData.process} onChange={(value) => updateField("process", value)} />
-            <RichContentEditor label="Solution" value={formData.solution} onChange={(value) => updateField("solution", value)} />
-            <RichContentEditor label="Results" value={formData.results} onChange={(value) => updateField("results", value)} />
+            <RichContentEditor label="Problem" description="Describe the original user or business challenge." value={formData.problem} onChange={(value) => updateField("problem", value)} />
+            <RichContentEditor label="Process" description="Show the research, decisions, and approach that led to the outcome." value={formData.process} onChange={(value) => updateField("process", value)} />
+            <RichContentEditor label="Solution" description="Explain what you built and how it addressed the problem." value={formData.solution} onChange={(value) => updateField("solution", value)} />
+            <RichContentEditor label="Results" description="Record evidence: measurable outcomes, completed deliverables, or launch results." value={formData.results} onChange={(value) => updateField("results", value)} />
+          </div>
+        </section>
+        <section className="studio-form-section studio-content-preview">
+          <h3 className="studio-form-section-title">Case study preview</h3>
+          <div className="studio-website-preview">
+            <p className="studio-eyebrow">{formData.type} project</p>
+            <h2>{formData.title || "Your project title"}</h2>
+            <p>{formData.summary || "Your summary will appear here."}</p>
+            {([ ["Problem", formData.problem], ["Process", formData.process], ["Solution", formData.solution], ["Results", formData.results] ] as const).map(([heading, blocks]) =>
+              blocks.some((block) => block._type === "block" && block.children.some((child) => child.text.trim())) ? <div key={heading}><h3>{heading}</h3><PreviewRichContent blocks={blocks} /></div> : null,
+            )}
           </div>
         </section>
         <section className="studio-form-section">
           <div className="studio-form-section-header">
             <h3 className="studio-form-section-title">Metrics</h3>
+            <p className="studio-help-text">Use numbers or concrete evidence that supports the Results section.</p>
             <button type="button" onClick={addMetric} className="studio-btn-secondary">
               <Plus size={16} />
               Add Metric
@@ -729,7 +817,7 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
 
         {activeStep === 2 ? (
         <section className="studio-form-section">
-          <h3 className="studio-form-section-title">Skills and Legacy Details</h3>
+          <h3 className="studio-form-section-title">Related Skills &amp; Tech Stack</h3>
           {skills.length ? (
             <div className="studio-tag-list">
               {skills.map((skill) => (
@@ -743,19 +831,12 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
             <p className="studio-help-text">Add skills first to connect them to this project.</p>
           )}
 
+          {selectedTechnicalSkillNames.length ? <div className="mt-4"><p className="studio-form-label">Included automatically in Tech Stack</p><div className="mt-2 flex flex-wrap gap-2">{selectedTechnicalSkillNames.map((skill) => <span key={skill} className="studio-tag">{skill}</span>)}</div></div> : null}
+
           <div className="studio-form-grid">
-            <label className="studio-field">
-              <span className="studio-form-label">Tech Stack</span>
-              <textarea value={formData.techStack} onChange={(event) => updateField("techStack", event.target.value)} className="studio-form-textarea" rows={5} />
-            </label>
-            <label className="studio-field">
-              <span className="studio-form-label">Features</span>
-              <textarea value={formData.features} onChange={(event) => updateField("features", event.target.value)} className="studio-form-textarea" rows={5} />
-            </label>
-            <label className="studio-field">
-              <span className="studio-form-label">Impact</span>
-              <textarea value={formData.impact} onChange={(event) => updateField("impact", event.target.value)} className="studio-form-textarea" rows={5} />
-            </label>
+            <EditableStringList label="Additional tech stack" values={projectOnlyTechStack} onChange={(techStack) => updateField("techStack", techStack)} placeholder="Stripe" />
+            <EditableStringList label="Features" description="Key user-facing capabilities included in this project." values={formData.features} onChange={(features) => updateField("features", features)} placeholder="Accessible content editor" />
+            <EditableStringList label="Impact" description="Why the results mattered to users, the client, or the business." values={formData.impact} onChange={(impact) => updateField("impact", impact)} placeholder="Reduced publishing time" />
             <label className="studio-field">
               <span className="studio-form-label">Repository URL</span>
               <input value={formData.repoUrl} onChange={(event) => updateField("repoUrl", event.target.value)} className="studio-form-input" />
@@ -764,6 +845,20 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
               <span className="studio-form-label">Live URL</span>
               <input value={formData.liveUrl} onChange={(event) => updateField("liveUrl", event.target.value)} className="studio-form-input" />
             </label>
+            <div className="studio-field studio-field-wide">
+              <div className="studio-editable-list-header">
+                <span className="studio-form-label">Additional project links</span>
+                <button type="button" onClick={addProjectLink} className="studio-btn-text"><Plus size={15} /> Add link</button>
+              </div>
+              <p className="studio-help-text">Optional resources shown under Project resources on the public case study.</p>
+              {formData.links.length ? <div className="studio-project-links-list">
+                {formData.links.map((link, index) => <div key={link._key ?? index} className="studio-project-link-row">
+                  <input value={link.label ?? ""} onChange={(event) => updateProjectLink(index, "label", event.target.value)} className="studio-form-input" placeholder="View Figma design" />
+                  <input type="url" value={link.href ?? ""} onChange={(event) => updateProjectLink(index, "href", event.target.value)} className="studio-form-input" placeholder="https://figma.com/..." />
+                  <button type="button" onClick={() => removeProjectLink(index)} className="studio-icon-button studio-icon-button-danger" aria-label="Remove project link"><Trash2 size={16} /></button>
+                </div>)}
+              </div> : null}
+            </div>
           </div>
         </section>
         ) : null}
@@ -798,7 +893,7 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
                   <button type="button" className="studio-asset-action is-danger" onClick={() => setPendingRemoval({ kind: "featuredImage", label: "featured image" })}><Trash2 size={15} /> Delete</button>
                 </div>
                 <details className="studio-asset-details">
-                  <summary>Edit image details</summary>
+                  <summary>Alt text and large-view caption</summary>
                   <label><span>Alt text</span><input value={formData.featuredImage.alt ?? ""} onChange={(event) => updateFeaturedImage("alt", event.target.value)} className="studio-form-input" /></label>
                   <label><span>Caption</span><input value={formData.featuredImage.caption ?? ""} onChange={(event) => updateFeaturedImage("caption", event.target.value)} className="studio-form-input" /></label>
                 </details>
@@ -839,10 +934,12 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
                 {image.src ? <Image src={image.src} alt={image.alt || `Gallery image ${index + 1}`} fill sizes="240px" className="object-cover" /> : <ImagePlus size={20} />}
                 <div className="studio-asset-card-label">Gallery image {index + 1}</div>
                 <div className="studio-asset-card-actions">
+                  <button type="button" className="studio-asset-action" onClick={() => moveGalleryImage(index, -1)} disabled={index === 0} aria-label={`Move gallery image ${index + 1} earlier`} title="Move earlier"><MoveLeft size={15} /> Earlier</button>
+                  <button type="button" className="studio-asset-action" onClick={() => moveGalleryImage(index, 1)} disabled={index === formData.gallery.length - 1} aria-label={`Move gallery image ${index + 1} later`} title="Move later"><MoveRight size={15} /> Later</button>
                   <button type="button" className="studio-asset-action is-danger" onClick={() => setPendingRemoval({ kind: "gallery", index, label: `gallery image ${index + 1}` })}><Trash2 size={15} /> Delete</button>
                 </div>
                 <details className="studio-asset-details">
-                  <summary>Edit image details</summary>
+                  <summary>Alt text and large-view caption</summary>
                   <label><span>Alt text</span><input value={image.alt ?? ""} onChange={(event) => updateGalleryImage(index, "alt", event.target.value)} className="studio-form-input" /></label>
                   <label><span>Caption</span><input value={image.caption ?? ""} onChange={(event) => updateGalleryImage(index, "caption", event.target.value)} className="studio-form-input" /></label>
                 </details>
@@ -880,11 +977,6 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
             </div>
           </div>
           <div className="studio-form-grid">
-            <label className="studio-field">
-              <span className="studio-form-label">Featured Order</span>
-              <input type="number" value={formData.order} onChange={(event) => updateField("order", Number(event.target.value))} className="studio-form-input" min={1} />
-            </label>
-
             <label className="studio-checkbox-field">
               <input type="checkbox" checked={formData.featured} onChange={(event) => updateField("featured", event.target.checked)} />
               <span>Featured on homepage</span>

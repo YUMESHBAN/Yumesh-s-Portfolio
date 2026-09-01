@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
 import { ProjectCaseStudy } from "@/components/project-case-study";
-import { getPersonProfile, getProjectBySlug, getProjects, getSiteSettings } from "@/lib/content";
+import { getPersonProfile, getProjectBySlug, getProjectRelatedContent, getProjects, getSiteSettings } from "@/lib/content";
 import { getProjectImage } from "@/lib/project-media";
 import { breadcrumbJsonLd, projectJsonLd } from "@/lib/structured-data";
 
@@ -52,6 +52,8 @@ export default async function WorkDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const relatedContent = await getProjectRelatedContent(project._id);
+
   const currentIndex = projects.findIndex((item) => item.slug === project.slug);
   const index = currentIndex >= 0 ? currentIndex : 0;
   const nextProject = projects.length > 1 ? projects[(index + 1) % projects.length] : undefined;
@@ -70,7 +72,7 @@ export default async function WorkDetailPage({ params }: PageProps) {
         )}
       />
 
-      <ProjectCaseStudy project={project} index={index} total={projects.length} nextProject={nextProject} />
+      <ProjectCaseStudy project={project} index={index} total={projects.length} nextProject={nextProject} relatedContent={relatedContent} />
     </>
   );
 }

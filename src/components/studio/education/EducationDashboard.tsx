@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff, GraduationCap, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, GraduationCap, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useClient } from "sanity";
 
@@ -71,8 +71,6 @@ export default function EducationDashboard() {
   const [view, setView] = useState<"list" | "form">("list");
   const [editingEducation, setEditingEducation] = useState<EducationDocument | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterLevel, setFilterLevel] = useState("all");
-  const [showHidden, setShowHidden] = useState(true);
   const [error, setError] = useState("");
 
   const fetchEducation = useCallback(async () => {
@@ -93,11 +91,6 @@ export default function EducationDashboard() {
     fetchEducation();
   }, [fetchEducation]);
 
-  const levels = useMemo(
-    () => Array.from(new Set(educationItems.map((item) => item.level).filter(Boolean))).sort(),
-    [educationItems],
-  );
-
   const filteredEducation = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
 
@@ -107,12 +100,10 @@ export default function EducationDashboard() {
         .join(" ")
         .toLowerCase();
       const matchesSearch = !search || searchable.includes(search);
-      const matchesLevel = filterLevel === "all" || item.level === filterLevel;
-      const matchesVisibility = showHidden || item.showOnWebsite !== false;
 
-      return matchesSearch && matchesLevel && matchesVisibility;
+      return matchesSearch;
     });
-  }, [educationItems, filterLevel, searchTerm, showHidden]);
+  }, [educationItems, searchTerm]);
 
   function handleAddNew() {
     setEditingEducation(null);
@@ -122,6 +113,19 @@ export default function EducationDashboard() {
   function handleEdit(education: EducationDocument) {
     setEditingEducation(education);
     setView("form");
+  }
+
+  async function moveEducation(education: EducationDocument, direction: -1 | 1) {
+    const ordered = [...educationItems].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+    const index = ordered.findIndex((item) => item._id === education._id);
+    const neighbor = ordered[index + direction];
+    if (!education._id || !neighbor?._id) return;
+    try {
+      await client.transaction().patch(education._id, { set: { order: neighbor.order ?? index + direction + 1 } }).patch(neighbor._id, { set: { order: education.order ?? index + 1 } }).commit();
+      fetchEducation();
+    } catch (moveError) {
+      setError(getErrorMessage(moveError));
+    }
   }
 
   async function handleDelete(education: EducationDocument) {
@@ -158,6 +162,7 @@ export default function EducationDashboard() {
 
   const totalResultRows = educationItems.reduce((total, item) => total + (item.resultEntries?.length ?? 0), 0);
   const visibleEducationCount = educationItems.filter((item) => item.showOnWebsite !== false).length;
+  const levelCount = new Set(educationItems.map((item) => item.level).filter(Boolean)).size;
 
   return (
     <div className="studio-page-container">
@@ -168,34 +173,17 @@ export default function EducationDashboard() {
           <p className="studio-header-subtitle">Manage education stages, manual percentages, highest result, average result, and website visibility.</p>
         </div>
 
-        <div className="studio-filters">
-          <div className="studio-search-wrapper">
-            <Search className="studio-search-icon" size={16} />
-            <input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="studio-search-input"
-              placeholder="Search education..."
-            />
-          </div>
+      </div>
 
-          <select value={filterLevel} onChange={(event) => setFilterLevel(event.target.value)} className="studio-select">
-            <option value="all">All Levels</option>
-            {levels.map((level) => (
-              <option key={level} value={level}>
-                {level}
-              </option>
-            ))}
-          </select>
-
-          <button
-            type="button"
-            onClick={() => setShowHidden((current) => !current)}
-            className={`studio-filter-btn ${showHidden ? "studio-filter-btn-active" : "studio-filter-btn-inactive"}`}
-          >
-            {showHidden ? <Eye size={15} /> : <EyeOff size={15} />}
-            Hidden
-          </button>
+      <div className="studio-education-controls">
+        <div className="studio-search-wrapper">
+          <Search className="studio-search-icon" size={16} />
+          <input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className="studio-search-input"
+            placeholder="Search by institution, degree, level, or location..."
+          />
         </div>
       </div>
 
@@ -214,7 +202,7 @@ export default function EducationDashboard() {
         </div>
         <div className="studio-stat-card">
           <p className="studio-stat-label">Levels</p>
-          <p className="studio-stat-value studio-stat-pink">{levels.length}</p>
+          <p className="studio-stat-value studio-stat-pink">{levelCount}</p>
         </div>
       </div>
 
@@ -269,6 +257,8 @@ export default function EducationDashboard() {
                   {highest ? <p className="studio-card-meta">Highest row: {highest.label}</p> : null}
 
                   <div className="studio-actions">
+                    <button type="button" onClick={() => moveEducation(education, -1)} className="studio-icon-button" aria-label="Move education earlier" disabled={[...educationItems].sort((a, b) => (a.order ?? 99) - (b.order ?? 99)).findIndex((item) => item._id === education._id) === 0}><ArrowUp size={16} /></button>
+                    <button type="button" onClick={() => moveEducation(education, 1)} className="studio-icon-button" aria-label="Move education later" disabled={[...educationItems].sort((a, b) => (a.order ?? 99) - (b.order ?? 99)).findIndex((item) => item._id === education._id) === educationItems.length - 1}><ArrowDown size={16} /></button>
                     <button type="button" onClick={() => handleEdit(education)} className="studio-btn-edit">
                       <Pencil size={16} />
                       Edit
