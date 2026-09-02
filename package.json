@@ -11,13 +11,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "check:sanity": "tsx scripts/check-sanity.ts",
-    "check:sanity:stack": "tsx scripts/check-stack-showcase.ts",
-    "seed:sanity": "tsx scripts/seed-sanity.ts",
-    "seed:sanity:merry-crochets-article": "tsx scripts/seed-merry-crochets-article.ts",
-    "seed:sanity:about-manifesto": "tsx scripts/seed-about-manifesto.ts",
-    "seed:sanity:about-journey": "tsx scripts/seed-about-journey.ts",
-    "seed:sanity:stack": "tsx scripts/seed-stack-showcase.ts",
     "studio": "sanity dev",
     "studio:build": "sanity build",
     "studio:deploy": "sanity deploy"

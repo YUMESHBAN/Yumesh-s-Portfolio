@@ -17,7 +17,6 @@ Official personal brand portfolio for Yumesh Ban, built with Next.js and Sanity.
 - `src/components/studio` contains the custom Studio dashboards mounted at `/studio/...`.
 - `src/lib/content.ts` loads Sanity content first and falls back to local data.
 - `src/app/studio/[[...tool]]` embeds Sanity Studio inside the Next.js app.
-- `scripts/seed-sanity.ts` uploads the fallback data into Sanity.
 
 ## Commands
 
@@ -26,7 +25,6 @@ npm.cmd run dev
 npm.cmd run lint
 npm.cmd run build
 npm.cmd run studio
-npm.cmd run seed:sanity
 ```
 
 ## Node Version
@@ -44,7 +42,6 @@ SANITY_API_TOKEN=
 SANITY_REVALIDATE_SECRET=
 ```
 
-Run `npm.cmd run seed:sanity` after adding a write token to load the starting portfolio content into Sanity.
 
 ## Custom Sanity Dashboard
 
@@ -71,10 +68,9 @@ The older `/dashboard` route redirects to `/studio`; Studio is the only admin in
 
 1. Create a real Sanity project and replace `NEXT_PUBLIC_SANITY_PROJECT_ID`.
 2. Add a Sanity write token as `SANITY_API_TOKEN`.
-3. Run `npm.cmd run seed:sanity` to upload the starter portfolio content.
-4. Configure the contact form SMTP variables and send a staging message to verify delivery and the reply-to address.
-5. Deploy the project to Vercel.
-6. Attach a custom domain such as `yumeshban.com`, `yumeshban.dev`, or `yumeshban.com.np`.
-7. Add a Sanity webhook pointing to `/api/revalidate`.
-8. Open Google Search Console, verify the domain, and submit `/sitemap.xml`.
-9. Use URL Inspection in Search Console for the homepage and `/about`.
+3. Configure the contact form SMTP variables and send a staging message to verify delivery and the reply-to address.
+4. Deploy the project to Vercel.
+5. Attach a custom domain such as `yumeshban.com`, `yumeshban.dev`, or `yumeshban.com.np`.
+6. Add a Sanity webhook pointing to `/api/revalidate`.
+7. Open Google Search Console, verify the domain, and submit `/sitemap.xml`.
+8. Use URL Inspection in Search Console for the homepage and `/about`.

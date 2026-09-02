@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, ChevronRight, FileText } from "lucide-react";
+import { ArrowUpRight, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { getProjectImage } from "@/lib/project-media";
@@ -12,12 +12,8 @@ function projectTypeLabel(type: string) {
   return /project/i.test(type) ? type : `${type} Project`;
 }
 
-function ProjectMedia({ project, prefersReducedMotion }: { project: Project; prefersReducedMotion: boolean }) {
+function ProjectMedia({ project }: { project: Project }) {
   const image = getProjectImage(project);
-
-  if (project.demoVideoUrl && !prefersReducedMotion) {
-    return <video src={project.demoVideoUrl} poster={image?.url} autoPlay loop muted playsInline preload="metadata" className="h-full w-full object-contain" aria-label={`${project.title} demo video`} />;
-  }
 
   if (image?.url) {
     return (
@@ -58,7 +54,6 @@ function ProjectLogo({ project }: { project: Project }) {
 export function SelectedWorkPreview({ projects }: { projects: Project[] }) {
   const [activeSlug, setActiveSlug] = useState(() => projects[0]?.slug ?? "");
   const [imageOnLeft, setImageOnLeft] = useState(true);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const moveFocusAfterSelection = useRef(false);
@@ -73,15 +68,6 @@ export function SelectedWorkPreview({ projects }: { projects: Project[] }) {
     headingRef.current?.focus();
     moveFocusAfterSelection.current = false;
   }, [activeSlug, imageOnLeft]);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
-
-    updatePreference();
-    mediaQuery.addEventListener("change", updatePreference);
-    return () => mediaQuery.removeEventListener("change", updatePreference);
-  }, []);
 
   useEffect(() => {
     if (!scrollAfterSelection.current) {
@@ -147,7 +133,7 @@ export function SelectedWorkPreview({ projects }: { projects: Project[] }) {
                   imageOnLeft ? "is-image-left md:order-1 md:border-r" : "is-image-right md:order-2 md:border-l"
                 }`}
               >
-                <ProjectMedia project={project} prefersReducedMotion={prefersReducedMotion} />
+                <ProjectMedia project={project} />
               </div>
 
               <div className={`selected-work-feature-details flex min-h-72 flex-col justify-between p-7 sm:p-8 ${imageOnLeft ? "md:order-2" : "md:order-1"}`}>
@@ -180,12 +166,6 @@ export function SelectedWorkPreview({ projects }: { projects: Project[] }) {
                     <a href={project.liveUrl} target="_blank" rel="noreferrer" className="site-button-secondary">
                       View live site
                       <ArrowUpRight size={17} aria-hidden="true" />
-                    </a>
-                  ) : null}
-                  {project.projectPdfUrl ? (
-                    <a href={project.projectPdfUrl} target="_blank" rel="noreferrer" className="site-button-secondary">
-                      <FileText size={17} aria-hidden="true" />
-                      View project PDF
                     </a>
                   ) : null}
                 </div>

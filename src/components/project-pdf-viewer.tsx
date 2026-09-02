@@ -44,7 +44,7 @@ export function ProjectPdfViewer({ src, projectTitle }: ProjectPdfViewerProps) {
 
       {isOpen ? (
         <div id={viewerId} className="mt-5 border border-white/10 bg-black/25 p-3 sm:mt-6 sm:p-4">
-          <object data={src} type="application/pdf" className="h-[65svh] min-h-[30rem] w-full border border-white/10 bg-[#08090d]" aria-label={`${projectTitle} PDF viewer`}>
+          <object data={src} type="application/pdf" className="h-[min(65svh,30rem)] min-h-64 w-full border border-white/10 bg-[#08090d] sm:h-[65svh] sm:min-h-[30rem]" aria-label={`${projectTitle} PDF viewer`}>
             <p className="p-6 text-sm leading-6 text-white/65">
               Your browser cannot display this PDF inline. <a href={src} target="_blank" rel="noreferrer" className="text-blue-200 underline underline-offset-4">Open it in a new tab</a> instead.
             </p>

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, FileText, ImagePlus, MoveLeft, MoveRight, Plus, Save, Trash2, Upload, Video, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, ImagePlus, MoveLeft, MoveRight, Plus, Save, Search, Trash2, Upload, Video, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import { useClient } from "sanity";
 
@@ -46,6 +46,7 @@ type SkillOption = {
   _id: string;
   name?: string;
   category?: string;
+  aliases?: string[];
 };
 
 type SkillReference = {
@@ -313,9 +314,16 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
   const [error, setError] = useState("");
   const [activeStep, setActiveStep] = useState(0);
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
+  const [skillSearch, setSkillSearch] = useState("");
 
   const isEditing = Boolean(project?._id);
   const selectedSkillSet = useMemo(() => new Set(formData.relatedSkillIds), [formData.relatedSkillIds]);
+  const filteredSkills = useMemo(() => {
+    const query = skillSearch.trim().toLowerCase();
+    if (!query) return skills;
+
+    return skills.filter((skill) => [skill.name, skill.category, ...(skill.aliases ?? [])].some((value) => value?.toLowerCase().includes(query)));
+  }, [skillSearch, skills]);
   const selectedTechnicalSkillNames = useMemo(
     () => skills.filter((skill) => selectedSkillSet.has(skill._id) && skill.category !== "Soft Skills").map((skill) => skill.name ?? "").filter(Boolean),
     [selectedSkillSet, skills],
@@ -327,7 +335,7 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
 
   const fetchSkills = useCallback(async () => {
     try {
-      const data = await client.fetch<SkillOption[]>(`*[_type == "skill"] | order(order asc, name asc){_id, name, category}`);
+      const data = await client.fetch<SkillOption[]>(`*[_type == "skill"] | order(order asc, name asc){_id, name, category, aliases}`);
       setSkills(data);
     } catch (fetchError) {
       setError(getErrorMessage(fetchError));
@@ -813,15 +821,23 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
         {activeStep === 2 ? (
         <section className="studio-form-section">
           <h3 className="studio-form-section-title">Related Skills &amp; Tech Stack</h3>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <label className="studio-search-wrapper w-full sm:w-80">
+              <span className="sr-only">Search skills</span>
+              <Search size={16} className="studio-search-icon" aria-hidden="true" />
+              <input value={skillSearch} onChange={(event) => setSkillSearch(event.target.value)} className="studio-search-input" placeholder="Search skills, categories, or aliases" />
+            </label>
+            <p className="studio-help-text">{filteredSkills.length} of {skills.length} skills</p>
+          </div>
           {skills.length ? (
-            <div className="studio-tag-list">
-              {skills.map((skill) => (
+            filteredSkills.length ? <div className="studio-tag-list mt-4">
+              {filteredSkills.map((skill) => (
                 <label key={skill._id} className="studio-checkbox-field">
                   <input type="checkbox" checked={selectedSkillSet.has(skill._id)} onChange={() => toggleSkill(skill._id)} />
                   <span>{skill.name ?? "Untitled skill"}</span>
                 </label>
               ))}
-            </div>
+            </div> : <p className="studio-help-text mt-4">No skills match “{skillSearch.trim()}”. Try a different term.</p>
           ) : (
             <p className="studio-help-text">Add skills first to connect them to this project.</p>
           )}

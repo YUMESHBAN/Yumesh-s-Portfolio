@@ -187,7 +187,9 @@ export function StackScrollExperience({
 
     if (!target) return;
 
-    const headerOffset = 112;
+    const stackNavigation = document.querySelector<HTMLElement>("[data-stack-dial-section] > .site-container > .sticky");
+    const navigationOffset = window.innerWidth < 1280 ? (stackNavigation?.getBoundingClientRect().height ?? 0) + 16 : 0;
+    const headerOffset = 112 + navigationOffset;
     const top = window.scrollY + target.getBoundingClientRect().top - headerOffset;
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -215,25 +217,27 @@ export function StackScrollExperience({
     const context = gsap.context(() => {
       const media = gsap.matchMedia();
 
-      media.add(isDial ? "(max-width: 1279px) and (prefers-reduced-motion: no-preference)" : "(prefers-reduced-motion: no-preference)", () => {
-        const sections = gsap.utils.toArray<HTMLElement>("[data-stack-proof]", root);
-        const triggers = sections.map((section, index) =>
-          ScrollTrigger.create({
-            trigger: section,
-            start: "top 60%",
-            end: "bottom 40%",
-            onToggle: (self) => {
-              if (self.isActive) {
-                activateProof(index);
-              }
-            },
-          }),
-        );
+      if (!isDial) {
+        media.add("(prefers-reduced-motion: no-preference)", () => {
+          const sections = gsap.utils.toArray<HTMLElement>("[data-stack-proof]", root);
+          const triggers = sections.map((section, index) =>
+            ScrollTrigger.create({
+              trigger: section,
+              start: "top 60%",
+              end: "bottom 40%",
+              onToggle: (self) => {
+                if (self.isActive) {
+                  activateProof(index);
+                }
+              },
+            }),
+          );
 
-        return () => {
-          triggers.forEach((trigger) => trigger.kill());
-        };
-      });
+          return () => {
+            triggers.forEach((trigger) => trigger.kill());
+          };
+        });
+      }
 
       if (!isDial) media.add("(min-width: 1280px) and (prefers-reduced-motion: no-preference)", () => {
         const sections = gsap.utils.toArray<HTMLElement>("[data-stack-proof]", root);
@@ -336,7 +340,26 @@ export function StackScrollExperience({
         return;
       }
 
-      const nextIndex = activeProofIndexRef.current + (event.deltaY > 0 ? 1 : -1);
+      const currentIndex = activeProofIndexRef.current;
+      const currentProof = proofs[currentIndex];
+      const direction = event.deltaY > 0 ? 1 : -1;
+      let nextIndex = -1;
+
+      if (currentProof && direction > 0) {
+        nextIndex = proofs.findIndex((proof, index) => index > currentIndex && !sameSkill(proof.skill, currentProof.skill));
+      }
+
+      if (currentProof && direction < 0) {
+        for (let index = currentIndex - 1; index >= 0; index -= 1) {
+          if (!sameSkill(proofs[index].skill, currentProof.skill)) {
+            nextIndex = index;
+            while (nextIndex > 0 && sameSkill(proofs[nextIndex - 1].skill, proofs[nextIndex].skill)) {
+              nextIndex -= 1;
+            }
+            break;
+          }
+        }
+      }
 
       if (nextIndex < 0 || nextIndex >= proofs.length) {
         return;
@@ -348,7 +371,7 @@ export function StackScrollExperience({
         return;
       }
 
-      setProofTransition(event.deltaY > 0 ? "next" : "previous");
+      setProofTransition(direction > 0 ? "next" : "previous");
       setActiveProofIndex(nextIndex);
       proofWheelLockRef.current = window.setTimeout(() => {
         proofWheelLockRef.current = null;
@@ -408,7 +431,7 @@ export function StackScrollExperience({
       <div className="site-container">
         {/* Persistent Sticky Category Pill Nav Bar across entire section - positioned at top-[108px] for generous spacing below header */}
         <div className={`sticky top-[108px] z-30 mb-6 rounded-xl border border-white/12 bg-[#090a0f]/92 p-3 backdrop-blur-xl shadow-[0_12px_28px_rgba(0,0,0,0.45)] ${isDial ? "xl:hidden" : ""}`} aria-label="Stack categories">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             {categoryData.map((category) => {
               const selected = normalise(category.title) === normalise(activeCategory.title);
 
@@ -417,7 +440,7 @@ export function StackScrollExperience({
                   key={category.title}
                   type="button"
                   onClick={() => selectCategory(category)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                  className={`rounded-full border px-3 py-1.5 text-center text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
                     selected
                       ? "border-blue-400/60 bg-blue-500/20 text-blue-100 shadow-[0_0_12px_rgba(96,165,250,0.3)]"
                       : "border-white/10 text-white/50 hover:border-white/30 hover:text-white/90"
@@ -527,7 +550,21 @@ export function StackScrollExperience({
               </div>
             ) : null}
 
-            <div className={isDial ? "xl:hidden" : ""}>
+            {isDial && activeProof && activeShowcase ? (
+              <article id={activeProof.id} data-stack-proof className="scroll-mt-56 border-t border-white/10 py-6 first:border-t-0 sm:py-10 xl:hidden">
+                <ProofContent
+                  proof={activeProof}
+                  index={activeProofIndex}
+                  showcase={activeShowcase}
+                  skillProofs={activeSkillProofs}
+                  subIndex={activeSubIndex}
+                  isDial
+                  onChangeProof={(nextIndex) => setSubProofIndexes((current) => ({ ...current, [activeProof.id]: nextIndex }))}
+                />
+              </article>
+            ) : null}
+
+            <div className={isDial ? "hidden" : ""}>
               {proofs.map((proof, index) => {
               const skillProofs = showcases.filter((s) => sameSkill(proof.skill, s.skill));
               const subIndex = subProofIndexes[proof.id] ?? 0;
