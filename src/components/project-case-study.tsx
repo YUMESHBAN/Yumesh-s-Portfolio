@@ -1,7 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, ArrowUpRight, Code2, Github, Play, Sparkles } from "lucide-react";
-import type { ReactNode } from "react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, ChevronDown, ChevronUp, Code2, Github, Play, Sparkles } from "lucide-react";
+import { useState, type ReactNode } from "react";
 
 import { urlForImage } from "@/sanity/image";
 import { ProjectPdfViewer } from "@/components/project-pdf-viewer";
@@ -160,15 +162,217 @@ function StorySection({ number, eyebrow, title, children }: { number: string; ey
   );
 }
 
-function ListBlock({ label, items }: { label: string; items?: string[] }) {
+function ListBlock({ label, items, initialLimit = 10 }: { label: string; items?: string[]; initialLimit?: number }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   if (!items?.length) return null;
+
+  const shouldPaginate = items.length > initialLimit;
+  const visibleItems = isExpanded || !shouldPaginate ? items : items.slice(0, initialLimit);
+  const remainingCount = items.length - initialLimit;
 
   return (
     <div>
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">{label}</p>
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">{label}</p>
+        {shouldPaginate ? (
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">
+            Showing {visibleItems.length} of {items.length}
+          </span>
+        ) : null}
+      </div>
       <ul className="mt-4 grid gap-3">
-        {items.map((item) => <li key={item} className="border-b border-white/10 pb-3 text-sm leading-6 text-white/62 last:border-b-0">{item}</li>)}
+        {visibleItems.map((item) => (
+          <li key={item} className="border-b border-white/10 pb-3 text-sm leading-6 text-white/62 last:border-b-0">
+            {item}
+          </li>
+        ))}
       </ul>
+      {shouldPaginate ? (
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-3.5 inline-flex items-center gap-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-blue-300 transition hover:text-blue-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-300"
+          aria-expanded={isExpanded}
+        >
+          {isExpanded ? (
+            <>
+              Show less <ChevronUp size={14} aria-hidden="true" />
+            </>
+          ) : (
+            <>
+              Show {remainingCount} more <ChevronDown size={14} aria-hidden="true" />
+            </>
+          )}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function ExpandableTechStack({ techStack, initialLimit = 10 }: { techStack: string[]; initialLimit?: number }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!techStack.length) return null;
+
+  const shouldPaginate = techStack.length > initialLimit;
+  const visibleTech = isExpanded || !shouldPaginate ? techStack : techStack.slice(0, initialLimit);
+  const remainingCount = techStack.length - initialLimit;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Technology</p>
+        {shouldPaginate ? (
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">
+            Showing {visibleTech.length} of {techStack.length}
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {visibleTech.map((tech) => (
+          <span key={tech} className="site-chip">{tech}</span>
+        ))}
+        {shouldPaginate ? (
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="site-chip cursor-pointer border-blue-300/40 text-blue-300 transition hover:border-blue-300 hover:bg-blue-300/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-300"
+            aria-expanded={isExpanded}
+          >
+            {isExpanded ? (
+              <span className="inline-flex items-center gap-1">
+                Show less <ChevronUp size={13} aria-hidden="true" />
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1">
+                + {remainingCount} more <ChevronDown size={13} aria-hidden="true" />
+              </span>
+            )}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ExpandableProofsList({
+  proofs,
+  initialLimit = 5,
+}: {
+  proofs: NonNullable<CaseStudyProps["relatedContent"]>["proofs"];
+  initialLimit?: number;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!proofs.length) return null;
+
+  const shouldPaginate = proofs.length > initialLimit;
+  const visibleProofs = isExpanded || !shouldPaginate ? proofs : proofs.slice(0, initialLimit);
+  const remainingCount = proofs.length - initialLimit;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Project proof</p>
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">
+          {shouldPaginate ? `Showing ${visibleProofs.length} of ${proofs.length}` : `${proofs.length} ${proofs.length === 1 ? "proof" : "proofs"}`}
+        </span>
+      </div>
+      <div className="mt-4 grid gap-6">
+        {visibleProofs.map((proof) => (
+          <article key={proof._id} className="overflow-hidden border border-white/10 bg-white/[0.03]">
+            {proof.image?.src || proof.image?.url ? (
+              <Image src={proof.image.src ?? proof.image.url ?? ""} alt={proof.image.alt || proof.title} width={1200} height={675} className="aspect-video w-full object-cover" />
+            ) : null}
+            <div className="p-5 sm:p-7">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue-200/70">
+                {[proof.skill?.category, proof.skill?.name].filter(Boolean).join(" / ") || "Project proof"}
+              </p>
+              <h3 className="mt-2 text-2xl font-semibold text-white">{proof.title}</h3>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-white/62">{proof.description}</p>
+              {proof.highlights?.length ? (
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {proof.highlights.map((item) => <span key={item} className="site-chip">{item}</span>)}
+                </div>
+              ) : null}
+            </div>
+          </article>
+        ))}
+      </div>
+      {shouldPaginate ? (
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="site-button-secondary mt-5 w-full justify-center"
+          aria-expanded={isExpanded}
+        >
+          {isExpanded ? (
+            <>
+              Show less proofs <ChevronUp size={16} aria-hidden="true" />
+            </>
+          ) : (
+            <>
+              Show {remainingCount} more {remainingCount === 1 ? "proof" : "proofs"} <ChevronDown size={16} aria-hidden="true" />
+            </>
+          )}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function ExpandableArticlesList({
+  articles,
+  initialLimit = 5,
+}: {
+  articles: NonNullable<CaseStudyProps["relatedContent"]>["articles"];
+  initialLimit?: number;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!articles.length) return null;
+
+  const shouldPaginate = articles.length > initialLimit;
+  const visibleArticles = isExpanded || !shouldPaginate ? articles : articles.slice(0, initialLimit);
+  const remainingCount = articles.length - initialLimit;
+
+  return (
+    <div className="border-t border-white/10 pt-8">
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Related writing</p>
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">
+          {shouldPaginate ? `Showing ${visibleArticles.length} of ${articles.length}` : `${articles.length} ${articles.length === 1 ? "article" : "articles"}`}
+        </span>
+      </div>
+      <div className="mt-4 grid gap-4">
+        {visibleArticles.map((article) => (
+          <Link key={article._id} href={`/articles/${article.slug}`} className="group block border border-white/10 bg-white/[0.03] p-5 transition hover:border-blue-300/45 sm:p-6">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue-200/70">{article.category || "Article"}</p>
+            <h3 className="mt-2 text-xl font-semibold text-white group-hover:text-blue-200">{article.title}</h3>
+            {article.excerpt ? <p className="mt-3 max-w-3xl text-sm leading-6 text-white/62">{article.excerpt}</p> : null}
+            <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-blue-300">Read article <ArrowUpRight size={15} /></span>
+          </Link>
+        ))}
+      </div>
+      {shouldPaginate ? (
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="site-button-secondary mt-5 w-full justify-center"
+          aria-expanded={isExpanded}
+        >
+          {isExpanded ? (
+            <>
+              Show less articles <ChevronUp size={16} aria-hidden="true" />
+            </>
+          ) : (
+            <>
+              Show {remainingCount} more {remainingCount === 1 ? "article" : "articles"} <ChevronDown size={16} aria-hidden="true" />
+            </>
+          )}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -249,26 +453,13 @@ export function ProjectCaseStudy({ project, index, total, nextProject, relatedCo
 
           {hasResults && resultsNumber ? <StorySection number={resultsNumber} eyebrow="The result" title="Proof over promises."><div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.48fr)] lg:gap-16"><div>{project.metrics?.length ? <div className="border-y border-white/10">{project.metrics.map((metric) => <div key={`${metric.label}-${metric.value}`} className="flex items-start justify-between gap-8 border-b border-white/10 py-5 last:border-b-0"><div><p className="text-3xl font-semibold tracking-[-0.05em] text-blue-100 sm:text-4xl">{metric.value}</p><p className="mt-2 text-sm font-medium text-white/78">{metric.label}</p>{metric.note ? <p className="mt-1 text-xs leading-5 text-white/48">{metric.note}</p> : null}</div><Sparkles className="mt-1 shrink-0 text-blue-300/70" size={17} aria-hidden="true" /></div>)}</div> : null}{hasRichContent(project.results) ? <div className="mt-8"><RichContent blocks={project.results} /></div> : null}</div><div className="border-t border-white/10 pt-7 lg:border-l lg:border-t-0 lg:pl-9 lg:pt-0"><ListBlock label="Impact" items={project.impact} /></div></div></StorySection> : null}
 
-          {hasBuildNotes && buildNotesNumber ? <StorySection number={buildNotesNumber} eyebrow="Build notes" title="The tools and details that carried it through."><div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.52fr)] lg:gap-14"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Technology</p><div className="mt-4 flex flex-wrap gap-2">{project.techStack.map((tech) => <span key={tech} className="site-chip">{tech}</span>)}</div>{project.features.length ? <div className="mt-10"><ListBlock label="Selected product details" items={project.features} /></div> : null}</div><div className="border-t border-white/10 pt-7 lg:border-l lg:border-t-0 lg:pl-9 lg:pt-0"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Explore further</p><div className="mt-4 grid gap-3">{project.demoVideoUrl ? <a href={project.demoVideoUrl} target="_blank" rel="noreferrer" className="site-link inline-flex min-h-11 items-center gap-2 text-sm font-medium">Watch demo <Play size={16} aria-hidden="true" /></a> : null}{project.links?.map((link) => <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="site-link inline-flex min-h-11 items-center gap-2 text-sm font-medium">{link.label}<ArrowUpRight size={16} aria-hidden="true" /></a>)}</div></div></div>{project.projectPdfUrl ? <ProjectPdfViewer src={project.projectPdfUrl} projectTitle={project.title} /> : null}{gallery.length ? <ProjectImageGallery images={gallery} projectTitle={project.title} /> : null}</StorySection> : null}
+          {hasBuildNotes && buildNotesNumber ? <StorySection number={buildNotesNumber} eyebrow="Build notes" title="The tools and details that carried it through."><div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.52fr)] lg:gap-14"><div><ExpandableTechStack techStack={project.techStack} initialLimit={10} />{project.features.length ? <div className="mt-10"><ListBlock label="Selected product details" items={project.features} initialLimit={10} /></div> : null}</div><div className="border-t border-white/10 pt-7 lg:border-l lg:border-t-0 lg:pl-9 lg:pt-0"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Explore further</p><div className="mt-4 grid gap-3">{project.demoVideoUrl ? <a href={project.demoVideoUrl} target="_blank" rel="noreferrer" className="site-link inline-flex min-h-11 items-center gap-2 text-sm font-medium">Watch demo <Play size={16} aria-hidden="true" /></a> : null}{project.links?.map((link) => <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="site-link inline-flex min-h-11 items-center gap-2 text-sm font-medium">{link.label}<ArrowUpRight size={16} aria-hidden="true" /></a>)}</div></div></div>{project.projectPdfUrl ? <ProjectPdfViewer src={project.projectPdfUrl} projectTitle={project.title} /> : null}{gallery.length ? <ProjectImageGallery images={gallery} projectTitle={project.title} /> : null}</StorySection> : null}
 
           {hasRelatedContent && relatedContentNumber ? (
             <StorySection number={relatedContentNumber} eyebrow="Connected work" title="Proof and writing from this project.">
               <div className="grid gap-10">
-                {relatedContent?.proofs.length ? <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Project proof</p>
-                  <div className="mt-4 grid gap-6">
-                    {relatedContent.proofs.map((proof) => <article key={proof._id} className="overflow-hidden border border-white/10 bg-white/[0.03]">
-                      {proof.image?.src || proof.image?.url ? <Image src={proof.image.src ?? proof.image.url ?? ""} alt={proof.image.alt || proof.title} width={1200} height={675} className="aspect-video w-full object-cover" /> : null}
-                      <div className="p-5 sm:p-7"><p className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue-200/70">{[proof.skill?.category, proof.skill?.name].filter(Boolean).join(" / ") || "Project proof"}</p><h3 className="mt-2 text-2xl font-semibold text-white">{proof.title}</h3><p className="mt-3 max-w-3xl text-sm leading-6 text-white/62">{proof.description}</p>{proof.highlights?.length ? <div className="mt-5 flex flex-wrap gap-2">{proof.highlights.map((item) => <span key={item} className="site-chip">{item}</span>)}</div> : null}</div>
-                    </article>)}
-                  </div>
-                </div> : null}
-                {relatedContent?.articles.length ? <div className="border-t border-white/10 pt-8">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Related writing</p>
-                  <div className="mt-4 grid gap-4">
-                    {relatedContent.articles.map((article) => <Link key={article._id} href={`/articles/${article.slug}`} className="group block border border-white/10 bg-white/[0.03] p-5 transition hover:border-blue-300/45 sm:p-6"><p className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue-200/70">{article.category || "Article"}</p><h3 className="mt-2 text-xl font-semibold text-white group-hover:text-blue-200">{article.title}</h3>{article.excerpt ? <p className="mt-3 max-w-3xl text-sm leading-6 text-white/62">{article.excerpt}</p> : null}<span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-blue-300">Read article <ArrowUpRight size={15} /></span></Link>)}
-                  </div>
-                </div> : null}
+                {relatedContent?.proofs.length ? <ExpandableProofsList proofs={relatedContent.proofs} initialLimit={5} /> : null}
+                {relatedContent?.articles.length ? <ExpandableArticlesList articles={relatedContent.articles} initialLimit={5} /> : null}
               </div>
             </StorySection>
           ) : null}

@@ -11,10 +11,8 @@ import { DateRangePicker, YearPicker } from "../shared/DateRangePicker";
 import {
   cleanOptionalFields,
   getErrorMessage,
-  joinLines,
   normalizeRichContent,
   slugify,
-  splitLines,
   type RichContentBlock,
   type SlugValue,
 } from "../shared/studio-utils";
@@ -133,8 +131,8 @@ type ProjectFormState = {
   summary: string;
   role: string;
   audience: string;
-  goals: string;
-  responsibilities: string;
+  goals: string[];
+  responsibilities: string[];
   problem: RichContentBlock[];
   process: RichContentBlock[];
   solution: RichContentBlock[];
@@ -196,6 +194,18 @@ function refsFromIds(ids: string[]) {
   }));
 }
 
+function ensureStringArray(val: unknown): string[] {
+  if (Array.isArray(val)) {
+    const list = val.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+    return list.length ? list : [""];
+  }
+  if (typeof val === "string" && val.trim()) {
+    const list = val.split("\n").map((s) => s.trim()).filter(Boolean);
+    return list.length ? list : [""];
+  }
+  return [""];
+}
+
 function projectToFormState(project?: ProjectDocument | null): ProjectFormState {
   return {
     status: project?.status ?? "published",
@@ -210,17 +220,17 @@ function projectToFormState(project?: ProjectDocument | null): ProjectFormState 
     summary: project?.summary ?? "",
     role: project?.role ?? "",
     audience: project?.audience ?? "",
-    goals: joinLines(project?.goals),
-    responsibilities: joinLines(project?.responsibilities),
+    goals: ensureStringArray(project?.goals),
+    responsibilities: ensureStringArray(project?.responsibilities),
     problem: project?.problem ?? [],
     process: project?.process ?? [],
     solution: project?.solution ?? [],
     results: project?.results ?? [],
     metrics: project?.metrics?.length ? project.metrics : [newMetric()],
     relatedSkillIds: project?.relatedSkills?.map((skill) => skill._ref).filter((id): id is string => Boolean(id)) ?? [],
-    techStack: project?.techStack ?? [],
-    features: project?.features ?? [],
-    impact: project?.impact ?? [],
+    techStack: ensureStringArray(project?.techStack),
+    features: ensureStringArray(project?.features),
+    impact: ensureStringArray(project?.impact),
     repoUrl: project?.repoUrl ?? "",
     liveUrl: project?.liveUrl ?? "",
     links: project?.links ?? [],
@@ -593,8 +603,8 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
       summary: formData.summary.trim(),
       role: formData.role.trim(),
       audience: formData.audience.trim(),
-      goals: splitLines(formData.goals),
-      responsibilities: splitLines(formData.responsibilities),
+      goals: formData.goals.map((item) => item.trim()).filter(Boolean),
+      responsibilities: formData.responsibilities.map((item) => item.trim()).filter(Boolean),
       problem: normalizeRichContent(formData.problem),
       process: normalizeRichContent(formData.process),
       solution: normalizeRichContent(formData.solution),
@@ -756,16 +766,20 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
         <section className="studio-form-section">
           <h3 className="studio-form-section-title">Case Study Structure</h3>
           <div className="studio-form-grid">
-            <label className="studio-field">
-              <span className="studio-form-label">Goals</span>
-              <span className="studio-help-text">What this project needed to achieve for users or the business.</span>
-              <textarea value={formData.goals} onChange={(event) => updateField("goals", event.target.value)} className="studio-form-textarea" rows={5} placeholder={"Increase conversions\nImprove content editing"} />
-            </label>
-            <label className="studio-field">
-              <span className="studio-form-label">Responsibilities</span>
-              <span className="studio-help-text">The work you personally owned or delivered.</span>
-              <textarea value={formData.responsibilities} onChange={(event) => updateField("responsibilities", event.target.value)} className="studio-form-textarea" rows={5} placeholder={"Frontend implementation\nCMS modeling"} />
-            </label>
+            <EditableStringList
+              label="Goals"
+              description="What this project needed to achieve for users or the business."
+              values={formData.goals}
+              onChange={(values) => updateField("goals", values)}
+              placeholder="Increase conversions"
+            />
+            <EditableStringList
+              label="Responsibilities"
+              description="The work you personally owned or delivered."
+              values={formData.responsibilities}
+              onChange={(values) => updateField("responsibilities", values)}
+              placeholder="Frontend implementation"
+            />
           </div>
 
           <div className="studio-form-stack">

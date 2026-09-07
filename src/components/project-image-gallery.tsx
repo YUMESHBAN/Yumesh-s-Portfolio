@@ -95,7 +95,9 @@ export function ProjectImageGallery({ images, projectTitle }: ProjectImageGaller
       <div ref={dialogRef} className="relative flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#101116] shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <button ref={closeButtonRef} type="button" onClick={closeModal} className="absolute right-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-full bg-black/65 text-white transition hover:bg-black" aria-label="Close enlarged image"><X size={20} /></button>
         <div className="relative min-h-0 bg-black"><Image src={activeSrc} alt={activeImage?.alt || `${projectTitle} gallery screenshot`} width={1600} height={1000} className="max-h-[72vh] w-full object-contain" priority /></div>
-        <div className="border-t border-white/10 px-5 py-4 text-sm leading-6 text-white/75">{activeImage?.caption || "No caption added for this image."}</div>
+        {activeImage?.caption?.trim() ? (
+          <div className="border-t border-white/10 px-5 py-4 text-sm leading-6 text-white/75">{activeImage.caption.trim()}</div>
+        ) : null}
       </div>
     </div>, document.body) : null}
   </>;

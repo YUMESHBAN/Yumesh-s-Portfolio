@@ -12,7 +12,12 @@ type EditableStringListProps = {
 };
 
 export default function EditableStringList({ label, values, onChange, placeholder, description }: EditableStringListProps) {
-  const rows = values.length ? values : [""];
+  const normalizedValues = Array.isArray(values)
+    ? values
+    : typeof values === "string"
+    ? (values as string).split("\n").map((s) => s.trim()).filter(Boolean)
+    : [];
+  const rows = normalizedValues.length ? normalizedValues : [""];
 
   function update(index: number, value: string) {
     onChange(rows.map((row, rowIndex) => (rowIndex === index ? value : row)));
