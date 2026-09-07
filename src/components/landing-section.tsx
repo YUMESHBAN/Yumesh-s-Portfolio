@@ -39,20 +39,20 @@ export function LandingSection({ profile, settings }: { profile: PersonProfile; 
   }, []);
 
   return (
-    <section className="landing-section pt-28 sm:pt-32">
+    <section className="landing-section pt-20 sm:pt-24">
       <div className="site-container">
-        <div className="landing-section-content grid items-center gap-10 lg:grid-cols-[minmax(0,1.04fr)_minmax(360px,0.96fr)] lg:gap-8">
+        <div className="landing-section-content grid items-center gap-8 lg:grid-cols-[minmax(0,1.04fr)_minmax(360px,0.96fr)] lg:gap-8">
           <div className="relative max-w-2xl text-left">
             <GreetingRotator />
 
-            <p className="mt-6 text-xl font-medium text-white/82 sm:text-2xl">I&apos;m {profile.name}</p>
+            <p className="mt-5 text-xl font-medium text-white/82 sm:text-2xl">I&apos;m {profile.name}</p>
 
-            <h1 className="mt-4 max-w-4xl text-balance text-5xl font-semibold leading-[1.02] text-white sm:text-7xl lg:text-5xl">
+            <h1 className="mt-3.5 max-w-4xl text-balance text-4xl font-semibold leading-[1.02] text-white sm:text-6xl lg:text-5xl">
               {heroTitle}
             </h1>
-            <p className="site-muted mt-7 max-w-xl text-base leading-8 sm:text-lg">{profile.shortBio}</p>
+            <p className="site-muted mt-5 max-w-xl text-base leading-7 sm:text-lg sm:leading-8">{profile.shortBio}</p>
 
-            <div className="mt-6 flex flex-wrap gap-3 text-sm text-white/60">
+            <div className="mt-5 flex flex-wrap gap-3 text-sm text-white/60">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5">
                 <MapPin size={15} className="text-blue-300" aria-hidden="true" />
                 {profile.location}
@@ -60,7 +60,7 @@ export function LandingSection({ profile, settings }: { profile: PersonProfile; 
               {availability ? <span className="site-chip py-1.5">{availability}</span> : null}
             </div>
 
-            <div className="relative z-30 mt-9 flex flex-wrap gap-3">
+            <div className="relative z-30 mt-7 flex flex-wrap gap-3">
               <Link href="/contact" className="site-button-primary">
                 Got a project?
                 <ArrowRight size={17} />
@@ -80,12 +80,12 @@ export function LandingSection({ profile, settings }: { profile: PersonProfile; 
 
           <div
             ref={portraitStageRef}
-            className={`hero-portrait-stage group relative mx-auto flex min-h-[430px] w-full max-w-[560px] items-end justify-center lg:min-h-[640px] lg:max-w-none ${
+            className={`hero-portrait-stage group relative mx-auto flex min-h-[380px] w-full max-w-[560px] items-end justify-center lg:min-h-[520px] lg:max-w-none ${
               isActive ? "is-active" : ""
             }`}
           >
             <div
-              className="hero-portrait-ring pointer-events-none absolute bottom-16 left-1/2 h-[300px] w-[300px] rounded-full border-[14px] sm:h-[390px] sm:w-[390px] lg:bottom-24 lg:h-[460px] lg:w-[460px]"
+              className="hero-portrait-ring pointer-events-none absolute bottom-12 left-1/2 h-[260px] w-[260px] rounded-full border-[14px] sm:h-[350px] sm:w-[350px] lg:bottom-16 lg:h-[420px] lg:w-[420px]"
               aria-hidden="true"
             />
             <span className="hero-portrait-symbol hero-portrait-symbol-left" aria-hidden="true">
@@ -102,7 +102,7 @@ export function LandingSection({ profile, settings }: { profile: PersonProfile; 
                 height={1448}
                 priority
                 sizes="(min-width: 1024px) 50vw, (min-width: 640px) 72vw, 92vw"
-                className="hero-portrait-image max-h-[560px] w-full object-contain object-bottom lg:max-h-[700px]"
+                className="hero-portrait-image max-h-[480px] w-full object-contain object-bottom lg:max-h-[580px]"
               />
             </div>
           </div>

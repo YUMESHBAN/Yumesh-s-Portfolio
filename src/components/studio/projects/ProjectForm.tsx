@@ -911,7 +911,7 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
 
             {formData.featuredImage?.src ? (
               <div className="studio-asset-card studio-asset-card-wide">
-                <Image src={formData.featuredImage.src} alt={formData.featuredImage.alt || "Featured project image"} fill sizes="420px" className="object-cover" />
+                <Image src={formData.featuredImage.src} alt={formData.featuredImage.alt || "Featured project image"} fill sizes="420px" className="object-contain p-2" />
                 <div className="studio-asset-card-label">Featured image</div>
                 <div className="studio-asset-card-actions">
                   <label className="studio-asset-action"><Upload size={15} /> Replace<input type="file" accept="image/*" onChange={handleFeaturedImageUpload} /></label>
@@ -956,7 +956,7 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
 
             {formData.gallery.map((image, index) => (
               <div key={image._key ?? index} className="studio-asset-card">
-                {image.src ? <Image src={image.src} alt={image.alt || `Gallery image ${index + 1}`} fill sizes="240px" className="object-cover" /> : <ImagePlus size={20} />}
+                {image.src ? <Image src={image.src} alt={image.alt || `Gallery image ${index + 1}`} fill sizes="240px" className="object-contain p-2" /> : <ImagePlus size={20} />}
                 <div className="studio-asset-card-label">Gallery image {index + 1}</div>
                 <div className="studio-asset-card-actions">
                   <button type="button" className="studio-asset-action" onClick={() => moveGalleryImage(index, -1)} disabled={index === 0} aria-label={`Move gallery image ${index + 1} earlier`} title="Move earlier"><MoveLeft size={15} /> Earlier</button>

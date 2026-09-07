@@ -13,7 +13,7 @@ export default async function PrivacyPage() {
   const profile = await getPersonProfile();
 
   return (
-    <section className="site-section pt-32">
+    <section className="site-section pt-20 sm:pt-24">
       <div className="site-container">
         <div className="max-w-3xl">
           <p className="site-eyebrow">{"// Website policy"}</p>

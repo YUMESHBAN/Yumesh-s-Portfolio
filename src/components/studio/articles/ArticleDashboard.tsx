@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, CalendarDays, EyeOff, FileText, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarDays, EyeOff, FileText, Pencil, Plus, Search, Star, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useClient } from "sanity";
 
@@ -121,6 +121,17 @@ export default function ArticleDashboard() {
     setView("list");
     setEditingArticle(null);
     fetchArticles();
+  }
+
+  async function toggleFeaturedOnArchive(article: ArticleDocument) {
+    if (!article._id) return;
+    try {
+      const newValue = !article.featuredOnArchive;
+      await client.patch(article._id).set({ featuredOnArchive: newValue }).commit();
+      await fetchArticles();
+    } catch (toggleError) {
+      setError(getErrorMessage(toggleError));
+    }
   }
 
   async function moveFeaturedArticle(article: ArticleDocument, featureField: "featuredOnHomepage" | "featuredOnArchive", orderField: "homepageOrder" | "archiveOrder", direction: -1 | 1) {
@@ -257,6 +268,15 @@ export default function ArticleDashboard() {
                   <button type="button" onClick={() => handleEdit(article)} className="studio-btn-edit">
                     <Pencil size={16} />
                     Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleFeaturedOnArchive(article)}
+                    className={`studio-btn-edit ${article.featuredOnArchive ? "bg-blue-600/20 text-blue-300 border-blue-500/40" : ""}`}
+                    title={article.featuredOnArchive ? "Remove from top section" : "Feature in top section"}
+                  >
+                    <Star size={15} fill={article.featuredOnArchive ? "currentColor" : "none"} />
+                    {article.featuredOnArchive ? "Featured" : "Feature"}
                   </button>
                   <button
                     type="button"

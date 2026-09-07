@@ -87,7 +87,7 @@ export function ProjectImageGallery({ images, projectTitle }: ProjectImageGaller
       {images.map((image, index) => {
         const src = image.url ?? image.src;
         return src ? <button key={src} type="button" onClick={(event) => { triggerRef.current = event.currentTarget; setActiveIndex(index); }} className="group overflow-hidden text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">
-          <div className="relative aspect-[16/10]"><Image src={src} alt={image.alt || `${projectTitle} gallery screenshot`} fill sizes="(min-width: 640px) 50vw, 100vw" className="object-cover transition duration-500 group-hover:scale-[1.025]" /></div>
+          <div className="relative aspect-[16/10] bg-[#08090d]"><Image src={src} alt={image.alt || `${projectTitle} gallery screenshot`} fill sizes="(min-width: 640px) 50vw, 100vw" className="object-contain p-3 sm:p-4 transition duration-500 group-hover:scale-[1.025]" /></div>
         </button> : null;
       })}
     </div>

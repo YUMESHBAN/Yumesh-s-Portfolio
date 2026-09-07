@@ -20,7 +20,7 @@ export default async function ContactPage() {
   const linkedin = profile.socialLinks.find((link) => link.label === "LinkedIn");
 
   return (
-    <section className="site-section pt-32">
+    <section className="site-section pt-20 sm:pt-24">
       <div className="site-container grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
           <SectionHeading

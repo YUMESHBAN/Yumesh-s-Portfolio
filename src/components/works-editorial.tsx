@@ -45,34 +45,45 @@ function ProjectActions({ project }: { project: Project }) {
 
 function ProjectDetails({ project, index }: { project: Project; index: number }) {
   const proof = projectProof(project);
+  const roleAssociation = [project.role, project.association].filter((item) => Boolean(item?.trim())).join(" / ");
 
   return (
     <div className="flex h-full min-w-0 flex-col justify-center">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[10px] uppercase tracking-[0.16em]">
         <span className="text-blue-300">{projectNumber(index)}</span>
-        <span className="h-px w-10 bg-blue-300/55" aria-hidden="true" />
-        <span className="text-white/52">{project.type}</span>
-        <span className="text-white/28" aria-hidden="true">/</span>
-        <span className="text-white/52">{project.dateRange}</span>
+        {project.type ? (
+          <>
+            <span className="h-px w-10 bg-blue-300/55" aria-hidden="true" />
+            <span className="text-white/52">{project.type}</span>
+          </>
+        ) : null}
+        {project.dateRange?.trim() ? (
+          <>
+            <span className="text-white/28" aria-hidden="true">/</span>
+            <span className="text-white/52">{project.dateRange}</span>
+          </>
+        ) : null}
       </div>
 
-      <h2 className="mt-6 max-w-3xl text-balance text-[clamp(2.75rem,5.8vw,5.4rem)] font-semibold leading-[0.9] tracking-[-0.065em] text-white">
+      <h2 className="mt-5 max-w-3xl text-balance text-[clamp(2.5rem,5.2vw,4.8rem)] font-semibold leading-[0.9] tracking-[-0.065em] text-white">
         {project.title}
       </h2>
-      <p className="mt-5 text-sm font-medium text-blue-200/72">
-        {project.role} / {project.association}
-      </p>
-      <p className="mt-5 max-w-2xl text-base leading-8 text-white/62">{project.summary}</p>
+      {roleAssociation ? (
+        <p className="mt-4 text-sm font-medium text-blue-200/72">
+          {roleAssociation}
+        </p>
+      ) : null}
+      <p className="mt-4 max-w-2xl text-base leading-7 text-white/62">{project.summary}</p>
 
       {proof ? (
-        <div className="mt-7 border-l border-blue-300/45 pl-5">
+        <div className="mt-6 border-l border-blue-300/45 pl-5">
           <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-blue-200/65">{proof.value}</p>
-          <p className="mt-2 max-w-xl text-sm font-medium leading-6 text-white/72">{proof.label}</p>
+          <p className="mt-1.5 max-w-xl text-sm font-medium leading-6 text-white/72">{proof.label}</p>
           {proof.note ? <p className="mt-1 text-xs leading-5 text-white/45">{proof.note}</p> : null}
         </div>
       ) : null}
 
-      <div className="mt-7 flex flex-wrap gap-2">
+      <div className="mt-6 flex flex-wrap gap-2">
         {project.techStack.slice(0, 3).map((tech) => <span key={tech} className="site-chip">{tech}</span>)}
         {project.techStack.length > 3 ? <span className="site-chip">+{project.techStack.length - 3}</span> : null}
       </div>
@@ -98,7 +109,7 @@ function ProjectStory({ project, index }: { project: Project; index: number }) {
                 alt={image?.alt || `${project.title} project screenshot`}
                 fill
                 sizes="(min-width: 1024px) 58vw, 100vw"
-                className="object-cover transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.025] motion-reduce:transition-none"
+                className="object-contain p-6 sm:p-8 pb-16 sm:pb-20 transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.025] motion-reduce:transition-none"
               />
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#08090d]/90 to-transparent" aria-hidden="true" />
               <div className="absolute inset-x-0 bottom-0 flex items-center justify-between border-t border-blue-300/25 bg-[#0b0b0c]/82 px-5 py-4 backdrop-blur-xl sm:px-6">
@@ -138,9 +149,9 @@ export function WorksEditorial({ projects }: { projects: Project[] }) {
 
   return (
     <>
-      <section className="works-hero relative isolate overflow-hidden border-b border-white/10 pt-20 sm:pt-24">
+      <section className="works-hero relative isolate overflow-hidden border-b border-white/10 pt-20 sm:pt-22">
         <div className="works-hero-glow pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
-        <div className="site-container grid min-h-[calc(100svh-6rem-1px)] items-center gap-10 py-6 sm:py-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(20rem,0.72fr)] lg:gap-16">
+        <div className="site-container grid min-h-[calc(100vh-5.5rem)] items-center gap-8 py-6 sm:py-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(20rem,0.72fr)] lg:gap-14">
           <div className="works-hero-copy max-w-4xl">
             <p className="site-eyebrow">{"// Works · 2024—2026"}</p>
             <h1 className="works-hero-title mt-5 max-w-4xl text-balance font-semibold leading-[0.88] tracking-[-0.07em] text-white">

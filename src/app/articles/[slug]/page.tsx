@@ -83,7 +83,7 @@ export default async function ArticleDetailPage({ params }: PageProps) {
         )}
       />
 
-      <article className="article-reading site-section pt-32">
+      <article className="article-reading site-section pt-20 sm:pt-24">
         <div className="site-container">
           <header className="article-reading-hero mx-auto max-w-4xl border-b border-white/10 pb-10 sm:pb-14">
             <Link

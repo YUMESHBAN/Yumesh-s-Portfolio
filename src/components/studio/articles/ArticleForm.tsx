@@ -553,7 +553,7 @@ export default function ArticleForm({ article, onComplete }: ArticleFormProps) {
           <div className="studio-form-grid">
             <label className="studio-checkbox-field">
               <input type="checkbox" checked={formData.featuredOnArchive} onChange={(event) => updateField("featuredOnArchive", event.target.checked)} />
-              <span>Use as the lead story in the article archive</span>
+              <span>Feature in top section of Articles page</span>
             </label>
 
           </div>

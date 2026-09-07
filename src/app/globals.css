@@ -763,6 +763,7 @@ a {
 
 .articles-feature,
 .articles-row {
+  position: relative;
   transition: border-color 220ms ease, background-color 220ms ease;
 }
 
@@ -771,17 +772,19 @@ a {
 }
 
 .articles-row {
-  position: relative;
   display: block;
   border-bottom: 1px solid rgb(255 255 255 / 0.1);
 }
 
+.articles-feature:hover,
+.articles-feature:focus-within,
 .articles-row:hover,
 .articles-row:focus-within {
   border-color: rgb(147 197 253 / 0.4);
   background: rgb(147 197 253 / 0.055);
 }
 
+.articles-feature::before,
 .articles-row::before {
   position: absolute;
   top: 0;
@@ -793,6 +796,8 @@ a {
   transition: background-color 220ms ease, box-shadow 220ms ease;
 }
 
+.articles-feature:hover::before,
+.articles-feature:focus-within::before,
 .articles-row:hover::before,
 .articles-row:focus-within::before {
   background: rgb(147 197 253 / 0.86);

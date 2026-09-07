@@ -283,7 +283,7 @@ function ExpandableProofsList({
         {visibleProofs.map((proof) => (
           <article key={proof._id} className="overflow-hidden border border-white/10 bg-white/[0.03]">
             {proof.image?.src || proof.image?.url ? (
-              <Image src={proof.image.src ?? proof.image.url ?? ""} alt={proof.image.alt || proof.title} width={1200} height={675} className="aspect-video w-full object-cover" />
+              <Image src={proof.image.src ?? proof.image.url ?? ""} alt={proof.image.alt || proof.title} width={1200} height={675} className="aspect-video w-full object-contain bg-[#08090d] p-4 sm:p-6" />
             ) : null}
             <div className="p-5 sm:p-7">
               <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue-200/70">
@@ -396,52 +396,66 @@ export function ProjectCaseStudy({ project, index, total, nextProject, relatedCo
   const resultsNumber = hasResults ? String(sectionIndex++).padStart(2, "0") : undefined;
   const buildNotesNumber = hasBuildNotes ? String(sectionIndex++).padStart(2, "0") : undefined;
   const relatedContentNumber = hasRelatedContent ? String(sectionIndex++).padStart(2, "0") : undefined;
-  const metadata: Array<[string, string]> = [
-    ["Role", project.role],
-    ["Association", project.association],
-    ["Timeline", project.dateRange],
-  ];
-  if (project.duration) metadata.push(["Duration", project.duration]);
-  if (project.teamSize) metadata.push(["Team", project.teamSize]);
+  const metadata = (
+    [
+      ["Role", project.role],
+      ["Association", project.association],
+      ["Timeline", project.dateRange],
+      ["Duration", project.duration],
+      ["Team", project.teamSize],
+    ] as Array<[string, string | undefined]>
+  ).filter((item): item is [string, string] => Boolean(item[1]?.trim()));
 
   return (
-    <article className="pt-28 sm:pt-32">
+    <article className="pt-20 sm:pt-24">
       <div className="site-container max-w-6xl">
         <Link href="/works" className="site-link inline-flex min-h-11 items-center gap-2 text-sm font-semibold">
           <ArrowLeft size={17} aria-hidden="true" />
           Back to Works
         </Link>
 
-        <header className="works-section-reveal pt-8 sm:pt-10">
+        <header className="works-section-reveal pt-4 sm:pt-6">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[10px] uppercase tracking-[0.16em]">
             <span className="text-blue-300">Works / {number}</span>
-            <span className="h-px w-10 bg-blue-300/55" aria-hidden="true" />
-            <span className="text-white/55">{project.type}</span>
-            <span className="text-white/28" aria-hidden="true">/</span>
-            <span className="text-white/55">{project.dateRange}</span>
+            {project.type ? (
+              <>
+                <span className="h-px w-10 bg-blue-300/55" aria-hidden="true" />
+                <span className="text-white/55">{project.type}</span>
+              </>
+            ) : null}
+            {project.dateRange?.trim() ? (
+              <>
+                <span className="text-white/28" aria-hidden="true">/</span>
+                <span className="text-white/55">{project.dateRange}</span>
+              </>
+            ) : null}
           </div>
-          <div className="mt-7 grid gap-9 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,0.3fr)] lg:items-end">
+          <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,0.3fr)] lg:items-end">
             <div>
-              <h1 className="max-w-5xl text-balance text-[clamp(3.2rem,8vw,7.8rem)] font-semibold leading-[0.86] tracking-[-0.075em] text-white">{project.title}</h1>
-              <p className="mt-7 max-w-3xl text-lg leading-8 text-white/64 sm:text-xl">{project.summary}</p>
+              <h1 className="max-w-5xl text-balance text-[clamp(2.5rem,6vw,5.2rem)] font-semibold leading-[0.9] tracking-[-0.065em] text-white">{project.title}</h1>
+              <p className="mt-4 max-w-3xl text-base leading-7 text-white/64 sm:text-lg sm:leading-8">{project.summary}</p>
             </div>
             {proof ? <div className="border-l border-blue-300/45 pl-5 lg:mb-1"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">{proof.value}</p><p className="mt-2 text-sm font-medium leading-6 text-white/78">{proof.label}</p>{proof.note ? <p className="mt-1 text-xs leading-5 text-white/45">{proof.note}</p> : null}</div> : null}
           </div>
 
-          {(project.liveUrl || project.repoUrl) ? <div className="mt-8 flex flex-wrap gap-3">
+          {(project.liveUrl || project.repoUrl) ? <div className="mt-6 flex flex-wrap gap-3">
             {project.liveUrl ? <a href={project.liveUrl} target="_blank" rel="noreferrer" className="site-button-primary">Live project <ArrowUpRight size={17} aria-hidden="true" /></a> : null}
             {project.repoUrl ? <a href={project.repoUrl} target="_blank" rel="noreferrer" className="site-button-secondary"><Github size={17} aria-hidden="true" />Repository</a> : null}
           </div> : null}
         </header>
 
-        <section className="works-section-reveal mt-12 border-y border-white/10 py-3 sm:mt-16 sm:py-4">
-          <div className="grid divide-y divide-white/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0 lg:grid-cols-5">
-            {metadata.map(([label, value]) => <div key={label} className="px-4 py-4 first:pl-0 sm:first:pl-0 lg:px-5"><p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">{label}</p><p className="mt-2 text-sm font-medium leading-6 text-white/78">{value}</p></div>)}
-          </div>
-        </section>
+        {metadata.length > 0 ? (
+          <section className="works-section-reveal mt-7 border-y border-white/10 py-2.5 sm:mt-9 sm:py-3.5">
+            <div className={`grid divide-y divide-white/10 sm:divide-y-0 sm:divide-x ${
+              metadata.length === 1 ? "grid-cols-1" : metadata.length === 2 ? "sm:grid-cols-2" : metadata.length === 3 ? "sm:grid-cols-3" : metadata.length === 4 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3 lg:grid-cols-5"
+            }`}>
+              {metadata.map(([label, value]) => <div key={label} className="px-4 py-3 first:pl-0 sm:first:pl-0 lg:px-5"><p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">{label}</p><p className="mt-1.5 text-sm font-medium leading-6 text-white/78">{value}</p></div>)}
+            </div>
+          </section>
+        ) : null}
 
         <section className="works-section-reveal mt-10 sm:mt-14">
-          {imageUrl ? <figure className="works-story-media group overflow-hidden border border-white/10 bg-[#08090d]"><div className="relative aspect-[16/10] overflow-hidden"><Image src={imageUrl} alt={image?.alt || `${project.title} project screenshot`} fill priority sizes="(min-width: 1024px) 1152px, 100vw" className="object-cover transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.025] motion-reduce:transition-none" /></div><figcaption className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-4 font-mono text-[10px] uppercase tracking-[0.15em] text-white/50 sm:px-6"><span>{image?.caption || `Project evidence / ${number}`}</span><span className="text-blue-200/70">16:10 view</span></figcaption></figure> : <div className="border border-white/10 bg-[linear-gradient(115deg,rgba(96,165,250,0.08),transparent_45%)] p-6 sm:p-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.38fr)] lg:gap-12 lg:p-12"><div><p className="font-mono text-6xl font-semibold tracking-[-0.08em] text-blue-300/80 sm:text-8xl">{number}</p><p className="mt-6 site-eyebrow">Case file / text-led evidence</p><p className="mt-4 max-w-2xl text-2xl font-medium leading-tight tracking-[-0.035em] text-white sm:text-3xl">{proof?.label || project.summary}</p></div><div className="mt-9 border-t border-white/10 pt-6 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Built by</p><p className="mt-3 text-sm font-medium text-white/78">{project.role}</p><div className="mt-7 flex flex-wrap gap-2">{project.techStack.slice(0, 4).map((tech) => <span key={tech} className="site-chip">{tech}</span>)}</div></div></div>}
+          {imageUrl ? <figure className="works-story-media group overflow-hidden border border-white/10 bg-[#08090d]"><div className="relative aspect-[16/10] overflow-hidden"><Image src={imageUrl} alt={image?.alt || `${project.title} project screenshot`} fill priority sizes="(min-width: 1024px) 1152px, 100vw" className="object-contain p-6 sm:p-8 transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.025] motion-reduce:transition-none" /></div><figcaption className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-4 font-mono text-[10px] uppercase tracking-[0.15em] text-white/50 sm:px-6"><span>{image?.caption || `Project evidence / ${number}`}</span><span className="text-blue-200/70">16:10 view</span></figcaption></figure> : <div className="border border-white/10 bg-[linear-gradient(115deg,rgba(96,165,250,0.08),transparent_45%)] p-6 sm:p-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.38fr)] lg:gap-12 lg:p-12"><div><p className="font-mono text-6xl font-semibold tracking-[-0.08em] text-blue-300/80 sm:text-8xl">{number}</p><p className="mt-6 site-eyebrow">Case file / text-led evidence</p><p className="mt-4 max-w-2xl text-2xl font-medium leading-tight tracking-[-0.035em] text-white sm:text-3xl">{proof?.label || project.summary}</p></div><div className="mt-9 border-t border-white/10 pt-6 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-blue-200/70">Built by</p><p className="mt-3 text-sm font-medium text-white/78">{project.role}</p><div className="mt-7 flex flex-wrap gap-2">{project.techStack.slice(0, 4).map((tech) => <span key={tech} className="site-chip">{tech}</span>)}</div></div></div>}
         </section>
 
         <div className="mt-14 sm:mt-20">
