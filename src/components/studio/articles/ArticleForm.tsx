@@ -101,7 +101,37 @@ function today() {
 }
 
 function normalizeArticleBody(body?: RichContentBlock[]) {
-  return body?.length ? body : textToPortableBlocks("");
+  if (!body?.length) {
+    return textToPortableBlocks("");
+  }
+
+  return body.flatMap((block) => {
+    if (block._type !== "block" || !block.listItem) {
+      return block;
+    }
+
+    const lines = block.children
+      .map((child) => child.text)
+      .join("")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (lines.length < 2) {
+      return block;
+    }
+
+    const firstChild = block.children[0];
+    if (!firstChild) {
+      return block;
+    }
+
+    return lines.map((text, index) => ({
+      ...block,
+      _key: index === 0 ? block._key : keyFromText("block"),
+      children: [{ ...firstChild, _key: index === 0 ? firstChild._key : keyFromText("span"), text }],
+    }));
+  });
 }
 
 function keyFromText(prefix: string) {
@@ -162,7 +192,15 @@ function ArticlePreviewContent({ blocks }: { blocks: RichContentBlock[] }) {
     if (block.style === "h2") return <h2 key={key}>{content}</h2>;
     if (block.style === "h3") return <h3 key={key}>{content}</h3>;
     if (block.style === "blockquote") return <blockquote key={key}>{content}</blockquote>;
-    if (block.listItem) return <p key={key} className="studio-preview-list-item">• {content}</p>;
+    if (block.listItem) {
+      let position = 1;
+      for (let previousIndex = index - 1; previousIndex >= 0; previousIndex -= 1) {
+        const previous = blocks[previousIndex];
+        if (previous._type !== "block" || previous.listItem !== block.listItem) break;
+        position += 1;
+      }
+      return <p key={key} className="studio-preview-list-item">{block.listItem === "number" ? `${position}.` : "•"} {content}</p>;
+    }
     return <p key={key}>{content}</p>;
   })}</div>;
 }

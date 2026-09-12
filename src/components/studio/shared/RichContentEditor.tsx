@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ArrowDown, ArrowUp, Bold, Code2, Heading2, Heading3, Highlighter, ImagePlus, Italic, List, ListOrdered, MessageSquare, Pilcrow, Plus, Quote, Trash2, Upload } from "lucide-react";
-import { useRef, useState, type ChangeEvent } from "react";
+import { useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { useClient } from "sanity";
 
 import { createTextBlock, getErrorMessage, type CalloutBlock, type CodeBlock, type ImageWithMetaBlock, type KeyTakeawayBlock, type PortableTextBlock, type RichContentBlock } from "./studio-utils";
@@ -179,6 +179,62 @@ export default function RichContentEditor({ label, description, value, onChange,
     onChange(next);
   }
 
+  function listEnd(start: number) {
+    const listItem = (value[start] as PortableTextBlock).listItem;
+    let end = start + 1;
+
+    while (value[end]?._type === "block" && value[end].listItem === listItem) {
+      end += 1;
+    }
+
+    return end;
+  }
+
+  function updateListItem(index: number, text: string) {
+    const block = value[index];
+    if (block?._type === "block") {
+      updateBlock(index, updateBlockText(block, text));
+    }
+  }
+
+  function addListItem(index: number, listItem: NonNullable<PortableTextBlock["listItem"]>) {
+    const next = [...value];
+    next.splice(index + 1, 0, createTextBlock("", index + 1, "normal", listItem));
+    onChange(next);
+  }
+
+  function removeListItem(index: number) {
+    removeBlock(index);
+  }
+
+  function moveListItem(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    const block = value[index];
+
+    if (
+      block?._type !== "block" ||
+      target < 0 ||
+      value[target]?._type !== "block" ||
+      value[target].listItem !== block.listItem
+    ) {
+      return;
+    }
+
+    const next = [...value];
+    [next[index], next[target]] = [next[target], next[index]];
+    onChange(next);
+  }
+
+  function removeList(start: number) {
+    onChange(value.filter((_, index) => index < start || index >= listEnd(start)));
+  }
+
+  function handleListItemKeyDown(event: KeyboardEvent<HTMLInputElement>, index: number, listItem: NonNullable<PortableTextBlock["listItem"]>) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    addListItem(index, listItem);
+  }
+
   function applyMark(index: number, block: PortableTextBlock, mark: string) {
     const key = block._key ?? String(index);
     const textarea = textareas.current[key];
@@ -266,6 +322,45 @@ export default function RichContentEditor({ label, description, value, onChange,
         <div className="studio-rich-blocks">
           {value.map((block, index) => {
             if (block._type === "block") {
+              if (block.listItem) {
+                const isFirstListItem = index === 0 || value[index - 1]?._type !== "block" || value[index - 1].listItem !== block.listItem;
+                if (!isFirstListItem) return null;
+
+                const end = listEnd(index);
+                const items = value.slice(index, end) as PortableTextBlock[];
+                const labelText = block.listItem === "number" ? "Numbered list" : "Bullet list";
+
+                return (
+                  <div key={block._key ?? index} className="studio-rich-block">
+                    <div className="studio-editable-list-header">
+                      <span className="studio-form-label">{labelText}</span>
+                      <div className="flex items-center gap-1">
+                        <button type="button" className="studio-btn-text" onClick={() => addListItem(end - 1, block.listItem!)}>
+                          <Plus size={15} /> Add item
+                        </button>
+                        <button type="button" onClick={() => removeList(index)} className="studio-icon-button studio-icon-button-danger" aria-label={`Remove ${labelText.toLowerCase()}`}>
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="studio-help-text">Press Enter to add another item. Use arrows to arrange the website order.</p>
+                    <div className="studio-editable-list">
+                      {items.map((item, itemIndex) => {
+                        const itemPosition = index + itemIndex;
+                        return (
+                          <div key={item._key ?? itemPosition} className="studio-editable-list-row">
+                            <input value={getBlockText(item)} onChange={(event) => updateListItem(itemPosition, event.target.value)} onKeyDown={(event) => handleListItemKeyDown(event, itemPosition, block.listItem!)} className="studio-form-input" placeholder="Write a list item..." />
+                            <button type="button" className="studio-icon-button" onClick={() => moveListItem(itemPosition, -1)} disabled={itemIndex === 0} aria-label={`Move ${labelText.toLowerCase()} item up`}><ArrowUp size={15} /></button>
+                            <button type="button" className="studio-icon-button" onClick={() => moveListItem(itemPosition, 1)} disabled={itemIndex === items.length - 1} aria-label={`Move ${labelText.toLowerCase()} item down`}><ArrowDown size={15} /></button>
+                            <button type="button" className="studio-icon-button studio-icon-button-danger" onClick={() => removeListItem(itemPosition)} aria-label={`Remove ${labelText.toLowerCase()} item`}><Trash2 size={15} /></button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div key={block._key ?? index} className="studio-rich-block">
                   {blockControls(index, block.listItem === "number" ? "Numbered list" : block.listItem ? "Bullet" : block.style === "normal" ? "Paragraph" : block.style, "Remove block")}
