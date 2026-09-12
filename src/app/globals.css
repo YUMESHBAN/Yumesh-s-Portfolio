@@ -1800,11 +1800,21 @@ a {
   .landing-section {
     position: relative;
     isolation: isolate;
-    min-height: min(calc(100svh - 1px), 52rem);
   }
 
-  .landing-section-content {
-    min-height: min(calc(100svh - 12rem), 40rem);
+  @media (min-width: 1024px) {
+    .landing-section {
+      min-height: calc(100vh - 1px);
+      min-height: calc(100svh - 1px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .landing-section-content {
+      flex: 1;
+      min-height: calc(100vh - 5rem);
+    }
   }
 
 .landing-bottom-shadow {
