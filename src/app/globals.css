@@ -849,8 +849,14 @@ a {
 }
 
 .article-content-media {
+  display: flow-root;
   margin-top: 2.75rem;
   margin-bottom: 2.75rem;
+}
+
+.article-content-media figcaption {
+  display: block;
+  width: 100%;
 }
 
 .article-content-media-wide {

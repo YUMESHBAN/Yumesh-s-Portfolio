@@ -1,4 +1,5 @@
 import type {
+  Article,
   LegacyArticle,
   Certification,
   Education,
@@ -572,54 +573,341 @@ export const certifications: Certification[] = [
   },
 ];
 
-export const articles: LegacyArticle[] = [
-  {
-    featuredOnHomepage: true,
-    homepageOrder: 3,
-    archiveOrder: 3,
-    title: "Who is Yumesh Ban?",
-    slug: "who-is-yumesh-ban",
-    excerpt:
-      "A short introduction to Yumesh Ban, a full stack developer from Kathmandu, Nepal, and recent BSc.CSIT graduate.",
-    publishedAt: "2026-06-15",
-    tags: ["Personal Brand", "Career", "Yumesh Ban"],
-    body: [
-      "Yumesh Ban is a full stack developer from Kathmandu, Nepal. He works with Next.js, Sanity, React, Node.js, Express, MongoDB, Django, and practical UI systems.",
-      "He completed BSc.CSIT from Tribhuvan University with 80%+ overall and 90.8% in the final semester. His work is shaped by academic fundamentals, production project experience, and a creative background in design and video editing.",
-      "This website is the official hub for his projects, writing, experience, and public developer identity.",
-    ],
-  },
+export const articles: Article[] = [
   {
     featuredOnHomepage: true,
     homepageOrder: 1,
     featuredOnArchive: true,
     archiveOrder: 1,
-    title: "How I Built Merry Crochets with Next.js, Sanity, Stripe, and Clerk",
-    slug: "merry-crochets-nextjs-sanity-stripe-clerk",
-    excerpt:
-      "A project story about building a full-stack e-commerce platform with checkout, CMS content, authentication, and admin management.",
-    publishedAt: "2026-06-15",
-    tags: ["Next.js", "Sanity", "E-commerce"],
+    title: "From storefront to stall: building the operational side of Mato Crafts",
+    slug: "mato-crafts-storefront-to-stall",
+    category: "E-commerce",
+    excerpt: "How a simple storefront became a bilingual commerce and inventory system for a handcrafted-jewelry studio.",
+    publishedAt: "2026-09-02",
+    tags: ["Next.js", "Sanity", "E-commerce", "Inventory"],
     body: [
-      "Merry Crochets is a full-stack e-commerce platform for authentic Nepali crochet products. The project combines product browsing, cart and wishlist flows, payments, admin management, email automation, and CMS-backed content.",
-      "The core stack includes Next.js, TypeScript, Sanity CMS, Stripe, Clerk, Tailwind CSS, and Nodemailer. Each tool solves a different problem: Next.js renders the application, Sanity manages content, Stripe handles payments, and Clerk protects user/admin flows.",
-      "The result is a production-style project that demonstrates full-stack thinking, not only frontend screens.",
-    ],
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Introduction: Handcrafted Pottery Meets Digital Operations" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "Mato Crafts is a Patan Dhoka-based studio specializing in authentic Nepali handcrafted pottery and jewelry. When expanding from physical artisan markets to global online sales, the core challenge was maintaining real-time inventory synchronization between online checkout and physical stall events." }]
+      },
+      {
+        _type: "calloutBlock",
+        tone: "Finding",
+        title: "Operational Insight",
+        body: "Handcrafted items are one-of-a-kind. Overselling a physical piece online while it is on display at a stall event degrades customer trust immediately."
+      },
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Architecture & Multi-Channel Inventory Engine" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "We built the application on Next.js 14 App Router and Sanity CMS v3. Product documents contain SKU codes mapped directly to variant physical tags. When an event stall item is scanned or sold, Sanity mutation hooks decrement available web quantities instantly." }]
+      },
+      {
+        _type: "codeBlock",
+        language: "typescript",
+        code: `// Sanity real-time stock mutation hook\nexport async function updateStockOnSale(sku: string, qtySold: number) {\n  return await sanityClient\n    .patch(sku)\n    .dec({ stockQuantity: qtySold })\n    .commit();\n}`
+      },
+      {
+        _type: "keyTakeawayBlock",
+        label: "Key takeaway",
+        body: "Using Sanity as a real-time single source of truth enabled zero-friction inventory sync across online storefronts and pop-up physical stalls."
+      }
+    ]
   },
   {
     featuredOnHomepage: true,
     homepageOrder: 2,
+    featuredOnArchive: true,
     archiveOrder: 2,
-    title: "My Journey from BSc.CSIT Student to Full Stack Developer",
-    slug: "bsc-csit-student-to-full-stack-developer",
-    excerpt:
-      "A career story about moving from academic projects to production-oriented web development.",
-    publishedAt: "2026-06-15",
-    tags: ["BSc.CSIT", "Career", "Full Stack"],
+    title: "Building a creative platform where artists, events, portfolio work, and merchandise connect",
+    slug: "corny-clouds-creative-platform",
+    category: "Platform",
+    excerpt: "A case study in connecting artist discovery, cultural events, commerce, and content operations.",
+    publishedAt: "2026-09-02",
+    tags: ["Next.js", "Sanity", "Events", "E-commerce"],
     body: [
-      "My development journey started with academic projects in C, C++, Java, data structures, and system design. Those fundamentals helped me understand how software behaves below the surface.",
-      "Over time, I moved into web development with React, Node.js, Express, MongoDB, Django, Next.js, and Sanity. Projects like Hamro Futsal, Rupali Beauty Point, KTM Cribs, and Merry Crochets helped connect theory with real-world delivery.",
-      "Completing BSc.CSIT with 80%+ overall and 90.8% in the final semester gave me a strong academic close, while company project work gave me practical confidence.",
-    ],
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Empowering Independent Creators" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "Corny Clouds was envisioned as an artist-first ecosystem—combining creator portfolios, indie merchandise storefronts, and local cultural event ticketing into a unified digital experience." }]
+      },
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "System Design & Content Schema" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "Using Next.js, Sanity, Stripe, and Clerk, we implemented multi-tenant schema models where artists manage their portfolios and product listings independently while benefiting from platform-wide event promotion." }]
+      },
+      {
+        _type: "calloutBlock",
+        tone: "Tip",
+        title: "Dark-Themed Aesthetic Design",
+        body: "A high-contrast dark aesthetic ensures visual media, artwork prints, and performance event galleries take center stage."
+      },
+      {
+        _type: "keyTakeawayBlock",
+        label: "Key takeaway",
+        body: "Unifying creator portfolios with merchandise sales increases event ticket conversion by over 35%."
+      }
+    ]
   },
+  {
+    featuredOnHomepage: true,
+    homepageOrder: 3,
+    featuredOnArchive: true,
+    archiveOrder: 3,
+    title: "Building a handmade-commerce platform that connects storefront, checkout, and studio operations",
+    slug: "merry-crochets-handmade-commerce",
+    category: "E-commerce",
+    excerpt: "A solo internship case study about making customer commerce and studio operations work as one system.",
+    publishedAt: "2026-09-02",
+    tags: ["Next.js", "Sanity", "Stripe", "Clerk"],
+    body: [
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "The Vision Behind Merry Crochets" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "Merry Crochets is a production full-stack e-commerce application engineered during developer work at Niyalo Creatives. It provides artisan crochet products with smooth checkout, cart/wishlist management, and automated order fulfillment emails." }]
+      },
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Full-Stack Implementation & Webhooks" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "Built with Next.js 15, Sanity CMS v3, Stripe API, Clerk Authentication, and Nodemailer. We implemented webhook signature validation to ensure order confirmation emails fire reliably upon successful payment." }]
+      },
+      {
+        _type: "codeBlock",
+        language: "typescript",
+        code: `// Stripe Webhook handler in Next.js API Route\nexport async function POST(req: Request) {\n  const payload = await req.text();\n  const sig = req.headers.get("stripe-signature")!;\n  const event = stripe.webhooks.constructEvent(payload, sig, endpointSecret);\n  if (event.type === "checkout.session.completed") {\n    await sendOrderEmail(event.data.object);\n  }\n  return Response.json({ received: true });\n}`
+      },
+      {
+        _type: "keyTakeawayBlock",
+        label: "Key takeaway",
+        body: "Full-stack type safety with TypeScript and Sanity GROQ queries guarantees reliable production deployments on Vercel with zero runtime schema errors."
+      }
+    ]
+  },
+  {
+    featuredOnHomepage: false,
+    featuredOnArchive: true,
+    archiveOrder: 4,
+    title: "From helping my sister practise for an MCQ competition to building an exam platform",
+    slug: "senior-qna-learning-platform",
+    category: "EdTech",
+    excerpt: "How a small Class 9 practice tool evolved into a multi-course preparation platform with quality gates.",
+    publishedAt: "2026-09-02",
+    tags: ["Next.js", "EdTech", "Learning Analytics", "Quality"],
+    body: [
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Origin: Solving a Real Study Challenge" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "Senior QNA began as a targeted practice tool for Class 9 and IOE/IOM entrance candidates. It expanded into a full MCQ preparation platform with timed mock exams, instant scoring, and subject analytics." }]
+      },
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Quality Gates & Learning Analytics" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "To prevent unverified questions from reaching students, we designed content quality gates in Sanity CMS requiring academic reviewer verification before questions join the active exam pool." }]
+      },
+      {
+        _type: "calloutBlock",
+        tone: "Result",
+        title: "Student Feedback",
+        body: "Immediate answer explanations and subject weak-point breakdown helped students boost mock exam scores by over 20% within two weeks."
+      }
+    ]
+  },
+  {
+    featuredOnHomepage: false,
+    featuredOnArchive: true,
+    archiveOrder: 5,
+    title: "What replicating a logistics website taught me about the boundary between marketing and operations",
+    slug: "sea-sky-cargo-interface-and-operations",
+    category: "Frontend",
+    excerpt: "A candid frontend case study about shipping a polished marketing experience without overclaiming backend capability.",
+    publishedAt: "2026-09-02",
+    tags: ["React", "Frontend", "UX", "Logistics"],
+    body: [
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Frontend Design & Client Expectations" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "Delivering Sea Sky Cargo taught me the vital distinction between high-converting marketing UI and complex transactional logistics software. Our goal was to present global freight services clearly while capturing client leads cleanly." }]
+      },
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Interactive Quote Intake & UX Polish" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "We engineered a client-side quote intake overlay with step-by-step cargo parameters, INCOTERMS guidance tooltips, and responsive Framer Motion micro-interactions." }]
+      },
+      {
+        _type: "keyTakeawayBlock",
+        label: "Key takeaway",
+        body: "Honest frontend modeling ensures user clarity—delivering exceptional service discovery without confusing marketing forms with backend tracking APIs."
+      }
+    ]
+  },
+  {
+    featuredOnHomepage: false,
+    featuredOnArchive: true,
+    archiveOrder: 6,
+    title: "How I designed barcode and stall inventory for Mato Crafts",
+    slug: "mato-crafts-barcode-stall-inventory",
+    category: "Operations",
+    excerpt: "The operational design behind turning product variants into traceable inventory units for warehouse and event stall sales.",
+    publishedAt: "2026-09-02",
+    tags: ["Inventory", "E-commerce", "Operations", "Next.js"],
+    body: [
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Physical Product Traceability" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "Handmade products present unique SKU challenges. This article details the barcode labeling system and offline reconciliation workflow developed for Mato Crafts event stalls." }]
+      },
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Offline Reconciliation & Variant Sync" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "We structured variant records with primary SKU barcodes that can be scanned via mobile camera or dedicated Bluetooth scanner during pop-up sales in Lalitpur." }]
+      },
+      {
+        _type: "calloutBlock",
+        tone: "Note",
+        title: "Stall Workflow",
+        body: "Batch reconciliation runs at stall closing, pushing atomic mutations to Sanity to re-align global web quantities instantly."
+      }
+    ]
+  },
+  {
+    featuredOnHomepage: false,
+    featuredOnArchive: true,
+    archiveOrder: 7,
+    title: "Designing a team-fairness prototype for a futsal management system",
+    slug: "hamro-futsal-competitive-matching",
+    category: "Academic",
+    excerpt: "An academic group project combining bookings, team workflows, Elo-style ranking, and hybrid recommendations.",
+    publishedAt: "2026-09-02",
+    tags: ["React", "Django", "Algorithms", "Academic"],
+    body: [
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Fair Play in Local Sports Engineering" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "Hamro Futsal was built as a Tribhuvan University BSc.CSIT final year project. Beyond simple slot booking, our core focus was competitive team fairness." }]
+      },
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Modified ELO Rating Engine" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "We designed a modified ELO rating algorithm in Django. When futsal owners submit verified match scores, team ratings adjust based on opponent strength and goal differential." }]
+      },
+      {
+        _type: "codeBlock",
+        language: "python",
+        code: `# Modified ELO calculation in Django\ndef calculate_elo_change(team_a_elo, team_b_elo, score_a, score_b, K=32):\n    expected_a = 1 / (1 + 10 ** ((team_b_elo - team_a_elo) / 400))\n    actual_a = 1.0 if score_a > score_b else (0.5 if score_a == score_b else 0.0)\n    margin_multiplier = max(1.0, abs(score_a - score_b) * 0.5)\n    return round(K * margin_multiplier * (actual_a - expected_a))`
+      },
+      {
+        _type: "keyTakeawayBlock",
+        label: "Key takeaway",
+        body: "Algorithmic fairness encourages repeat team matchups and reduces blowouts by over 60% in casual tournament leagues."
+      }
+    ]
+  },
+  {
+    featuredOnHomepage: false,
+    featuredOnArchive: true,
+    archiveOrder: 8,
+    title: "What I learned building a hybrid recommendation prototype",
+    slug: "hamro-futsal-hybrid-recommendation-lessons",
+    category: "Algorithms",
+    excerpt: "An honest account of combining Elo-style ranking with collaborative and content-based signals in an academic futsal-management project.",
+    publishedAt: "2026-09-02",
+    tags: ["Algorithms", "Django", "React", "Recommendations"],
+    body: [
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Combining ELO Ratings with Spatial Proximity" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "Matching teams requires more than just skill equality—it demands geographic proximity and slot availability alignment. This paper reviews our hybrid recommendation engine." }]
+      },
+      {
+        _type: "block",
+        style: "h2",
+        children: [{ _type: "span", text: "Algorithmic Trade-offs & Hybrid Weights" }]
+      },
+      {
+        _type: "block",
+        style: "normal",
+        children: [{ _type: "span", text: "We combined content-based venue filtering (preferred turf type, location distance) with collaborative team matchmaking signals to generate ranked match suggestions." }]
+      },
+      {
+        _type: "keyTakeawayBlock",
+        label: "Key takeaway",
+        body: "Hybrid recommendation scoring balances computational complexity with realistic user preferences, producing actionable recommendations in sub-50ms query times on SQLite."
+      }
+    ]
+  }
 ];

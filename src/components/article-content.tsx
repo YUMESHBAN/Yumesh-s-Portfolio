@@ -1,6 +1,6 @@
-import Image from "next/image";
 import type { ReactNode } from "react";
 
+import { ArticleImage } from "@/components/article-image";
 import { urlForImage } from "@/sanity/image";
 import type { RichContentBlock, RichTextBlock } from "@/types/content";
 
@@ -49,7 +49,7 @@ function imageSource(block: ImageBlock) {
   return block.src ?? block.url ?? (block.image ? urlForImage(block.image as Parameters<typeof urlForImage>[0])?.width(1800).height(1200).fit("max").url() : undefined);
 }
 
-function ArticleImage({ block }: { block: ImageBlock }) {
+function ArticleImageBlock({ block }: { block: ImageBlock }) {
   const src = imageSource(block);
 
   if (!src) return null;
@@ -62,15 +62,7 @@ function ArticleImage({ block }: { block: ImageBlock }) {
     sideRight: "article-content-media-side lg:float-right lg:ml-9 lg:max-w-[42%]",
   }[layout];
 
-  return (
-    <figure className={`article-content-media ${layoutClass}`}>
-      <div className="overflow-hidden border border-white/10 bg-black/25">
-        <Image src={src} alt={block.alt || "Article image"} width={1800} height={1200} sizes={layout === "wide" ? "(min-width: 1280px) 1024px, 100vw" : "(min-width: 1024px) 680px, 100vw"} className="h-auto w-full" />
-      </div>
-      {block.caption ? <figcaption className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">{block.caption}</figcaption> : null}
-      <span className="clear-both" aria-hidden="true" />
-    </figure>
-  );
+  return <ArticleImage src={src} alt={block.alt || "Article image"} caption={block.caption} className={layoutClass} sizes={layout === "wide" ? "(min-width: 1280px) 1024px, 100vw" : "(min-width: 1024px) 680px, 100vw"} />;
 }
 
 function renderTextBlock(block: RichTextBlock, key: string) {
@@ -117,7 +109,7 @@ export function ArticleContent({ blocks }: { blocks: RichContentBlock[] }) {
     }
 
     if (block._type === "imageWithMeta") {
-      content.push(<ArticleImage key={key} block={block as ImageBlock} />);
+      content.push(<ArticleImageBlock key={key} block={block as ImageBlock} />);
       continue;
     }
 
