@@ -3018,6 +3018,26 @@ a {
     @apply flex flex-wrap items-center gap-2;
   }
 
+  .studio-rich-toolbar-top {
+    @apply lg:hidden;
+  }
+
+  .studio-rich-editor-layout {
+    @apply grid gap-4 lg:grid-cols-[minmax(0,1fr)_11rem] lg:items-start;
+  }
+
+  .studio-rich-toolbar-rail-wrap {
+    @apply hidden lg:sticky lg:top-6 lg:grid lg:gap-2;
+  }
+
+  .studio-rich-toolbar-rail {
+    @apply grid gap-1;
+  }
+
+  .studio-rich-rail-action {
+    @apply flex w-full items-center gap-2 rounded-md border border-black/10 bg-white px-3 py-2 text-left text-xs font-black text-ink transition hover:border-moss/35 hover:bg-moss/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-moss/50;
+  }
+
   .studio-rich-blocks {
     @apply grid gap-3;
   }

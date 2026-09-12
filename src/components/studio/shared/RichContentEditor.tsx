@@ -268,56 +268,77 @@ export default function RichContentEditor({ label, description, value, onChange,
     );
   }
 
+  function contentToolbar(placement: "top" | "rail") {
+    const isRail = placement === "rail";
+    const buttonClass = isRail ? "studio-rich-rail-action" : "studio-icon-button";
+    const textButtonClass = isRail ? "studio-rich-rail-action" : "studio-btn-secondary";
+    const labelClass = (alwaysVisible = false) => isRail || alwaysVisible ? undefined : "sr-only";
+
+    return (
+      <div className={`studio-rich-toolbar studio-rich-toolbar-${placement}`}>
+        <button type="button" onClick={() => addTextBlock("normal")} className={textButtonClass}>
+          <Pilcrow size={15} />
+          <span className={labelClass(true)}>Paragraph</span>
+        </button>
+        <button type="button" onClick={() => addTextBlock("h2")} className={buttonClass} title="Add heading 2" aria-label="Add heading 2">
+          <Heading2 size={16} />
+          <span className={labelClass()}>Heading 2</span>
+        </button>
+        <button type="button" onClick={() => addTextBlock("h3")} className={buttonClass} title="Add heading 3" aria-label="Add heading 3">
+          <Heading3 size={16} />
+          <span className={labelClass()}>Heading 3</span>
+        </button>
+        <button type="button" onClick={() => addTextBlock("blockquote")} className={buttonClass} title="Add quote" aria-label="Add quote">
+          <Quote size={16} />
+          <span className={labelClass()}>Quote</span>
+        </button>
+        <button type="button" onClick={() => addTextBlock("normal", "bullet")} className={buttonClass} title="Add bullet list" aria-label="Add bullet list">
+          <List size={16} />
+          <span className={labelClass()}>Bullet list</span>
+        </button>
+        <button type="button" onClick={() => addTextBlock("normal", "number")} className={buttonClass} title="Add numbered list" aria-label="Add numbered list">
+          <ListOrdered size={16} />
+          <span className={labelClass()}>Numbered list</span>
+        </button>
+        <button type="button" onClick={addCallout} className={buttonClass} title="Add callout" aria-label="Add callout">
+          <MessageSquare size={16} />
+          <span className={labelClass()}>Callout</span>
+        </button>
+        <button type="button" onClick={addCode} className={buttonClass} title="Add code block" aria-label="Add code block">
+          <Code2 size={16} />
+          <span className={labelClass()}>Code</span>
+        </button>
+        {allowTakeaways ? (
+          <button type="button" onClick={addTakeaway} className={buttonClass} title="Add key takeaway" aria-label="Add key takeaway">
+            <Highlighter size={16} />
+            <span className={labelClass()}>Key takeaway</span>
+          </button>
+        ) : null}
+        {allowImages ? (
+          <label className={`${textButtonClass} cursor-pointer`} title="Add image">
+            <ImagePlus size={16} />
+            <span className={labelClass(true)}>Add image</span>
+            <input type="file" accept="image/*" onChange={(event) => uploadImage(event)} className="sr-only" />
+          </label>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="studio-rich-editor">
       <div className="studio-form-section-header">
         <div><h3 className="studio-form-section-title">{label}</h3>{description ? <p className="studio-help-text mt-2">{description}</p> : null}</div>
-        <div className="studio-rich-toolbar">
-          <button type="button" onClick={() => addTextBlock("normal")} className="studio-btn-secondary">
-            <Pilcrow size={15} />
-            Paragraph
-          </button>
-          <button type="button" onClick={() => addTextBlock("h2")} className="studio-icon-button" title="Add heading 2" aria-label="Add heading 2">
-            <Heading2 size={16} />
-          </button>
-          <button type="button" onClick={() => addTextBlock("h3")} className="studio-icon-button" title="Add heading 3" aria-label="Add heading 3">
-            <Heading3 size={16} />
-          </button>
-          <button type="button" onClick={() => addTextBlock("blockquote")} className="studio-icon-button" title="Add quote" aria-label="Add quote">
-            <Quote size={16} />
-          </button>
-          <button type="button" onClick={() => addTextBlock("normal", "bullet")} className="studio-icon-button" title="Add bullet" aria-label="Add bullet">
-            <List size={16} />
-          </button>
-          <button type="button" onClick={() => addTextBlock("normal", "number")} className="studio-icon-button" title="Add numbered list item" aria-label="Add numbered list item">
-            <ListOrdered size={16} />
-          </button>
-          <button type="button" onClick={addCallout} className="studio-icon-button" title="Add callout" aria-label="Add callout">
-            <MessageSquare size={16} />
-          </button>
-          <button type="button" onClick={addCode} className="studio-icon-button" title="Add code block" aria-label="Add code block">
-            <Code2 size={16} />
-          </button>
-          {allowTakeaways ? (
-            <button type="button" onClick={addTakeaway} className="studio-icon-button" title="Add key takeaway" aria-label="Add key takeaway">
-              <Highlighter size={16} />
-            </button>
-          ) : null}
-          {allowImages ? (
-            <label className="studio-btn-secondary cursor-pointer" title="Add image">
-              <ImagePlus size={16} />
-              Add image
-              <input type="file" accept="image/*" onChange={(event) => uploadImage(event)} className="sr-only" />
-            </label>
-          ) : null}
-        </div>
+        {contentToolbar("top")}
       </div>
 
-      {uploading ? <p className="studio-help-text">Uploading image…</p> : null}
-      {error ? <p className="studio-error">{error}</p> : null}
+      <div className="studio-rich-editor-layout">
+        <div>
+          {uploading ? <p className="studio-help-text">Uploading image…</p> : null}
+          {error ? <p className="studio-error">{error}</p> : null}
 
-      {value.length ? (
-        <div className="studio-rich-blocks">
+          {value.length ? (
+            <div className="studio-rich-blocks">
           {value.map((block, index) => {
             if (block._type === "block") {
               if (block.listItem) {
@@ -502,13 +523,19 @@ export default function RichContentEditor({ label, description, value, onChange,
 
             return null;
           })}
+            </div>
+          ) : (
+            <button type="button" onClick={() => addTextBlock("normal")} className="studio-btn-secondary">
+              <Plus size={16} />
+              Add first block
+            </button>
+          )}
         </div>
-      ) : (
-        <button type="button" onClick={() => addTextBlock("normal")} className="studio-btn-secondary">
-          <Plus size={16} />
-          Add first block
-        </button>
-      )}
+        <aside className="studio-rich-toolbar-rail-wrap" aria-label="Add article content">
+          <p className="studio-form-label">Add content</p>
+          {contentToolbar("rail")}
+        </aside>
+      </div>
     </div>
   );
 }
