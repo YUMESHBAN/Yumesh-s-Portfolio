@@ -183,7 +183,9 @@ export default function RichContentEditor({ label, description, value, onChange,
     const listItem = (value[start] as PortableTextBlock).listItem;
     let end = start + 1;
 
-    while (value[end]?._type === "block" && value[end].listItem === listItem) {
+    while (true) {
+      const candidate = value[end];
+      if (candidate?._type !== "block" || candidate.listItem !== listItem) break;
       end += 1;
     }
 
@@ -211,12 +213,8 @@ export default function RichContentEditor({ label, description, value, onChange,
     const target = index + direction;
     const block = value[index];
 
-    if (
-      block?._type !== "block" ||
-      target < 0 ||
-      value[target]?._type !== "block" ||
-      value[target].listItem !== block.listItem
-    ) {
+    const targetBlock = value[target];
+    if (block?._type !== "block" || target < 0 || targetBlock?._type !== "block" || targetBlock.listItem !== block.listItem) {
       return;
     }
 
@@ -323,7 +321,8 @@ export default function RichContentEditor({ label, description, value, onChange,
           {value.map((block, index) => {
             if (block._type === "block") {
               if (block.listItem) {
-                const isFirstListItem = index === 0 || value[index - 1]?._type !== "block" || value[index - 1].listItem !== block.listItem;
+                const previousBlock = value[index - 1];
+                const isFirstListItem = index === 0 || previousBlock?._type !== "block" || previousBlock.listItem !== block.listItem;
                 if (!isFirstListItem) return null;
 
                 const end = listEnd(index);
