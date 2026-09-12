@@ -80,7 +80,7 @@ function renderTextBlock(block: RichTextBlock, key: string) {
   if (block.style === "h3") return <h3 key={key} className="article-content-subheading mt-10 text-xl font-semibold leading-tight tracking-[-0.03em] text-white sm:text-2xl">{renderInline(block)}</h3>;
   if (block.style === "blockquote") return <blockquote key={key} className="my-10 border-l-2 border-blue-300/65 pl-6 text-xl leading-8 text-white/82 sm:text-2xl sm:leading-9">{renderInline(block)}</blockquote>;
 
-  return <p key={key} className="article-content-paragraph text-lg leading-8 text-white/68">{renderInline(block)}</p>;
+  return <p key={key} className="article-content-paragraph whitespace-pre-line text-lg leading-8 text-white/68">{renderInline(block)}</p>;
 }
 
 export function ArticleContent({ blocks }: { blocks: RichContentBlock[] }) {
