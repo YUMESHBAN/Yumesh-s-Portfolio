@@ -2426,6 +2426,22 @@ a {
     @apply grid grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)_auto] gap-2;
   }
 
+  .studio-project-document-row {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .studio-project-document-row > svg {
+    @apply text-moss;
+  }
+
+  .studio-project-document-row > input {
+    @apply min-w-48 flex-1;
+  }
+
+  .studio-project-document-upload input {
+    @apply sr-only;
+  }
+
   .studio-btn-text {
     @apply inline-flex items-center gap-1 text-xs font-black text-moss transition hover:text-ink;
   }

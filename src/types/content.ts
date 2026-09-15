@@ -21,6 +21,11 @@ export type LinkItem = {
   type?: string;
 };
 
+export type ProjectDocumentItem = {
+  title: string;
+  url: string;
+};
+
 export type MetricItem = {
   label: string;
   value: string;
@@ -168,6 +173,7 @@ export type Project = {
   repoUrl?: string;
   liveUrl?: string;
   links?: LinkItem[];
+  additionalDocuments?: ProjectDocumentItem[];
   demoVideoUrl?: string;
   demoVideoMimeType?: string;
   projectPdfUrl?: string;

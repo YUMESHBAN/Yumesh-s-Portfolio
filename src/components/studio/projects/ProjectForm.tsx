@@ -69,6 +69,13 @@ type FileDocument = {
   originalFilename?: string;
 };
 
+type AdditionalProjectDocument = {
+  _key?: string;
+  _type?: "projectDocument";
+  title?: string;
+  file?: FileDocument;
+};
+
 type PendingRemoval = {
   kind: "logo" | "featuredImage" | "demoVideo" | "projectPdf" | "gallery";
   label: string;
@@ -104,6 +111,7 @@ export type ProjectDocument = {
   repoUrl?: string;
   liveUrl?: string;
   links?: ProjectLinkDocument[];
+  additionalDocuments?: AdditionalProjectDocument[];
   demoVideo?: FileDocument;
   demoVideoUrl?: string;
   projectPdf?: FileDocument;
@@ -145,6 +153,7 @@ type ProjectFormState = {
   repoUrl: string;
   liveUrl: string;
   links: ProjectLinkDocument[];
+  additionalDocuments: AdditionalProjectDocument[];
   demoVideo?: FileDocument;
   demoVideoUrl: string;
   projectPdf?: FileDocument;
@@ -180,6 +189,10 @@ function newMetric(): MetricDocument {
 
 function newProjectLink(): ProjectLinkDocument {
   return { _key: keyFromText("link"), _type: "linkItem", label: "", href: "", type: "Other" };
+}
+
+function documentTitleFromFilename(filename: string) {
+  return filename.replace(/\.[^.]+$/, "") || filename;
 }
 
 function keyFromId(id: string) {
@@ -234,6 +247,7 @@ function projectToFormState(project?: ProjectDocument | null): ProjectFormState 
     repoUrl: project?.repoUrl ?? "",
     liveUrl: project?.liveUrl ?? "",
     links: project?.links ?? [],
+    additionalDocuments: project?.additionalDocuments ?? [],
     demoVideo: project?.demoVideo,
     demoVideoUrl: project?.demoVideoUrl ?? "",
     projectPdf: project?.projectPdf,
@@ -303,6 +317,23 @@ function fileForSave(file?: FileDocument) {
 
   const { url: _url, originalFilename: _originalFilename, ...savedFile } = file;
   return savedFile;
+}
+
+function usableAdditionalDocuments(documents: AdditionalProjectDocument[]) {
+  return documents.flatMap((document) => {
+    const title = document.title?.trim();
+    const file = fileForSave(document.file);
+    if (!title || !file) {
+      return [];
+    }
+
+    return [{
+      _key: document._key ?? keyFromText("project-document"),
+      _type: "projectDocument" as const,
+      title,
+      file,
+    }];
+  });
 }
 
 function uniqueTechStack(...groups: string[][]) {
@@ -406,6 +437,30 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
 
   function removeProjectLink(index: number) {
     setFormData((previous) => ({ ...previous, links: previous.links.filter((_, linkIndex) => linkIndex !== index) }));
+  }
+
+  function updateAdditionalDocument(index: number, value: string) {
+    setFormData((previous) => ({
+      ...previous,
+      additionalDocuments: previous.additionalDocuments.map((document, documentIndex) => documentIndex === index ? { ...document, title: value } : document),
+    }));
+  }
+
+  function removeAdditionalDocument(index: number) {
+    setFormData((previous) => ({ ...previous, additionalDocuments: previous.additionalDocuments.filter((_, documentIndex) => documentIndex !== index) }));
+  }
+
+  function moveAdditionalDocument(index: number, direction: -1 | 1) {
+    setFormData((previous) => {
+      const destination = index + direction;
+      if (destination < 0 || destination >= previous.additionalDocuments.length) {
+        return previous;
+      }
+
+      const additionalDocuments = [...previous.additionalDocuments];
+      [additionalDocuments[index], additionalDocuments[destination]] = [additionalDocuments[destination], additionalDocuments[index]];
+      return { ...previous, additionalDocuments };
+    });
   }
 
   async function uploadImage(file: File, altFallback: string) {
@@ -522,6 +577,31 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
     }
   }
 
+  async function handleAdditionalDocumentsUpload(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    if (!files.length) {
+      return;
+    }
+
+    setUploading(true);
+    setError("");
+
+    try {
+      const documents = await Promise.all(files.map(async (file) => ({
+        _key: keyFromText("project-document"),
+        _type: "projectDocument" as const,
+        title: documentTitleFromFilename(file.name),
+        file: await uploadFile(file),
+      })));
+      setFormData((previous) => ({ ...previous, additionalDocuments: [...previous.additionalDocuments, ...documents] }));
+    } catch (uploadError) {
+      setError(getErrorMessage(uploadError));
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
+  }
+
   function updateFeaturedImage(field: "alt" | "caption", value: string) {
     setFormData((previous) => ({
       ...previous,
@@ -617,6 +697,7 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
       repoUrl: formData.repoUrl.trim(),
       liveUrl: formData.liveUrl.trim(),
       links: formData.links.map((link) => ({ _key: link._key ?? keyFromText("link"), _type: "linkItem" as const, label: link.label?.trim() ?? "", href: link.href?.trim() ?? "", type: "Other" })).filter((link) => link.label && link.href),
+      additionalDocuments: usableAdditionalDocuments(formData.additionalDocuments),
       logo: imageForSave(formData.logo),
       featuredImage: imageForSave(formData.featuredImage),
       demoVideo: fileForSave(formData.demoVideo),
@@ -641,6 +722,7 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
       "repoUrl",
       "liveUrl",
       "links",
+      "additionalDocuments",
       "seoTitle",
       "seoDescription",
       "canonicalPath",
@@ -875,12 +957,29 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
                 <span className="studio-form-label">Additional project links</span>
                 <button type="button" onClick={addProjectLink} className="studio-btn-text"><Plus size={15} /> Add link</button>
               </div>
-              <p className="studio-help-text">Optional resources shown under Project resources on the public case study.</p>
+              <p className="studio-help-text">External resources shown under Explore further on the public case study.</p>
               {formData.links.length ? <div className="studio-project-links-list">
                 {formData.links.map((link, index) => <div key={link._key ?? index} className="studio-project-link-row">
                   <input value={link.label ?? ""} onChange={(event) => updateProjectLink(index, "label", event.target.value)} className="studio-form-input" placeholder="View Figma design" />
                   <input type="url" value={link.href ?? ""} onChange={(event) => updateProjectLink(index, "href", event.target.value)} className="studio-form-input" placeholder="https://figma.com/..." />
                   <button type="button" onClick={() => removeProjectLink(index)} className="studio-icon-button studio-icon-button-danger" aria-label="Remove project link"><Trash2 size={16} /></button>
+                </div>)}
+              </div> : null}
+            </div>
+            <div className="studio-field studio-field-wide">
+              <div className="studio-editable-list-header">
+                <span className="studio-form-label">Additional project documents</span>
+                <label className="studio-btn-text cursor-pointer studio-project-document-upload"><Plus size={15} /> Add PDFs<input type="file" accept="application/pdf" multiple onChange={handleAdditionalDocumentsUpload} /></label>
+              </div>
+              <p className="studio-help-text">Supplementary PDFs shown under Explore further. The primary Project PDF remains in its dedicated viewer.</p>
+              {formData.additionalDocuments.length ? <div className="studio-project-links-list">
+                {formData.additionalDocuments.map((document, index) => <div key={document._key ?? index} className="studio-project-document-row">
+                  <FileText size={18} aria-hidden="true" />
+                  <input value={document.title ?? ""} onChange={(event) => updateAdditionalDocument(index, event.target.value)} className="studio-form-input" placeholder="Database schema" />
+                  {document.file?.url ? <a href={document.file.url} target="_blank" rel="noreferrer" className="studio-btn-text">Open</a> : null}
+                  <button type="button" onClick={() => moveAdditionalDocument(index, -1)} disabled={index === 0} className="studio-icon-button" aria-label={`Move ${document.title || "document"} earlier`} title="Move earlier"><MoveLeft size={16} /></button>
+                  <button type="button" onClick={() => moveAdditionalDocument(index, 1)} disabled={index === formData.additionalDocuments.length - 1} className="studio-icon-button" aria-label={`Move ${document.title || "document"} later`} title="Move later"><MoveRight size={16} /></button>
+                  <button type="button" onClick={() => removeAdditionalDocument(index)} className="studio-icon-button studio-icon-button-danger" aria-label={`Remove ${document.title || "document"}`}><Trash2 size={16} /></button>
                 </div>)}
               </div> : null}
             </div>
@@ -994,7 +1093,7 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
             </div>
             <div>
               <span>Media</span>
-              <p>{[formData.featuredImage?.image && "Image", formData.demoVideo && "Video", formData.projectPdf && "PDF"].filter(Boolean).join(" · ") || "No media added"}</p>
+              <p>{[formData.featuredImage?.image && "Image", formData.demoVideo && "Video", formData.projectPdf && "PDF", formData.additionalDocuments.length && `${formData.additionalDocuments.length} document${formData.additionalDocuments.length === 1 ? "" : "s"}`].filter(Boolean).join(" · ") || "No media added"}</p>
             </div>
             <div>
               <span>Status</span>

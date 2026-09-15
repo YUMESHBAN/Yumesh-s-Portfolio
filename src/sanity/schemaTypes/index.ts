@@ -133,6 +133,18 @@ export const schemaTypes = [
     },
   }),
   defineType({
+    name: "projectDocument",
+    title: "Project Document",
+    type: "object",
+    fields: [
+      defineField({ name: "title", title: "Title", type: "string", validation: (Rule) => Rule.required() }),
+      defineField({ name: "file", title: "PDF file", type: "file", options: { accept: "application/pdf" }, validation: (Rule) => Rule.required() }),
+    ],
+    preview: {
+      select: { title: "title" },
+    },
+  }),
+  defineType({
     name: "metricItem",
     title: "Metric",
     type: "object",
@@ -538,6 +550,7 @@ export const schemaTypes = [
       defineField({ name: "repoUrl", type: "url" }),
       defineField({ name: "liveUrl", type: "url" }),
       defineField({ name: "links", title: "Additional links", type: "array", of: [{ type: "linkItem" }] }),
+      defineField({ name: "additionalDocuments", title: "Additional project documents", type: "array", of: [{ type: "projectDocument" }] }),
       defineField({ name: "logo", title: "Project logo", type: "imageWithMeta" }),
       defineField({ name: "featuredImage", title: "Featured image", type: "imageWithMeta" }),
       defineField({ name: "demoVideo", title: "Demo video", type: "file", options: { accept: "video/mp4,video/webm" } }),
