@@ -45,6 +45,7 @@ export default function StudioLayout({ children }: StudioLayoutProps) {
         html.portfolio-studio-page body {
           height: 100% !important;
           overflow: hidden !important;
+          color-scheme: light !important;
         }
 
         .portfolio-studio-wrapper {

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ArrowLeft, ArrowRight, FileText, ImagePlus, MoveLeft, MoveRight, Plus, Save, Search, Trash2, Upload, Video, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import { useClient } from "sanity";
 
 import RichContentEditor from "../shared/RichContentEditor";
@@ -316,7 +316,7 @@ function fileForSave(file?: FileDocument) {
   }
 
   const { url: _url, originalFilename: _originalFilename, ...savedFile } = file;
-  return savedFile;
+  return { ...savedFile, _type: "file" as const };
 }
 
 function usableAdditionalDocuments(documents: AdditionalProjectDocument[]) {
@@ -353,9 +353,11 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [documentUploadError, setDocumentUploadError] = useState("");
   const [activeStep, setActiveStep] = useState(0);
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
   const [skillSearch, setSkillSearch] = useState("");
+  const additionalDocumentsInputRef = useRef<HTMLInputElement>(null);
 
   const isEditing = Boolean(project?._id);
   const selectedSkillSet = useMemo(() => new Set(formData.relatedSkillIds), [formData.relatedSkillIds]);
@@ -578,13 +580,21 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
   }
 
   async function handleAdditionalDocumentsUpload(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
+    const input = event.currentTarget;
+    const files = Array.from(input.files ?? []);
     if (!files.length) {
+      return;
+    }
+
+    if (files.some((file) => file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf"))) {
+      setDocumentUploadError("Please select PDF files only.");
+      input.value = "";
       return;
     }
 
     setUploading(true);
     setError("");
+    setDocumentUploadError("");
 
     try {
       const documents = await Promise.all(files.map(async (file) => ({
@@ -595,10 +605,10 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
       })));
       setFormData((previous) => ({ ...previous, additionalDocuments: [...previous.additionalDocuments, ...documents] }));
     } catch (uploadError) {
-      setError(getErrorMessage(uploadError));
+      setDocumentUploadError(getErrorMessage(uploadError));
     } finally {
       setUploading(false);
-      event.target.value = "";
+      input.value = "";
     }
   }
 
@@ -969,9 +979,12 @@ export default function ProjectForm({ project, onComplete }: ProjectFormProps) {
             <div className="studio-field studio-field-wide">
               <div className="studio-editable-list-header">
                 <span className="studio-form-label">Additional project documents</span>
-                <label className="studio-btn-text cursor-pointer studio-project-document-upload"><Plus size={15} /> Add PDFs<input type="file" accept="application/pdf" multiple onChange={handleAdditionalDocumentsUpload} /></label>
+                <button type="button" onClick={() => additionalDocumentsInputRef.current?.click()} className="studio-btn-text"><Plus size={15} /> Add PDFs</button>
               </div>
+              <input ref={additionalDocumentsInputRef} type="file" accept="application/pdf" multiple onChange={handleAdditionalDocumentsUpload} className="sr-only" />
               <p className="studio-help-text">Supplementary PDFs shown under Explore further. The primary Project PDF remains in its dedicated viewer.</p>
+              {uploading ? <p className="studio-help-text">Uploading PDFs…</p> : null}
+              {documentUploadError ? <p className="studio-error">{documentUploadError}</p> : null}
               {formData.additionalDocuments.length ? <div className="studio-project-links-list">
                 {formData.additionalDocuments.map((document, index) => <div key={document._key ?? index} className="studio-project-document-row">
                   <FileText size={18} aria-hidden="true" />

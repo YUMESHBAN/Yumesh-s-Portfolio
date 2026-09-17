@@ -40,9 +40,9 @@ export function LandingSection({ profile, settings }: { profile: PersonProfile; 
 
   return (
     <section className="landing-section pt-20 sm:pt-24 lg:pt-20 lg:pb-0">
-      <div className="site-container my-auto flex flex-1 flex-col justify-end w-full">
-        <div className="landing-section-content grid items-center lg:items-end gap-8 lg:min-h-[calc(100vh-5rem)] lg:grid-cols-[minmax(0,1.04fr)_minmax(360px,0.96fr)] lg:gap-10">
-          <div className="relative max-w-2xl text-left my-auto py-6 lg:py-12">
+      <div className="site-container flex flex-col justify-end w-full">
+        <div className="landing-section-content grid items-center lg:items-end gap-8 lg:min-h-[calc(100svh-5rem)] lg:grid-cols-[minmax(0,1.04fr)_minmax(360px,0.96fr)] lg:gap-10">
+          <div className="relative z-30 max-w-2xl text-left my-auto py-6 lg:py-12">
             <GreetingRotator />
 
             <p className="mt-5 text-xl font-medium text-white/82 sm:text-2xl lg:mt-6 lg:text-3xl">I&apos;m {profile.name}</p>
@@ -80,7 +80,7 @@ export function LandingSection({ profile, settings }: { profile: PersonProfile; 
 
           <div
             ref={portraitStageRef}
-            className={`hero-portrait-stage group relative mx-auto flex min-h-[380px] w-full max-w-[560px] items-end justify-center lg:min-h-[580px] lg:h-full lg:max-h-none lg:max-w-none ${
+            className={`hero-portrait-stage group relative mx-auto flex min-h-[380px] w-full max-w-[560px] items-end justify-center lg:min-h-[580px] lg:max-h-none lg:max-w-none ${
               isActive ? "is-active" : ""
             }`}
           >

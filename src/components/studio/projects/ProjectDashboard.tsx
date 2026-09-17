@@ -43,7 +43,7 @@ const projectQuery = `*[_type == "project"] | order(featured desc, order asc, _c
     _key,
     _type,
     title,
-    file{asset, "url": asset->url, "originalFilename": asset->originalFilename}
+    file{_type, asset, "url": asset->url, "originalFilename": asset->originalFilename}
   },
   demoVideo,
   "demoVideoUrl": demoVideo.asset->url,

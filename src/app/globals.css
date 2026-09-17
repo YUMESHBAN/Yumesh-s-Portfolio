@@ -15,9 +15,9 @@
 }
 
 :root {
-  color-scheme: light;
-  --background: #f6f6f3;
-  --foreground: #18181b;
+  color-scheme: dark;
+  --background: #0b0b0c;
+  --foreground: #ffffff;
 }
 
 .contact-network-base {
@@ -407,6 +407,7 @@
 }
 
 html {
+  background: var(--background);
   scroll-behavior: auto;
 }
 
@@ -1818,8 +1819,7 @@ a {
     }
 
     .landing-section-content {
-      flex: 1;
-      min-height: calc(100vh - 5rem);
+      min-height: calc(100svh - 5rem);
     }
   }
 
@@ -2436,10 +2436,6 @@ a {
 
   .studio-project-document-row > input {
     @apply min-w-48 flex-1;
-  }
-
-  .studio-project-document-upload input {
-    @apply sr-only;
   }
 
   .studio-btn-text {
