@@ -10,6 +10,8 @@ import {
   UserIcon,
 } from "@sanity/icons";
 
+import { semanticIconOptions } from "@/lib/skill-icons";
+
 const statusOptions = [
   { title: "Published", value: "published" },
   { title: "Draft", value: "draft" },
@@ -727,7 +729,8 @@ export const schemaTypes = [
     fields: [
       statusField,
       defineField({ name: "name", type: "string", validation: (Rule) => Rule.required() }),
-      defineField({ name: "iconName", title: "Icon name", type: "string" }),
+      defineField({ name: "iconName", title: "Simple Icons slug", type: "string", description: "Optional brand slug, for example react or nodedotjs." }),
+      defineField({ name: "semanticIconName", title: "Semantic icon", type: "string", options: { list: semanticIconOptions.map(({ title, value }) => ({ title, value })) } }),
       defineField({ name: "aliases", type: "array", of: [{ type: "string" }] }),
       defineField({
         name: "category",

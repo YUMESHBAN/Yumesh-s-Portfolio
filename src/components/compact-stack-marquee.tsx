@@ -112,6 +112,7 @@ export function CompactStackMarquee({
   }, []);
   const mosaicPageRows = mosaicPages.map((page) => mosaicRowsFor(page));
   const activeMosaicPage = Math.min(mosaicPage, Math.max(0, mosaicPages.length - 1));
+  const activeMosaicRows = mosaicPageRows[activeMosaicPage] ?? [];
 
   useEffect(() => {
     setActiveProofIndex(0);
@@ -166,10 +167,16 @@ export function CompactStackMarquee({
     const next = provenSkills[index];
     if (!next) return;
 
-    setMosaicPage(Math.floor(index / MOSAIC_PAGE_SIZE));
+    const nextMosaicPage = Math.floor(index / MOSAIC_PAGE_SIZE);
+    const focusButton = () => mosaicButtonRefs.current.get(next.key)?.focus();
+
+    if (nextMosaicPage !== activeMosaicPage) {
+      setMosaicPage(nextMosaicPage);
+      setTimeout(focusButton, 0);
+    } else focusButton();
+
     setRovingKey(next.key);
     setPreviewKey(next.key);
-    mosaicButtonRefs.current.get(next.key)?.focus();
   }
 
   function handleMosaicKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -400,7 +407,7 @@ export function CompactStackMarquee({
           onKeyDown={(event) => !duplicate && handleItemKeyDown(event, item.index)}
         >
           <span className="stack-marquee-logo">
-            <TechLogo name={item.skill.name} iconName={item.skill.iconName} />
+            <TechLogo name={item.skill.name} iconName={item.skill.iconName} semanticIconName={item.skill.semanticIconName} />
           </span>
           <span className="stack-marquee-name">{item.skill.name}</span>
         </button>
@@ -465,59 +472,50 @@ export function CompactStackMarquee({
 
           <div className="compact-stack-mosaic" role="group" aria-label="Choose a technology to view its project proof">
             <div className="compact-stack-mosaic-viewport">
-              <div
-                className="compact-stack-mosaic-track"
-                style={{ transform: `translateY(-${activeMosaicPage * 43.1}rem)` }}
-              >
-                {mosaicPageRows.map((rows, pageIndex) => (
-                  <div
-                    className="compact-stack-mosaic-page"
-                    key={`mosaic-page-${pageIndex}`}
-                    aria-hidden={pageIndex !== activeMosaicPage}
-                  >
-                    {rows.map((row, rowIndex) => (
-                      <div className={`compact-stack-mosaic-row ${row.length === 2 ? "is-short" : ""}`} key={`mosaic-row-${pageIndex}-${rowIndex}`}>
-                        {row.map((item) => {
-                          const selected = activeItem?.key === item.key;
+              <div className="compact-stack-mosaic-track" key={`mosaic-page-${activeMosaicPage}`}>
+                <div className="compact-stack-mosaic-page">
+                  {activeMosaicRows.map((row, rowIndex) => (
+                    <div className={`compact-stack-mosaic-row ${row.length === 2 ? "is-short" : ""}`} key={`mosaic-row-${activeMosaicPage}-${rowIndex}`}>
+                      {row.map((item) => {
+                        const selected = activeItem?.key === item.key;
 
-                          return (
-                            <button
-                              ref={(node) => {
-                                if (node) mosaicButtonRefs.current.set(item.key, node);
-                                else mosaicButtonRefs.current.delete(item.key);
-                              }}
-                              key={item.key}
-                              type="button"
-                              tabIndex={pageIndex === activeMosaicPage && effectiveRovingKey === item.key ? 0 : -1}
-                              className={`compact-stack-mosaic-tile ${selected ? "is-active" : ""}`}
-                              aria-label={`${item.skill.name}: view project proof`}
-                              aria-expanded={selected}
-                              aria-controls="stack-proof-disclosure"
-                              onPointerEnter={() => {
-                                setRovingKey(item.key);
-                                setPreviewKey(item.key);
-                              }}
-                              onPointerLeave={() => {
-                                if (pinnedKey) setPreviewKey((current) => current === item.key ? null : current);
-                                else setPreviewKey(null);
-                              }}
-                              onFocus={() => {
-                                setRovingKey(item.key);
-                                if (!suppressFocusPreview.current) setPreviewKey(item.key);
-                              }}
-                              onClick={(event) => togglePinned(item, event.currentTarget)}
-                              onKeyDown={(event) => handleMosaicKeyDown(event, item.index)}
-                            >
-                              <span className="compact-stack-mosaic-tile-surface">
-                                <TechLogo name={item.skill.name} iconName={item.skill.iconName} />
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                ))}
+                        return (
+                          <button
+                            ref={(node) => {
+                              if (node) mosaicButtonRefs.current.set(item.key, node);
+                              else mosaicButtonRefs.current.delete(item.key);
+                            }}
+                            key={item.key}
+                            type="button"
+                            tabIndex={effectiveRovingKey === item.key ? 0 : -1}
+                            className={`compact-stack-mosaic-tile ${selected ? "is-active" : ""}`}
+                            aria-label={`${item.skill.name}: view project proof`}
+                            aria-expanded={selected}
+                            aria-controls="stack-proof-disclosure"
+                            onPointerEnter={() => {
+                              setRovingKey(item.key);
+                              setPreviewKey(item.key);
+                            }}
+                            onPointerLeave={() => {
+                              if (pinnedKey) setPreviewKey((current) => current === item.key ? null : current);
+                              else setPreviewKey(null);
+                            }}
+                            onFocus={() => {
+                              setRovingKey(item.key);
+                              if (!suppressFocusPreview.current) setPreviewKey(item.key);
+                            }}
+                            onClick={(event) => togglePinned(item, event.currentTarget)}
+                            onKeyDown={(event) => handleMosaicKeyDown(event, item.index)}
+                          >
+                            <span className="compact-stack-mosaic-tile-surface">
+                              <TechLogo name={item.skill.name} iconName={item.skill.iconName} semanticIconName={item.skill.semanticIconName} />
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
             {mosaicPages.length > 1 ? (
@@ -559,7 +557,7 @@ export function CompactStackMarquee({
                   ) : (
                     <div className="stack-proof-media-fallback">
                       <span className="stack-marquee-logo stack-proof-fallback-logo">
-                        <TechLogo name={activeItem.skill.name} iconName={activeItem.skill.iconName} />
+                        <TechLogo name={activeItem.skill.name} iconName={activeItem.skill.iconName} semanticIconName={activeItem.skill.semanticIconName} />
                       </span>
                       <p>{currentProof.title}</p>
                     </div>

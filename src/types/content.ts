@@ -242,6 +242,7 @@ export type Skill = {
   status?: ContentStatus;
   name: string;
   iconName?: string;
+  semanticIconName?: string;
   aliases?: string[];
   category: string;
   level: "Learning" | "Working" | "Strong";

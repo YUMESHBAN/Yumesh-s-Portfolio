@@ -179,6 +179,7 @@ export const skillsQuery = `*[_type == "skill" && (!defined(status) || status ==
   status,
   name,
   iconName,
+  semanticIconName,
   aliases,
   category,
   level,

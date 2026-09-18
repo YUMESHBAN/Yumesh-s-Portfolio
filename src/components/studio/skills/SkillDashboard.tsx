@@ -4,6 +4,8 @@ import { EyeOff, Pencil, Plus, Search, Star, Tag, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useClient } from "sanity";
 
+import { TechLogo } from "@/components/tech-logo";
+
 import { getErrorMessage } from "../shared/studio-utils";
 
 import SkillForm, { type SkillDocument } from "./SkillForm";
@@ -14,6 +16,7 @@ const skillQuery = `*[_type == "skill"] | order(order asc, name asc) {
   status,
   name,
   iconName,
+  semanticIconName,
   aliases,
   category,
   level,
@@ -59,7 +62,7 @@ export default function SkillDashboard() {
     const search = searchTerm.trim().toLowerCase();
 
     return skills.filter((skill) => {
-      const searchable = [skill.name, skill.iconName, skill.category, skill.level, skill.aliases?.join(" ")]
+      const searchable = [skill.name, skill.iconName, skill.semanticIconName, skill.category, skill.level, skill.aliases?.join(" ")]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
@@ -195,8 +198,13 @@ export default function SkillDashboard() {
                   ) : null}
                 </div>
 
-                <h2 className="studio-card-title">{skill.name}</h2>
-                <p className="studio-card-meta">{[skill.level, skill.iconName].filter(Boolean).join(" / ") || "No level added"}</p>
+                <div className="mt-4 flex items-center gap-3">
+                  <TechLogo name={skill.name ?? "Skill"} iconName={skill.iconName} semanticIconName={skill.semanticIconName} />
+                  <div className="min-w-0">
+                    <h2 className="studio-card-title">{skill.name}</h2>
+                    <p className="studio-card-meta">{[skill.level, skill.iconName || skill.semanticIconName].filter(Boolean).join(" / ") || "No icon selected"}</p>
+                  </div>
+                </div>
 
                 {skill.aliases?.length ? (
                   <div className="studio-tag-list">

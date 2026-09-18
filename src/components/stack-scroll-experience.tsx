@@ -513,7 +513,7 @@ export function StackScrollExperience({
                       aria-label={target ? `View ${skill.name} proof` : `${skill.name} has no proof yet`}
                     >
                       <span className="flex min-w-0 items-center gap-3">
-                        <TechLogo name={skill.name} iconName={skill.iconName} />
+                        <TechLogo name={skill.name} iconName={skill.iconName} semanticIconName={skill.semanticIconName} />
                         <span className="truncate text-sm font-semibold tracking-[-0.02em]">{skill.name}</span>
                       </span>
                       <span className="flex shrink-0 items-center gap-2">

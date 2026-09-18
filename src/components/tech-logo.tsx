@@ -1,7 +1,35 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import {
+  BadgeCheck,
+  Boxes,
+  Braces,
+  ChartNoAxesCombined,
+  CreditCard,
+  Database,
+  FileSearch,
+  ImageIcon,
+  KeyRound,
+  LayoutDashboard,
+  MonitorSmartphone,
+  Network,
+  Newspaper,
+  Route,
+  Search,
+  Send,
+  ShieldCheck,
+  ShoppingCart,
+  Sparkles,
+  TestTube2,
+  Trophy,
+  UsersRound,
+  Workflow,
+  type LucideIcon,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { getSemanticIconName, type SemanticIconName } from "@/lib/skill-icons";
 
 const techLogos: Record<string, string> = {
   "Next.js": "/tech-icons/nextdotjs.svg",
@@ -31,22 +59,44 @@ const techLogos: Record<string, string> = {
   JWT: "https://cdn.simpleicons.org/jsonwebtokens/FFFFFF",
 };
 
-function initials(name: string) {
-  return name
-    .split(/[\s.]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
+const semanticIcons: Record<SemanticIconName, LucideIcon> = {
+  responsive: MonitorSmartphone,
+  route: Route,
+  database: Database,
+  sparkles: Sparkles,
+  code: Braces,
+  shield: ShieldCheck,
+  "credit-card": CreditCard,
+  boxes: Boxes,
+  send: Send,
+  "layout-dashboard": LayoutDashboard,
+  newspaper: Newspaper,
+  "shopping-cart": ShoppingCart,
+  search: Search,
+  chart: ChartNoAxesCombined,
+  trophy: Trophy,
+  key: KeyRound,
+  test: TestTube2,
+  image: ImageIcon,
+  network: Network,
+  workflow: Workflow,
+  "badge-check": BadgeCheck,
+  "file-search": FileSearch,
+  users: UsersRound,
+};
 
-export function TechLogo({ name, iconName }: { name: string; iconName?: string }) {
+export function TechLogo({ name, iconName, semanticIconName }: { name: string; iconName?: string; semanticIconName?: string }) {
   const logo = techLogos[name] ?? (iconName ? `https://cdn.simpleicons.org/${encodeURIComponent(iconName)}/FFFFFF` : undefined);
   const [failed, setFailed] = useState(false);
+  const SemanticIcon = semanticIcons[getSemanticIconName(name, semanticIconName)];
+
+  useEffect(() => {
+    setFailed(false);
+  }, [logo]);
 
   return (
     <span className="relative grid size-12 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.06] text-sm font-semibold text-white">
-      {!logo || failed ? <span aria-hidden="true">{initials(name)}</span> : null}
+      {!logo || failed ? <SemanticIcon size={24} strokeWidth={1.8} aria-hidden="true" /> : null}
       {logo && !failed ? (
         <Image
           src={logo}

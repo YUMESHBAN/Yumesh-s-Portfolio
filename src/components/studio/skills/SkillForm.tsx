@@ -4,6 +4,9 @@ import { Plus, Save, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useClient } from "sanity";
 
+import { TechLogo } from "@/components/tech-logo";
+import { semanticIconOptions, type SemanticIconName } from "@/lib/skill-icons";
+
 import { cleanOptionalFields, joinLines, splitLines } from "../shared/studio-utils";
 
 const skillStatuses = ["published", "draft", "hidden"] as const;
@@ -20,6 +23,7 @@ export type SkillDocument = {
   status?: SkillStatus;
   name?: string;
   iconName?: string;
+  semanticIconName?: SemanticIconName;
   aliases?: string[];
   category?: SkillCategory;
   level?: SkillLevel;
@@ -31,6 +35,7 @@ type SkillFormState = {
   status: SkillStatus;
   name: string;
   iconName: string;
+  semanticIconName: SemanticIconName | "";
   aliases: string;
   category: SkillCategory;
   level: SkillLevel;
@@ -49,6 +54,7 @@ function skillToFormState(skill?: SkillDocument | null): SkillFormState {
     status: skill?.status ?? "published",
     name: skill?.name ?? "",
     iconName: skill?.iconName ?? "",
+    semanticIconName: skill?.semanticIconName ?? "",
     aliases: joinLines(skill?.aliases),
     category: skill?.category ?? "Frontend",
     level: skill?.level ?? "Working",
@@ -95,6 +101,7 @@ export default function SkillForm({ skill, categorySuggestions, onComplete }: Sk
       status: formData.status,
       name,
       iconName: formData.iconName.trim(),
+      semanticIconName: formData.semanticIconName || undefined,
       aliases: splitLines(formData.aliases),
       category,
       level: formData.level,
@@ -102,7 +109,7 @@ export default function SkillForm({ skill, categorySuggestions, onComplete }: Sk
       order: Number.isFinite(Number(formData.order)) ? Number(formData.order) : 99,
     };
 
-    const unsetFields = ["iconName"].filter((field) => !String(payload[field as keyof typeof payload] ?? "").trim());
+    const unsetFields = ["iconName", "semanticIconName"].filter((field) => !String(payload[field as keyof typeof payload] ?? "").trim());
 
     try {
       if (skill?._id) {
@@ -214,8 +221,25 @@ export default function SkillForm({ skill, categorySuggestions, onComplete }: Sk
             <label className="studio-field">
               <span className="studio-form-label">Simple Icons Slug</span>
               <input value={formData.iconName} onChange={(event) => updateField("iconName", event.target.value)} className="studio-form-input" placeholder="nodedotjs, react, figma" />
-              <span className="studio-help-text">Optional. Used when no built-in logo match exists.</span>
+              <span className="studio-help-text">Brand logos take priority over a semantic icon.</span>
             </label>
+
+            <label className="studio-field">
+              <span className="studio-form-label">Semantic Icon</span>
+              <select value={formData.semanticIconName} onChange={(event) => updateField("semanticIconName", event.target.value as SemanticIconName | "")} className="studio-form-select">
+                <option value="">Use the skill default</option>
+                {semanticIconOptions.map((icon) => <option key={icon.value} value={icon.value}>{icon.title}</option>)}
+              </select>
+              <span className="studio-help-text">Use this for capabilities that do not have a brand logo.</span>
+            </label>
+
+            <div className="studio-field studio-field-wide">
+              <span className="studio-form-label">Icon Preview</span>
+              <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-slate-700">
+                <TechLogo name={formData.name || "Skill"} iconName={formData.iconName || undefined} semanticIconName={formData.semanticIconName || undefined} />
+                <span className="text-sm">This is the icon shown on the portfolio.</span>
+              </div>
+            </div>
 
             <label className="studio-field">
               <span className="studio-form-label">Display Order</span>

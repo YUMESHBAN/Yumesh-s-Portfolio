@@ -1444,11 +1444,18 @@ a {
     }
 
     .compact-stack-mosaic-track {
-      transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+      animation: compact-stack-mosaic-reveal 260ms cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .compact-stack-mosaic-page {
       min-height: 43.1rem;
+    }
+
+    @keyframes compact-stack-mosaic-reveal {
+      from {
+        opacity: 0;
+        transform: translateY(1.5rem);
+      }
     }
 
     .compact-stack-mosaic-toggle {
@@ -1573,6 +1580,7 @@ a {
     .stack-marquee-logo > span,
     .compact-stack-mosaic-tile,
     .compact-stack-mosaic-tile-surface,
+    .compact-stack-mosaic-track,
     .stack-proof-disclosure {
       animation: none;
       transition: none;
