@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 
 import { TechLogo } from "@/components/tech-logo";
@@ -16,6 +16,8 @@ type ProvenSkill = {
   proof: SkillShowcase;
   image?: ImageWithMeta;
 };
+
+const MOSAIC_PAGE_SIZE = 23;
 
 function normalise(value: string) {
   return value.trim().toLocaleLowerCase();
@@ -31,6 +33,18 @@ function sameSkill(skill: Skill, proofSkill: SkillShowcase["skill"]) {
 
 function itemKey(skill: Skill) {
   return skill._id ?? `${normalise(skill.category)}-${normalise(skill.name)}`;
+}
+
+function mosaicRowsFor(items: ProvenSkill[]) {
+  return items.reduce<ProvenSkill[][]>((rows, item) => {
+    const currentRow = rows.at(-1);
+    const currentRowSize = currentRow ? ((rows.length - 1) % 2 === 0 ? 3 : 2) : 0;
+
+    if (!currentRow || currentRow.length === currentRowSize) rows.push([item]);
+    else currentRow.push(item);
+
+    return rows;
+  }, []);
 }
 
 export function CompactStackMarquee({
@@ -60,6 +74,7 @@ export function CompactStackMarquee({
   const [ignoreMarqueeHoverPause, setIgnoreMarqueeHoverPause] = useState(false);
   const [marqueeDelay, setMarqueeDelay] = useState("0s");
   const [activeProofIndex, setActiveProofIndex] = useState(0);
+  const [mosaicPage, setMosaicPage] = useState(0);
 
   const provenSkills = useMemo<ProvenSkill[]>(() => {
     return [...skills]
@@ -87,15 +102,16 @@ export function CompactStackMarquee({
   const activeItem = provenSkills.find((item) => item.key === activeKey);
   const marqueeDurationSeconds = Math.max(28, provenSkills.length * 2.6);
   const duration = `${marqueeDurationSeconds}s`;
-  const mosaicRows = provenSkills.reduce<ProvenSkill[][]>((rows, item) => {
-    const currentRow = rows.at(-1);
-    const currentRowSize = currentRow ? ((rows.length - 1) % 2 === 0 ? 3 : 2) : 0;
+  const mosaicPages = provenSkills.reduce<ProvenSkill[][]>((pages, item) => {
+    const currentPage = pages.at(-1);
 
-    if (!currentRow || currentRow.length === currentRowSize) rows.push([item]);
-    else currentRow.push(item);
+    if (!currentPage || currentPage.length === MOSAIC_PAGE_SIZE) pages.push([item]);
+    else currentPage.push(item);
 
-    return rows;
+    return pages;
   }, []);
+  const mosaicPageRows = mosaicPages.map((page) => mosaicRowsFor(page));
+  const activeMosaicPage = Math.min(mosaicPage, Math.max(0, mosaicPages.length - 1));
 
   useEffect(() => {
     setActiveProofIndex(0);
@@ -150,6 +166,7 @@ export function CompactStackMarquee({
     const next = provenSkills[index];
     if (!next) return;
 
+    setMosaicPage(Math.floor(index / MOSAIC_PAGE_SIZE));
     setRovingKey(next.key);
     setPreviewKey(next.key);
     mosaicButtonRefs.current.get(next.key)?.focus();
@@ -447,47 +464,72 @@ export function CompactStackMarquee({
           </div>
 
           <div className="compact-stack-mosaic" role="group" aria-label="Choose a technology to view its project proof">
-            {mosaicRows.map((row, rowIndex) => (
-              <div className={`compact-stack-mosaic-row ${row.length === 2 ? "is-short" : ""}`} key={`mosaic-row-${rowIndex}`}>
-                {row.map((item) => {
-                  const selected = activeItem?.key === item.key;
+            <div className="compact-stack-mosaic-viewport">
+              <div
+                className="compact-stack-mosaic-track"
+                style={{ transform: `translateY(-${activeMosaicPage * 43.1}rem)` }}
+              >
+                {mosaicPageRows.map((rows, pageIndex) => (
+                  <div
+                    className="compact-stack-mosaic-page"
+                    key={`mosaic-page-${pageIndex}`}
+                    aria-hidden={pageIndex !== activeMosaicPage}
+                  >
+                    {rows.map((row, rowIndex) => (
+                      <div className={`compact-stack-mosaic-row ${row.length === 2 ? "is-short" : ""}`} key={`mosaic-row-${pageIndex}-${rowIndex}`}>
+                        {row.map((item) => {
+                          const selected = activeItem?.key === item.key;
 
-                  return (
-                    <button
-                      ref={(node) => {
-                        if (node) mosaicButtonRefs.current.set(item.key, node);
-                        else mosaicButtonRefs.current.delete(item.key);
-                      }}
-                      key={item.key}
-                      type="button"
-                      tabIndex={effectiveRovingKey === item.key ? 0 : -1}
-                      className={`compact-stack-mosaic-tile ${selected ? "is-active" : ""}`}
-                      aria-label={`${item.skill.name}: view project proof`}
-                      aria-expanded={selected}
-                      aria-controls="stack-proof-disclosure"
-                      onPointerEnter={() => {
-                        setRovingKey(item.key);
-                        setPreviewKey(item.key);
-                      }}
-                      onPointerLeave={() => {
-                        if (pinnedKey) setPreviewKey((current) => current === item.key ? null : current);
-                        else setPreviewKey(null);
-                      }}
-                      onFocus={() => {
-                        setRovingKey(item.key);
-                        if (!suppressFocusPreview.current) setPreviewKey(item.key);
-                      }}
-                      onClick={(event) => togglePinned(item, event.currentTarget)}
-                      onKeyDown={(event) => handleMosaicKeyDown(event, item.index)}
-                    >
-                      <span className="compact-stack-mosaic-tile-surface">
-                        <TechLogo name={item.skill.name} iconName={item.skill.iconName} />
-                      </span>
-                    </button>
-                  );
-                })}
+                          return (
+                            <button
+                              ref={(node) => {
+                                if (node) mosaicButtonRefs.current.set(item.key, node);
+                                else mosaicButtonRefs.current.delete(item.key);
+                              }}
+                              key={item.key}
+                              type="button"
+                              tabIndex={pageIndex === activeMosaicPage && effectiveRovingKey === item.key ? 0 : -1}
+                              className={`compact-stack-mosaic-tile ${selected ? "is-active" : ""}`}
+                              aria-label={`${item.skill.name}: view project proof`}
+                              aria-expanded={selected}
+                              aria-controls="stack-proof-disclosure"
+                              onPointerEnter={() => {
+                                setRovingKey(item.key);
+                                setPreviewKey(item.key);
+                              }}
+                              onPointerLeave={() => {
+                                if (pinnedKey) setPreviewKey((current) => current === item.key ? null : current);
+                                else setPreviewKey(null);
+                              }}
+                              onFocus={() => {
+                                setRovingKey(item.key);
+                                if (!suppressFocusPreview.current) setPreviewKey(item.key);
+                              }}
+                              onClick={(event) => togglePinned(item, event.currentTarget)}
+                              onKeyDown={(event) => handleMosaicKeyDown(event, item.index)}
+                            >
+                              <span className="compact-stack-mosaic-tile-surface">
+                                <TechLogo name={item.skill.name} iconName={item.skill.iconName} />
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+            {mosaicPages.length > 1 ? (
+              <button
+                type="button"
+                className="compact-stack-mosaic-toggle"
+                onClick={() => setMosaicPage((current) => current < mosaicPages.length - 1 ? current + 1 : 0)}
+                aria-label={activeMosaicPage < mosaicPages.length - 1 ? "Show remaining skills" : "Show first skills"}
+              >
+                {activeMosaicPage < mosaicPages.length - 1 ? <ChevronDown size={18} aria-hidden="true" /> : <ChevronUp size={18} aria-hidden="true" />}
+              </button>
+            ) : null}
           </div>
         </div>
 
